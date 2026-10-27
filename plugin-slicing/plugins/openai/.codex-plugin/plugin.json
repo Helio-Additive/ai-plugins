@@ -1,0 +1,32 @@
+{
+  "description": "Create, monitor, and retrieve Helio Additive slicing jobs.",
+  "extensions": {
+    "com.openai": {
+      "onboardingSkill": "./skills/setup/SKILL.md"
+    }
+  },
+  "interface": {
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "category": "Productivity",
+    "composerIcon": "./assets/icon.png",
+    "composerIconDark": "./assets/logo-dark.png",
+    "defaultPrompt": [
+      "Create a slicing job for my 3D model.",
+      "Check the status of my Helio slicing job.",
+      "Get a download URL for my completed slice."
+    ],
+    "developerName": "Helio-Additive",
+    "displayName": "Helio Slicing",
+    "logo": "./assets/logo.png",
+    "logoDark": "./assets/logo-dark.png",
+    "longDescription": "Connect to Helio Additive to create slicing jobs, check their progress, and retrieve completed outputs.",
+    "shortDescription": "Create and track 3D-print slicing jobs."
+  },
+  "mcpServers": "./.mcp.json",
+  "name": "helioadditive-slicing",
+  "skills": "./skills/",
+  "version": "0.1.0"
+}

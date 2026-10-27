@@ -1,0 +1,7 @@
+# Generate plugin packages from Jsonnet, MDX, and shared assets.
+make:
+    make
+
+# Check plugin metadata against the marketplace entry.
+validate:
+    bun run scripts/validate.ts

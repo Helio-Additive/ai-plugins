@@ -1,0 +1,20 @@
+{
+  "name": "helioadditive-slicing-plugins",
+  "interface": {
+    "displayName": "Helio-Additive Slicing Plugins"
+  },
+  "plugins": [
+    {
+      "name": "helioadditive-slicing",
+      "source": {
+        "source": "local",
+        "path": "./plugins/openai"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
