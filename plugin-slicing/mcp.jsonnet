@@ -1,7 +1,7 @@
 // OpenAI MCP configuration; generated at plugins/openai/.mcp.json.
 {
   mcpServers: {
-    'helio-slicing': {
+    'helioadditive-slicing': {
       type: 'http',
       url: 'https://mcp3.helioadditive.com/openai/slicing',
       scopes: ['slicing'],

@@ -68,7 +68,7 @@ test("generates provider packages directly from Jsonnet and nested MDX sources",
   expect(outputs["openai/plugin.json"]).toBeUndefined();
   expect(outputs["openai/mcp.json"]).toBeUndefined();
   expect(await Bun.file(join(fixture, "plugins/openai/.codex-plugin/plugin.json")).json()).toMatchObject({ version: "0.1.7", mcpServers: "./.mcp.json" });
-  expect(await Bun.file(join(fixture, "plugins/openai/.mcp.json")).json()).toMatchObject({ mcpServers: { "helio-slicing": { type: "http" } } });
+  expect(await Bun.file(join(fixture, "plugins/openai/.mcp.json")).json()).toMatchObject({ mcpServers: { "helioadditive-slicing": { type: "http" } } });
   expect(await readFile(join(fixture, "plugins/openai/assets/icon.png"))).toEqual(await readFile(join(fixture, "assets/logo.png")));
   expect((await snapshot(join(fixture, "skills")))["test skill/nested/SKILL.md"]).toBeUndefined();
   run("scripts/validate.ts");

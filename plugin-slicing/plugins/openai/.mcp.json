@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "helio-slicing": {
+    "helioadditive-slicing": {
       "oauth": {
         "callbackUrl": "http://127.0.0.1/callback",
         "clientId": "openai-slicer-plugin"

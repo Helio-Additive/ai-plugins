@@ -9,6 +9,6 @@ Use this skill for explicit requests to create a new 3D-print slicing job. The `
 2. If required inputs are missing, ask one concise question that lists only the missing inputs. Preserve any values the user already supplied.
 3. Call `create_slice` only after the user has explicitly requested creation and all required values are known.
 4. Report the resulting slice identifier, state, and any warnings or next action returned by the service. Do not claim that a slice is complete unless the service says so.
-5. Offer to check the slice status or retrieve an output URL. Do not fetch an output URL unless the user asks for it.
+5. Offer to check the slice status or download its output files when complete. Follow the `get-helio-slice-output` skill when the user asks for the files.
 
 If the service rejects the request, report its error in plain language and identify the user-correctable input when one is given. Do not silently retry a creation request.

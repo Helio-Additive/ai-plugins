@@ -59,7 +59,7 @@ if (plugin.mcpServers !== "./.mcp.json") {
   fail("OpenAI manifest must reference ./.mcp.json; run just make.");
 }
 const mcp = JSON.parse(readFileSync(resolve(pluginDirectory, ".mcp.json"), "utf8"));
-const server = mcp.mcpServers["helio-slicing"];
+const server = mcp.mcpServers["helioadditive-slicing"];
 if (server?.type !== "http" || !server.url || !server.oauth?.clientId
   || server.oauth.callbackUrl !== "http://127.0.0.1/callback" || !server.scopes?.includes("slicing")) {
   fail("Helio MCP must declare an HTTP server, the registered OAuth client, loopback callback, and slicing scope.");
