@@ -15,32 +15,22 @@ function fail(message: string): never {
   process.exit(1);
 }
 
-if (!entry) {
-  fail(".agents/plugins/marketplace.json has no local entry for ./plugins/openai.");
-}
-
-if (typeof plugin.name !== "string" || plugin.name.trim() === "") {
+if (!entry) fail("Marketplace has no local entry for ./plugins/openai.");
+if (typeof plugin.name !== "string" || !plugin.name.trim()) {
   fail("plugins/openai/.codex-plugin/plugin.json must have a non-empty name.");
 }
 
 if (plugin.name !== entry.name) {
-  fail(
-    `plugins/openai/.codex-plugin/plugin.json name ${JSON.stringify(plugin.name)} does not match `
-    + `.agents/plugins/marketplace.json entry name ${JSON.stringify(entry.name)} `
-    + "for ./plugins/openai.",
-  );
+  fail(`Plugin name ${JSON.stringify(plugin.name)} does not match marketplace entry ${JSON.stringify(entry.name)}.`);
 }
-
-console.log(`Validation passed: plugin and marketplace entry both use ${JSON.stringify(plugin.name)}.`);
 
 function validatePackage(directory: string) {
   if (!existsSync(directory)) fail(`Missing generated package: ${directory}; run just make.`);
   if (lstatSync(directory).isSymbolicLink()) fail(`Generated package must not be a symlink: ${directory}`);
-  for (const entry of readdirSync(directory, { withFileTypes: true })) {
-    const path = resolve(directory, entry.name);
+  for (const entry of readdirSync(directory, { recursive: true, withFileTypes: true })) {
+    const path = resolve(entry.parentPath, entry.name);
     if (entry.isSymbolicLink()) fail(`Packaged resource must not be a symlink: ${path}`);
-    if (entry.isDirectory()) validatePackage(path);
-    else if (entry.name.endsWith(".mdx") || entry.name.endsWith(".jsonnet")) {
+    if (!entry.isDirectory() && /\.(mdx|jsonnet)$/.test(entry.name)) {
       fail(`Source file must not be packaged: ${path}`);
     }
   }
@@ -64,4 +54,4 @@ if (server?.type !== "http" || !server.url || !server.oauth?.clientId
   || server.oauth.callbackUrl !== "http://127.0.0.1/callback" || !server.scopes?.includes("slicing")) {
   fail("Helio MCP must declare an HTTP server, the registered OAuth client, loopback callback, and slicing scope.");
 }
-console.log("Validation passed: onboarding, skills, assets, and OAuth configuration are packaged.");
+console.log(`Validation passed: ${plugin.name} matches the marketplace; skills, assets, and OAuth configuration are packaged.`);

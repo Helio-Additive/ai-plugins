@@ -17,9 +17,9 @@
     category: 'Productivity',
     capabilities: ['Read', 'Write'],
     defaultPrompt: [
-      'Create a slicing job for my 3D model.',
-      'Check the status of my Helio slicing job.',
-      'Get a download URL for my completed slice.',
+      'Slice this .stl file',
+      'Show me my recent slices',
+      'Check the progress of my slice',
     ],
   },
   extensions: {

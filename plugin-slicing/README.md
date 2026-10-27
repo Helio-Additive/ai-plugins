@@ -49,5 +49,3 @@ refreshing or reinstalling a plugin. Run `make` directly if Just is unavailable.
 checks packaged onboarding, branding, and OAuth configuration, and rejects
 symlinks or MDX/Jsonnet source files anywhere in the generated packages. It exits
 with a nonzero status when a check fails.
-
-Run `bun test` to check generation, rebuilds, and validation using temporary packages.
