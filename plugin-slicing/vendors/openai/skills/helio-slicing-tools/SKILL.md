@@ -14,7 +14,7 @@ Use the `helioadditive-slicing` MCP server. Check the connected tool schemas for
 * `get_slicer_settings`: Get the decoded settings JSON Schema, using `type: "BAMBU"` or `"ORCA"`. Describes supported settings, not a job's current values.
 * `validate_slicer_settings`: Check settings against that schema. Takes `engine: "BAMBU"` or `"ORCA"` and `settings` as a JSON-encoded string; returns a boolean.
 * `create_input_probe`: Optionally inspect a file before slicing. Supply `fileId`, or `inputType` and `inputKey` with an optional upload version. No engine or machine preset is needed. Repeated requests reuse the same probe.
-* `get_input_probe`: Poll by probe `id`; successful results contain typed integer `plates`, reusable `fileId`, and native metadata in `info`.
+* `get_input_probe`: Poll by probe `id`; successful results contain typed integer `plates`, reusable `fileId`, `infoKey`, and a short-lived `infoDownloadUrl`. Fetch that URL for native metadata JSON; it is not embedded in the response. Poll again for a fresh URL if it expires. A failed probe may also provide a native error document.
 * `create_slice`: Requires `input.slicingEngine` (`"BAMBU"` or `"ORCA"`), plus `fileId` OR `inputType`/`inputKey` and optional version. Automatically probes first if needed. Plate `0` or omission selects all plates; a positive value selects one one-based plate. Supports profile overrides and settings.
 * `get_slice`: Retrieve a slice by `id`, including `fileId`, aggregate progress, every requested plate's outcome, and plate-specific artifacts with download URLs.
 
