@@ -49,7 +49,7 @@ const packages = { openai, anthropic: skills };
 // Render everything before replacing packages so compilation errors leave the
 // existing plugin installations intact. Replacing outputs also removes stale files.
 await mkdir(join(root, ".cache"), { recursive: true });
-const staging = await mkdtemp(join(root, ".cache/plugins-"));
+const staging = await mkdtemp(join(root, ".cache/vendors-"));
 try {
   for (const [provider, outputs] of Object.entries(packages)) {
     await mkdir(join(staging, provider), { recursive: true });
@@ -60,14 +60,14 @@ try {
     }
   }
 
-  await mkdir(join(root, "plugins"), { recursive: true });
+  await mkdir(join(root, "vendors"), { recursive: true });
   for (const provider of Object.keys(packages)) {
-    const destination = join(root, "plugins", provider);
+    const destination = join(root, "vendors", provider);
     await rm(destination, { recursive: true, force: true });
     await rename(join(staging, provider), destination);
-    console.log(`Built plugins/${provider}`);
+    console.log(`Built vendors/${provider}`);
   }
-  await rm(join(root, "plugins/codex"), { recursive: true, force: true });
+  await rm(join(root, "vendors/codex"), { recursive: true, force: true });
 } finally {
   await rm(staging, { recursive: true, force: true });
 }

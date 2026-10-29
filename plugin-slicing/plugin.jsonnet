@@ -1,4 +1,4 @@
-// OpenAI plugin metadata; generated at plugins/openai/.codex-plugin/plugin.json.
+// OpenAI plugin metadata; generated at vendors/openai/.codex-plugin/plugin.json.
 {
   name: 'helioadditive-slicing',
   version: '0.1.0',

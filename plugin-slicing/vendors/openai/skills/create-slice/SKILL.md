@@ -1,0 +1,19 @@
+---
+name: create-helio-slice
+description: Create a Helio Additive slicing job when a user explicitly asks to slice a 3D model for printing.
+---
+
+Use this skill for explicit requests to create a new 3D-print slicing job. The `create_slice` MCP tool creates work and may consume manufacturing resources.
+
+For custom print settings, use `configure-helio-slice-settings` to inspect the engine's schema, choose compatible presets, and validate overrides before submission.
+
+1. Inspect the tool input schema before collecting or submitting values. Do not guess required fields, model locations, printer profiles, materials, or slicing settings.
+2. If required inputs are missing, ask one concise question that lists only the missing inputs. Preserve any values the user already supplied.
+3. Reuse a `fileId` returned by a prior probe or slice whenever available. Otherwise supply `inputType`, `inputKey`, and any upload version. Do not upload the same file again for another plate, engine, preset, or settings combination.
+4. Probing explicitly is optional: `create_slice` automatically waits for the file's one engine-independent probe before slicing. To inspect metadata first, use `create_input_probe` and poll `get_input_probe`; use the typed integer `plates` and native `info` to identify the source application and embedded profiles. Probes take no slicing engine or machine preset.
+5. Plate `0` or an omitted plate means **all plates**; a positive plate means that one-based plate only. Preserve the user's selection. Each selected plate runs independently against the same retained file.
+6. Call `create_slice` only after the user has explicitly requested creation and all required values are known.
+7. Report the resulting slice ID, reusable file ID, and current state. A null terminal status may mean probing or waiting for plate jobs. Report which plates were requested and any plate failures; do not claim completion until the parent slice succeeds.
+8. Offer to check the slice status or download its output files when complete. Follow the `get-helio-slice-output` skill when the user asks for the files.
+
+If the service rejects the request, report its error in plain language and identify the user-correctable input when one is given. Do not silently retry a creation request.

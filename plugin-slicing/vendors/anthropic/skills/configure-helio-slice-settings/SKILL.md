@@ -8,6 +8,7 @@ Use this skill to turn print requirements into settings for a BambuStudio (`BAMB
 ## Establish the baseline
 
 * Reuse the user's engine, printer/nozzle, material, profiles, and existing overrides. Ask only for missing details that affect the requested change.
+* Treat the fitted nozzle, bed geometry, printer limits, and machine routines as fixed hardware configuration. Do not offer to change nozzle diameter as a print-quality setting. If hardware was physically changed, confirm it and select the matching machine preset; never emulate that change through generic settings.
 * Clarify the relevant goal: finer detail, strength, shorter print time, support removal, or another specific requirement. Explain meaningful tradeoffs when choosing values.
 * When selecting presets, call `slicer_version` and use its result as `filter.forSlicerVersion`. Find the machine with `slicer_machines`, then compatible materials and processes with `slicer_filaments` and `slicer_processes` using `filter.compatibleMachine`.
 * Map returned IDs into `input.presetOverrides.machineId`, `processId`, and `filamentIds`. Machine `defaultProcessId` and `defaultFilamentIds` can supply a baseline when present; preserve filament order and look up missing defaults. Geometry-only `THREE_MF` inputs require explicit profiles.
@@ -26,6 +27,8 @@ Translate the user's goal into a small set of changes:
 * Time and material behavior: speeds, acceleration, temperature, cooling, and retraction.
 
 These are search concepts, not guaranteed field names. Discover the actual keys in the engine's schema. Keep unrelated preset/project values unchanged; do not copy every schema default into the overrides or assume schema defaults are active job values.
+
+Printer-preset keys, custom G-code, file/output paths, and printer host or credential settings are not job overrides. This includes `nozzle_diameter`, `printable_area`, `machine_start_gcode`, `machine_end_gcode`, `filename_format`, `bed_custom_texture`, `bed_custom_model`, `print_host`, and `printhost_*`. Do not suggest these keys, bypass validation, or move a rejected value into another field. Machine routines must come from the selected trusted preset.
 
 ## Validate and apply
 

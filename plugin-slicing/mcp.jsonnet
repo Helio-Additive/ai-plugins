@@ -1,4 +1,4 @@
-// OpenAI MCP configuration; generated at plugins/openai/.mcp.json.
+// OpenAI MCP configuration; generated at vendors/openai/.mcp.json.
 {
   mcpServers: {
     'helioadditive-slicing': {

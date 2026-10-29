@@ -1,10 +1,10 @@
 import { lstatSync, existsSync, readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import marketplace from "../.agents/plugins/marketplace.json";
-import plugin from "../plugins/openai/.codex-plugin/plugin.json";
+import plugin from "../vendors/openai/.codex-plugin/plugin.json";
 
 const root = resolve(import.meta.dir, "..");
-const pluginDirectory = resolve(root, "plugins/openai");
+const pluginDirectory = resolve(root, "vendors/openai");
 const entry = marketplace.plugins.find(
   (entry) => entry.source.source === "local"
     && resolve(root, entry.source.path) === pluginDirectory,
@@ -15,9 +15,9 @@ function fail(message: string): never {
   process.exit(1);
 }
 
-if (!entry) fail("Marketplace has no local entry for ./plugins/openai.");
+if (!entry) fail("Marketplace has no local entry for ./vendors/openai.");
 if (typeof plugin.name !== "string" || !plugin.name.trim()) {
-  fail("plugins/openai/.codex-plugin/plugin.json must have a non-empty name.");
+  fail("vendors/openai/.codex-plugin/plugin.json must have a non-empty name.");
 }
 
 if (plugin.name !== entry.name) {
@@ -37,7 +37,7 @@ function validatePackage(directory: string) {
 }
 
 for (const provider of ["openai", "anthropic"]) {
-  validatePackage(resolve(root, "plugins", provider));
+  validatePackage(resolve(root, "vendors", provider));
 }
 
 for (const path of [plugin.skills, plugin.extensions["com.openai"].onboardingSkill, plugin.interface.composerIcon, plugin.interface.logo, plugin.mcpServers]) {

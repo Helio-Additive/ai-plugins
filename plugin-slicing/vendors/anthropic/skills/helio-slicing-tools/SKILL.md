@@ -1,0 +1,37 @@
+---
+name: helio-slicing-tools
+description: Explain Helio Slicing MCP capabilities, find compatible printer and material profiles, or inspect and validate BambuStudio or OrcaSlicer settings.
+---
+
+Use the `helioadditive-slicing` MCP server. Check the connected tool schemas for current fields and constraints.
+
+## Tools
+
+* `slicer_version`: Get the supported slicer runner version; accepts an empty object.
+* `slicer_machines`: Find printer presets, nozzle sizes, and default process/filament IDs. Accepts an optional `filter`.
+* `slicer_filaments`: Find material presets compatible with a selected machine. Accepts an optional `filter`.
+* `slicer_processes`: Find print process presets, such as layer-height profiles. Accepts an optional `filter`.
+* `get_slicer_settings`: Get the decoded settings JSON Schema, using `type: "BAMBU"` or `"ORCA"`. Describes supported settings, not a job's current values.
+* `validate_slicer_settings`: Check settings against that schema. Takes `engine: "BAMBU"` or `"ORCA"` and `settings` as a JSON-encoded string; returns a boolean.
+* `create_input_probe`: Optionally inspect a file before slicing. Supply `fileId`, or `inputType` and `inputKey` with an optional upload version. No engine or machine preset is needed. Repeated requests reuse the same probe.
+* `get_input_probe`: Poll by probe `id`; successful results contain typed integer `plates`, reusable `fileId`, and native metadata in `info`.
+* `create_slice`: Requires `input.slicingEngine` (`"BAMBU"` or `"ORCA"`), plus `fileId` OR `inputType`/`inputKey` and optional version. Automatically probes first if needed. Plate `0` or omission selects all plates; a positive value selects one one-based plate. Supports profile overrides and settings.
+* `get_slice`: Retrieve a slice by `id`, including `fileId`, aggregate progress, every requested plate's outcome, and plate-specific artifacts with download URLs.
+
+## Choose profiles and settings
+
+For detailed print configuration, use `configure-helio-slice-settings`.
+
+* All profile filters support `engine` (`BAMBU` or `ORCA`), `search`, `vendor`, and `forSlicerVersion`. Omitting `engine` searches both catalogs. Every result includes its engine and an engine-qualified ID; preserve that ID unchanged.
+* Machine filters also support `nozzleDiameterMm`. Filament and process filters support `compatibleMachine`; pass the selected machine's returned ID and engine to avoid mixing catalogs.
+* Populate `create_slice.input.presetOverrides` with returned IDs: machine `id` → `machineId`, process `id` → `processId`, filament IDs → `filamentIds`.
+* The slice engine and every selected profile must agree. An Orca-only printer such as the Snapmaker U1 requires Orca profiles; do not substitute a Bambu profile just because its path or name resembles an Orca profile.
+* To use machine defaults, take `defaultProcessId` and `defaultFilamentIds` from the machine result, preserving filament order. Defaults may be null or empty; look up missing profiles rather than inventing IDs.
+* For custom settings, inspect `get_slicer_settings`, then call `validate_slicer_settings` with the same engine before submission. Pass `settings` as a JSON string, for example `"{\"layer_height\":0.2}"`.
+* Generic settings cannot change printer hardware, nozzle diameter, bed geometry, machine G-code, paths, or host access. Use only advertised process/filament settings; do not offer a software nozzle-diameter change.
+
+## Create and retrieve
+
+Use `create-helio-slice` for explicitly requested job creation and `check-helio-slice` for status. Geometry-only `THREE_MF` inputs require explicit profiles. The toolset has no file-upload or slice-listing tool; obtain the existing file ID, upload key, or slice ID when needed. Reuse the same file ID across plates, engines, presets, and settings; never request another upload just to slice another plate.
+
+For requested downloads, use `get-helio-slice-output` with a ready artifact's service-provided `downloadUrl`. Stream output to a local file; never open G-Code download URLs in a browser.

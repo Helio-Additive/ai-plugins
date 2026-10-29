@@ -27,18 +27,18 @@ every build. Markdown is written directly into the generated plugin packages;
 
 Generated packages contain regular files, including copied branding assets:
 
-- `plugins/openai/` contains the OpenAI manifest at
+- `vendors/openai/` contains the OpenAI manifest at
   `.codex-plugin/plugin.json`, `.mcp.json`, and skill Markdown.
-- `plugins/anthropic/` contains shared skill Markdown, ready for provider metadata
+- `vendors/anthropic/` contains shared skill Markdown, ready for provider metadata
   to be added later.
 
 The Jsonnet templates generate the OpenAI package directly. The MCP configuration
 uses `type: "http"`, the registered OAuth client ID, and
 `http://127.0.0.1/callback`. Resource paths in `.codex-plugin/plugin.json` are
-relative to the `plugins/openai/` package root.
+relative to the `vendors/openai/` package root.
 
 The local marketplace at `.agents/plugins/marketplace.json` points to
-`plugins/openai/`.
+`vendors/openai/`.
 
 Treat these provider directories as build output: each build replaces them and
 removes stale files. Compilation errors leave the existing packages intact.
