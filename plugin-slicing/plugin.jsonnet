@@ -22,9 +22,4 @@
       'Check the progress of my slice',
     ],
   },
-  extensions: {
-    'com.openai': {
-      onboardingSkill: './skills/setup/SKILL.md',
-    },
-  },
 }

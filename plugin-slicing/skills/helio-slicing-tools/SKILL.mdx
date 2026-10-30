@@ -5,8 +5,14 @@ description: Explain Helio Slicing MCP capabilities, find compatible printer and
 
 Use the `helioadditive-slicing` MCP server. Check the connected tool schemas for current fields and constraints.
 
+Authentication is handled by the host when the plugin is installed; there is no separate setup step. Never request or store passwords, access tokens, or client secrets. If a tool reports an authorization failure, report the error and ask the user to reconnect the plugin; do not retry or substitute credentials.
+
 ## Tools
 
+- `list_uploaded_files`: Browse the user's retained uploads with names, file IDs and input types; filter by name or input type instead of asking for another upload.
+- `get_uploaded_file`: Retrieve an uploaded file and its probe details by exact file ID.
+- `list_slices`: Browse the user's slices; filter by name, `fileId`, or status (`IN_PROGRESS`, `SUCCEEDED`, `FAILED`). Use `get_slice` for detailed outcomes.
+- `rename_uploaded_file` and `rename_slice`: Change a display name only when requested. Supply the exact ID and a name of 1..255 characters. These operations do not move stored files or create slicing work; renaming a file does not rename existing slices.
 - `slicer_version`: Get the supported slicer runner version; accepts an empty object.
 - `slicer_machines`: Find printer presets, nozzle sizes, and default process/filament IDs. Accepts an optional `filter`.
 - `slicer_filaments`: Find material presets compatible with a selected machine. Accepts an optional `filter`.
@@ -32,6 +38,8 @@ For detailed print configuration, use `configure-helio-slice-settings`.
 
 ## Create and retrieve
 
-Use `create-helio-slice` for explicitly requested job creation and `check-helio-slice` for status. Geometry-only `THREE_MF` inputs require explicit profiles. The toolset has no file-upload or slice-listing tool; obtain the existing file ID, upload key, or slice ID when needed. Reuse the same file ID across plates, engines, presets, and settings; never request another upload just to slice another plate.
+List tools use one-based `page` and `pageSize` (defaults 1 and 20; bounded to 50 pages and 100 rows per page). Follow `pageInfo.hasNextPage`, and use filters to narrow large histories rather than requesting pages beyond the cap. Both support `filter.name` with `equalTo`, `notEqualTo`, `contains`, `startsWith` or `endsWith`, plus `sortBy` (`NAME` or `INSERTED_AT`) and `sortDirection` (`ASCENDING` or `DESCENDING`). Default order is newest first. Names are not unique: show matching IDs and ask the user to disambiguate instead of guessing.
+
+Use `create-helio-slice` for explicitly requested job creation and `check-helio-slice` for status. Geometry-only `THREE_MF` inputs require explicit profiles. The slicing toolset has no file-upload tool; use an existing file ID or obtain an upload key when needed. Reuse the same file ID across plates, engines, presets, and settings; never request another upload just to slice another plate. Optional `input.name` labels a new slice or a newly registered file without changing its stored key.
 
 For requested downloads, use `get-helio-slice-output` with a ready artifact's service-provided `downloadUrl`. Stream output to a local file; never open G-Code download URLs in a browser.

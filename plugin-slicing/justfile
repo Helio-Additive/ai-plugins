@@ -5,3 +5,4 @@ make:
 # Check plugin metadata against the marketplace entry.
 validate:
     bun run scripts/validate.ts
+    bun test scripts/validate.test.ts

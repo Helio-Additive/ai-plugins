@@ -38,7 +38,8 @@ uses `type: "http"`, the registered OAuth client ID, and
 relative to the `vendors/openai/` package root.
 
 The local marketplace at `.agents/plugins/marketplace.json` points to
-`vendors/openai/`.
+`vendors/openai/`. The host handles OAuth during installation (`ON_INSTALL`);
+there is no separate setup skill or additional login step.
 
 Treat these provider directories as build output: each build replaces them and
 removes stale files. Compilation errors leave the existing packages intact.
@@ -46,6 +47,6 @@ Commit the shared sources and generated packages together, and rebuild before
 refreshing or reinstalling a plugin. Run `make` directly if Just is unavailable.
 
 `just validate` checks the plugin name against its local marketplace entry,
-checks packaged onboarding, branding, and OAuth configuration, and rejects
+checks installation-time authentication, packaged skills, branding, and OAuth configuration, and rejects
 symlinks or MDX/Jsonnet source files anywhere in the generated packages. It exits
 with a nonzero status when a check fails.

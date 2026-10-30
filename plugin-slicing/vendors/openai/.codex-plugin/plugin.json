@@ -1,10 +1,5 @@
 {
   "description": "Create, monitor, and retrieve Helio Additive slicing jobs.",
-  "extensions": {
-    "com.openai": {
-      "onboardingSkill": "./skills/setup/SKILL.md"
-    }
-  },
   "interface": {
     "capabilities": [
       "Read",

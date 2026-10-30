@@ -24,6 +24,10 @@ if (plugin.name !== entry.name) {
   fail(`Plugin name ${JSON.stringify(plugin.name)} does not match marketplace entry ${JSON.stringify(entry.name)}.`);
 }
 
+if (entry.policy.authentication !== "ON_INSTALL") {
+  fail("The marketplace must request authentication when the plugin is installed.");
+}
+
 function validatePackage(directory: string) {
   if (!existsSync(directory)) fail(`Missing generated package: ${directory}; run just make.`);
   if (lstatSync(directory).isSymbolicLink()) fail(`Generated package must not be a symlink: ${directory}`);
@@ -40,7 +44,7 @@ for (const provider of ["openai", "anthropic"]) {
   validatePackage(resolve(root, "vendors", provider));
 }
 
-for (const path of [plugin.skills, plugin.extensions["com.openai"].onboardingSkill, plugin.interface.composerIcon, plugin.interface.logo, plugin.mcpServers]) {
+for (const path of [plugin.skills, plugin.interface.composerIcon, plugin.interface.logo, plugin.mcpServers]) {
   const absolute = resolve(pluginDirectory, path);
   if (!absolute.startsWith(pluginDirectory + "/") || !existsSync(absolute)) fail(`Missing packaged resource: ${path}`);
   if (lstatSync(absolute).isSymbolicLink()) fail(`Packaged resource must not be a symlink: ${path}`);
