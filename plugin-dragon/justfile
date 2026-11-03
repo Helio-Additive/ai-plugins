@@ -1,0 +1,7 @@
+# Generate plugin packages from Jsonnet, MDX, and shared assets.
+make:
+    make
+
+# Check package structure and Dragon registration safety invariants.
+validate:
+    bun run scripts/validate.ts
