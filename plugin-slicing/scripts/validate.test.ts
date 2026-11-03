@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const root = resolve(import.meta.dir, "..");
@@ -48,4 +48,16 @@ test("the marketplace uses localhost and production packages never use developme
     expect(existsSync(resolve(root, `vendors/${provider}/skills/setup`))).toBe(false);
   }
   expect(existsSync(resolve(root, "vendors/anthropic/.claude-plugin/plugin.json"))).toBe(true);
+});
+
+test("every generated provider documents Snapmaker as a distinct engine", () => {
+  for (const provider of ["localhost", "openai", "anthropic"]) {
+    const tools = readFileSync(resolve(root, `vendors/${provider}/skills/helio-slicing-tools/SKILL.md`), "utf8");
+    expect(tools).toContain("SNAPMAKER");
+    expect(tools).toContain("slicer_cli-snapmaker");
+    expect(tools).toContain("`fits`");
+    expect(tools).not.toContain("U1 requires Orca profiles");
+    const settings = readFileSync(resolve(root, `vendors/${provider}/skills/configure-helio-slice-settings/SKILL.md`), "utf8");
+    expect(settings).toContain('{"type":"SNAPMAKER"}');
+  }
 });

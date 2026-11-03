@@ -3,7 +3,7 @@ name: configure-helio-slice-settings
 description: Configure slice details such as layer height, walls, infill, supports, speed, or temperature using Helio Slicing presets, settings schemas, and validated overrides.
 ---
 
-Use this skill to turn print requirements into settings for a BambuStudio (`BAMBU`) or OrcaSlicer (`ORCA`) slice. Use the connected `helioadditive-slicing` tool schemas for current inputs.
+Use this skill to turn print requirements into settings for a BambuStudio (`BAMBU`), OrcaSlicer (`ORCA`), or Snapmaker Orca (`SNAPMAKER`) slice. Use the connected `helioadditive-slicing` tool schemas for current inputs.
 
 ## Establish the baseline
 
@@ -15,7 +15,7 @@ Use this skill to turn print requirements into settings for a BambuStudio (`BAMB
 
 ## Inspect supported settings
 
-Call `get_slicer_settings` with `{"type":"BAMBU"}` or `{"type":"ORCA"}` matching the chosen engine. It returns a decoded JSON Schema describing supported options; it does not retrieve a job's settings or the fully resolved preset configuration.
+Call `get_slicer_settings` with `{"type":"BAMBU"}`, `{"type":"ORCA"}`, or `{"type":"SNAPMAKER"}` matching the chosen engine. Snapmaker Orca is a separate engine with its own settings schema, not an alias for ordinary Orca. It returns a decoded JSON Schema describing supported options; it does not retrieve a job's settings or the fully resolved preset configuration.
 
 Inspect only the relevant properties and referenced definitions. Use their descriptions, units, types, enums, ranges, and dependencies where supplied. Follow the schema's exact representations, including strings or arrays where required; do not assume a numeric-looking setting takes a number.
 
