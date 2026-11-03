@@ -12,8 +12,8 @@ async function files(directory: string) {
     .map((entry) => join(entry.parentPath, entry.name));
 }
 
-function renderJsonnet(source: string): string {
-  const output = execFileSync("jsonnet", [source], { cwd: root, encoding: "utf8" });
+function renderJsonnet(source: string, args: string[] = []): string {
+  const output = execFileSync("jsonnet", [...args, source], { cwd: root, encoding: "utf8" });
   return JSON.stringify(JSON.parse(output), null, 2) + "\n";
 }
 
@@ -44,7 +44,22 @@ for (const source of await files(join(root, "assets"))) {
 if (!openai.has("assets/icon.png") && openai.has("assets/logo.png")) {
   openai.set("assets/icon.png", openai.get("assets/logo.png")!);
 }
-const packages = { openai, anthropic: skills };
+const localhost = new Map(openai);
+localhost.set(".mcp.json", renderJsonnet("mcp.jsonnet", ["--tla-str", "provider=localhost"]));
+const anthropic = new Map<string, string | Buffer>([
+  ...skills,
+  [".mcp.json", renderJsonnet("mcp.jsonnet", ["--tla-str", "provider=anthropic"])],
+  [".claude-plugin/plugin.json", JSON.stringify({
+    name: "helioadditive-slicing",
+    version: "0.1.0",
+    description: "Create, monitor, and retrieve Helio Additive slicing jobs.",
+    author: { name: "Helio-Additive" },
+  }, null, 2) + "\n"],
+]);
+for (const [path, contents] of openai) {
+  if (path.startsWith("assets/")) anthropic.set(path, contents);
+}
+const packages = { localhost, openai, anthropic };
 
 // Render everything before replacing packages so compilation errors leave the
 // existing plugin installations intact. Replacing outputs also removes stale files.

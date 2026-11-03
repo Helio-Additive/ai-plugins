@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "helioadditive-slicing": {
+      "oauth": {
+        "callbackUrl": "http://127.0.0.1/callback",
+        "clientId": "openai-slicer-plugin"
+      },
+      "scopes": [
+        "slicing"
+      ],
+      "type": "http",
+      "url": "https://mcp.helio-local.svc.cluster.local:8444/openai/slicing"
+    }
+  }
+}

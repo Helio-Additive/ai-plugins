@@ -29,8 +29,9 @@ Generated packages contain regular files, including copied branding assets:
 
 - `vendors/openai/` contains the OpenAI manifest at
   `.codex-plugin/plugin.json`, `.mcp.json`, and skill Markdown.
-- `vendors/anthropic/` contains shared skill Markdown, ready for provider metadata
-  to be added later.
+- `vendors/anthropic/` contains a Claude plugin manifest, `.mcp.json`, and shared skills.
+- `vendors/localhost/` contains the OpenAI package for local testing, pointing to
+  `https://mcp.helio-local.svc.cluster.local:8444/openai/slicing`.
 
 The Jsonnet templates generate the OpenAI package directly. The MCP configuration
 uses `type: "http"`, the registered OAuth client ID, and
@@ -38,8 +39,20 @@ uses `type: "http"`, the registered OAuth client ID, and
 relative to the `vendors/openai/` package root.
 
 The local marketplace at `.agents/plugins/marketplace.json` points to
-`vendors/openai/`. The host handles OAuth during installation (`ON_INSTALL`);
+`vendors/localhost/`. The host handles OAuth during installation (`ON_INSTALL`);
 there is no separate setup skill or additional login step.
+
+The two production packages use `https://mcp.helioadditive.com`; OAuth endpoints
+are discovered from that server and must use `https://auth.helioadditive.com`.
+Local tests use OrbStack's LoadBalancer Service DNS and the devops `local-tls` proxy with an
+mkcert-trusted certificate. The issuer is
+`https://auth.helio-local.svc.cluster.local:8443`; the same names resolve from the
+host and Pods after the Services are deployed. Run the devops root `just localhost`
+helper to install local CA trust and deploy the proxy. No port-forward or
+`/etc/hosts` edits are needed. Restart the plugin host after installing the CA.
+The HTTP loopback OAuth callback stays unchanged; only the remote auth/MCP
+endpoints require HTTPS. No token or client secret is packaged. Production OAuth
+discovery and provider installation must be tested before submission.
 
 Treat these provider directories as build output: each build replaces them and
 removes stale files. Compilation errors leave the existing packages intact.

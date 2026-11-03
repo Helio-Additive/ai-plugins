@@ -8,7 +8,7 @@
       "name": "helioadditive-slicing",
       "source": {
         "source": "local",
-        "path": "./vendors/openai"
+        "path": "./vendors/localhost"
       },
       "policy": {
         "installation": "AVAILABLE",
