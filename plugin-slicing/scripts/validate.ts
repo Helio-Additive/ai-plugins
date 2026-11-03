@@ -1,23 +1,24 @@
 import { lstatSync, existsSync, readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import marketplace from "../.agents/plugins/marketplace.json";
-import plugin from "../vendors/localhost/.codex-plugin/plugin.json";
 
 const root = resolve(import.meta.dir, "..");
-const pluginDirectory = resolve(root, "vendors/localhost");
-const entry = marketplace.plugins.find(
-  (entry) => entry.source.source === "local"
-    && resolve(root, entry.source.path) === pluginDirectory,
-);
+const entry = marketplace.plugins.find((entry) => entry.name === "helioadditive-slicing");
 
 function fail(message: string): never {
   console.error(`Validation failed: ${message}`);
   process.exit(1);
 }
 
-if (!entry) fail("Marketplace has no local entry for ./vendors/localhost.");
+if (!entry || entry.source.source !== "local" || entry.source.path !== "./vendors/localhost/nightly") {
+  fail("Marketplace must use the local package ./vendors/localhost/nightly for team testing.");
+}
+const pluginDirectory = resolve(root, entry.source.path);
+const manifestPath = resolve(pluginDirectory, ".codex-plugin/plugin.json");
+if (!existsSync(manifestPath)) fail("Missing nightly plugin manifest; run just make.");
+const plugin = JSON.parse(readFileSync(manifestPath, "utf8"));
 if (typeof plugin.name !== "string" || !plugin.name.trim()) {
-  fail("vendors/openai/.codex-plugin/plugin.json must have a non-empty name.");
+  fail("The marketplace plugin manifest must have a non-empty name.");
 }
 
 if (plugin.name !== entry.name) {
@@ -40,7 +41,7 @@ function validatePackage(directory: string) {
   }
 }
 
-for (const provider of ["localhost", "openai", "anthropic"]) {
+for (const provider of ["localhost/nightly", "localhost/staging", "localhost/production", "orbstack", "openai", "anthropic"]) {
   validatePackage(resolve(root, "vendors", provider));
 }
 
@@ -57,5 +58,8 @@ const server = mcp.mcpServers["helioadditive-slicing"];
 if (server?.type !== "http" || !server.url || !server.oauth?.clientId
   || server.oauth.callbackUrl !== "http://127.0.0.1/callback" || !server.scopes?.includes("slicing")) {
   fail("Helio MCP must declare an HTTP server, the registered OAuth client, loopback callback, and slicing scope.");
+}
+if (server.url !== "https://mcp3.helioadditive.com/openai/slicing") {
+  fail("The marketplace package must target the hosted nightly MCP endpoint.");
 }
 console.log(`Validation passed: ${plugin.name} matches the marketplace; skills, assets, and OAuth configuration are packaged.`);

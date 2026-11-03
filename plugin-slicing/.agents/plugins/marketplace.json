@@ -8,7 +8,7 @@
       "name": "helioadditive-slicing",
       "source": {
         "source": "local",
-        "path": "./vendors/localhost"
+        "path": "./vendors/localhost/nightly"
       },
       "policy": {
         "installation": "AVAILABLE",

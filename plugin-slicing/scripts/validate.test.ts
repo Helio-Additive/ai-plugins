@@ -37,21 +37,47 @@ test("the generated MCP server retains its OAuth configuration", async () => {
 
 test("the marketplace uses localhost and production packages never use development endpoints", async () => {
   const marketplace = await Bun.file(resolve(root, ".agents/plugins/marketplace.json")).json();
-  expect(marketplace.plugins[0].source.path).toBe("./vendors/localhost");
+  expect(marketplace.plugins[0].source.path).toBe("./vendors/localhost/nightly");
   for (const [provider, url] of [
-    ["localhost", "https://mcp.helio-local.svc.cluster.local:8444/openai/slicing"],
+    ["localhost/nightly", "https://mcp3.helioadditive.com/openai/slicing"],
+    ["localhost/staging", "https://mcp2.helioadditive.com/openai/slicing"],
+    ["localhost/production", "https://mcp.helioadditive.com/openai/slicing"],
+    ["orbstack", "https://mcp.helio-local.svc.cluster.local:8444/openai/slicing"],
     ["openai", "https://mcp.helioadditive.com/openai/slicing"],
     ["anthropic", "https://mcp.helioadditive.com/slicing"],
   ]) {
     const mcp = await Bun.file(resolve(root, `vendors/${provider}/.mcp.json`)).json();
     expect(mcp.mcpServers["helioadditive-slicing"].url).toBe(url);
+    if (provider !== "anthropic") {
+      const server = mcp.mcpServers["helioadditive-slicing"];
+      expect(server.oauth.clientId).toBe("openai-slicer-plugin");
+      expect(server.oauth.callbackUrl).toBe("http://127.0.0.1/callback");
+      expect(server.scopes).toContain("slicing");
+      const manifest = await Bun.file(resolve(root, `vendors/${provider}/.codex-plugin/plugin.json`)).json();
+      expect(manifest.name).toBe(marketplace.plugins[0].name);
+      expect(existsSync(resolve(root, `vendors/${provider}`, manifest.mcpServers))).toBe(true);
+    }
     expect(existsSync(resolve(root, `vendors/${provider}/skills/setup`))).toBe(false);
   }
+  expect(existsSync(resolve(root, "vendors/localhost/.mcp.json"))).toBe(false);
   expect(existsSync(resolve(root, "vendors/anthropic/.claude-plugin/plugin.json"))).toBe(true);
 });
 
+test("unknown providers and hosted environments fail instead of selecting production", () => {
+  for (const args of [
+    ["--tla-str", "provider=unknown"],
+    ["--tla-str", "provider=localhost", "--tla-str", "environment=unknown"],
+  ]) {
+    const result = Bun.spawnSync(["jsonnet", ...args, "mcp.jsonnet"], {
+      cwd: root, stdout: "pipe", stderr: "pipe",
+    });
+    expect(result.exitCode).not.toBe(0);
+    expect(result.stderr.toString()).toContain("Unknown");
+  }
+});
+
 test("every generated provider documents Snapmaker as a distinct engine", () => {
-  for (const provider of ["localhost", "openai", "anthropic"]) {
+  for (const provider of ["localhost/nightly", "localhost/staging", "localhost/production", "orbstack", "openai", "anthropic"]) {
     const tools = readFileSync(resolve(root, `vendors/${provider}/skills/helio-slicing-tools/SKILL.md`), "utf8");
     expect(tools).toContain("SNAPMAKER");
     expect(tools).toContain("slicer_cli-snapmaker");

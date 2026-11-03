@@ -44,8 +44,17 @@ for (const source of await files(join(root, "assets"))) {
 if (!openai.has("assets/icon.png") && openai.has("assets/logo.png")) {
   openai.set("assets/icon.png", openai.get("assets/logo.png")!);
 }
-const localhost = new Map(openai);
-localhost.set(".mcp.json", renderJsonnet("mcp.jsonnet", ["--tla-str", "provider=localhost"]));
+const orbstack = new Map(openai);
+orbstack.set(".mcp.json", renderJsonnet("mcp.jsonnet", ["--tla-str", "provider=orbstack"]));
+const localhost = Object.fromEntries(
+  ["nightly", "staging", "production"].map((environment) => {
+    const bundle = new Map(openai);
+    bundle.set(".mcp.json", renderJsonnet("mcp.jsonnet", [
+      "--tla-str", "provider=localhost", "--tla-str", `environment=${environment}`,
+    ]));
+    return [`localhost/${environment}`, bundle];
+  }),
+);
 const anthropic = new Map<string, string | Buffer>([
   ...skills,
   [".mcp.json", renderJsonnet("mcp.jsonnet", ["--tla-str", "provider=anthropic"])],
@@ -59,7 +68,7 @@ const anthropic = new Map<string, string | Buffer>([
 for (const [path, contents] of openai) {
   if (path.startsWith("assets/")) anthropic.set(path, contents);
 }
-const packages = { localhost, openai, anthropic };
+const packages = { ...localhost, orbstack, openai, anthropic };
 
 // Render everything before replacing packages so compilation errors leave the
 // existing plugin installations intact. Replacing outputs also removes stale files.
@@ -76,7 +85,8 @@ try {
   }
 
   await mkdir(join(root, "vendors"), { recursive: true });
-  for (const provider of Object.keys(packages)) {
+  // Replace each top-level tree once, including all nested hosted bundles.
+  for (const provider of new Set(Object.keys(packages).map((path) => path.split("/")[0]!))) {
     const destination = join(root, "vendors", provider);
     await rm(destination, { recursive: true, force: true });
     await rename(join(staging, provider), destination);
