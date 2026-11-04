@@ -28,20 +28,34 @@ compatibility, but their expanded fields are not a discovery contract.
 
 ## Repository layout
 
-- `plugin.jsonnet` defines OpenAI plugin metadata and branding paths.
-- `mcp.jsonnet` defines the Dragon HTTP server connection.
+- `plugin.jsonnet` defines shared identity and provider manifests.
+- `mcp.jsonnet` defines provider/environment-specific Dragon HTTP connections.
 - `skills/<skill>/SKILL.mdx` contains the six shared skill sources.
 - `assets/` contains shared branding images. `logo.png` also supplies
   `icon.png` unless a separate icon is added.
 - `vendors/` contains generated provider packages and is committed with its
   sources.
-- `.agents/plugins/marketplace.json` exposes `vendors/openai` to the local
+- `.agents/plugins/marketplace.json` exposes `vendors/localhost/nightly` to the local
   marketplace.
 
-`vendors/openai/` contains the OpenAI manifest, MCP configuration, assets, and
-rendered skill Markdown. `vendors/anthropic/` intentionally contains shared
-rendered skills only, matching the reference package; it does not yet define an
-Anthropic provider manifest or connection configuration.
+All five bundles are self-contained, with a provider manifest, MCP configuration,
+assets, and all six rendered skills:
+
+| Install directory | Provider | MCP resource |
+| --- | --- | --- |
+| `vendors/localhost/nightly` | OpenAI-compatible local install | `https://mcp3.helioadditive.com/openai/dragon` |
+| `vendors/localhost/staging` | OpenAI-compatible local install | `https://mcp2.helioadditive.com/openai/dragon` |
+| `vendors/localhost/production` | OpenAI-compatible local install | `https://mcp.helioadditive.com/openai/dragon` |
+| `vendors/openai` | OpenAI production | `https://mcp.helioadditive.com/openai/dragon` |
+| `vendors/anthropic` | Anthropic production | `https://mcp.helioadditive.com/dragon` |
+
+`localhost` describes local installation, not a local MCP server. Select the
+desired bundle in the host's local-plugin installation flow; the marketplace
+selects nightly. OpenAI manifests live in `.codex-plugin/plugin.json`, and the
+Anthropic manifest lives in `.claude-plugin/plugin.json` with conventional
+`skills/` and `.mcp.json` discovery. Production provider packages never use nightly.
+The host handles OAuth at installation. `setup` remains optional troubleshooting;
+there is no mandatory extra onboarding login or OpenAI `onboardingSkill` hook.
 
 ## Build and validate
 
@@ -60,18 +74,21 @@ generated packages intact. A successful build replaces each generated provider
 directory and removes stale files. Commit changes to shared sources and their
 generated `vendors/` outputs together.
 
-`just validate` verifies the marketplace path, generated resources, all six
-skills for both provider packages, asset paths, and the OAuth safety contract.
-It rejects symlinks and source MDX/Jsonnet files in generated output.
+`just validate` runs environment/OAuth regression tests and verifies the marketplace
+path, generated resources, all six skills in every bundle, assets, and exact OAuth
+contracts. It rejects symlinks and source MDX/Jsonnet files in generated output,
+checks source/output freshness, and exercises the streaming download helper with
+mocked network input. `bunx --no-install tsc --noEmit` checks TypeScript when installed.
 
 ## Hosting and authentication status
 
-The proposed endpoint is `https://mcp3.helioadditive.com/openai/dragon` with a
-loopback callback URL. That route and its protected-resource endpoint returned
-404 on 2026-10-30; hosted Dragon login is not qualified.
+Generation of nightly, staging, and production packages is not a claim that any
+environment is activated or hosted login is qualified. Discover authorization
+endpoints from each selected MCP resource's OAuth metadata; do not hardcode
+authorization/token URLs or substitute credentials.
 
 Gateway and Auth integration are managed in their respective repositories.
-The slicing gateway verifies JWT issuer, resource audience, scope, and allowed tools, then forwards the
+The Dragon gateway must verify JWT issuer, resource audience, scope, and allowed tools, then forward the
 original validated token. MCP forwards it unchanged to the API. Dragon's internal
 authentication middleware must accept the caller's token and return the canonical
 account identity across the workflow. Services retain subscription and resource
@@ -79,9 +96,17 @@ access checks. No token conversion or replacement credential belongs here.
 
 Each plugin has its own host authentication flow. Token reuse across services
 depends on both scope and audience policies; it is not guaranteed by a shared
-login or scope. The connection now matches the companion DevOps draft:
-`openai-dragon-plugin`, scope `dragon`, and the Dragon route as token audience.
-These are proposed configuration changes, not a claim of deployed registration.
+login or scope. OpenAI-compatible bundles match the registration contract in
+[DevOps proposal #4416](https://github.com/Helio-Additive/devops/pull/4416):
+`openai-dragon-plugin`, scope `dragon`, callback `http://127.0.0.1/callback`.
+The general Anthropic route uses existing `generic-agent` with scope `dragon`;
+Claude Code pins it as `oauth.scopes: "dragon"` (OpenAI uses top-level
+`scopes: ["dragon"]`). The matching resource/scope authorization must be deployed in Auth. Each selected
+MCP route is its own resource. Parent
+[context #1490](https://github.com/Helio-Additive/context/issues/1490) coordinates
+the matching nightly registration, gateway routes/discovery, caller-token API
+acceptance, and durable MCP run-store/single-owner prerequisites.
+Staging and production activation remain separate deployment work.
 Keep Jsonnet as the source for generated provider configuration, following
 `plugin-slicing`; do not edit generated connections directly.
 

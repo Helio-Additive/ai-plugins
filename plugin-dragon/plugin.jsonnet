@@ -1,8 +1,15 @@
-// OpenAI plugin metadata; generated at vendors/openai/.codex-plugin/plugin.json.
-{
+// Provider metadata; all bundles share the same identity and description.
+function(provider='openai')
+assert std.member(['openai', 'anthropic'], provider): 'Unknown plugin provider';
+local metadata = {
   name: 'helioadditive-dragon',
   version: '0.1.0',
   description: 'Prepare, run, monitor, and retrieve Helio Dragon thermal workflows.',
+};
+if provider == 'anthropic' then metadata + {
+  author: { name: 'Helio-Additive' },
+} else metadata +
+{
   skills: './skills/',
   mcpServers: './.mcp.json',
   interface: {
@@ -21,10 +28,5 @@
       'Check the progress of my Dragon run',
       'Download my Dragon result',
     ],
-  },
-  extensions: {
-    'com.openai': {
-      onboardingSkill: './skills/setup/SKILL.md',
-    },
   },
 }

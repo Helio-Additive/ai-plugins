@@ -11,8 +11,8 @@ async function files(directory: string) {
     .filter((entry) => entry.isFile()).map((entry) => join(entry.parentPath, entry.name));
 }
 
-function renderJsonnet(source: string): string {
-  const output = execFileSync("jsonnet", [source], { cwd: root, encoding: "utf8" });
+function renderJsonnet(source: string, args: string[] = []): string {
+  const output = execFileSync("jsonnet", [...args, source], { cwd: root, encoding: "utf8" });
   return JSON.stringify(JSON.parse(output), null, 2) + "\n";
 }
 
@@ -40,7 +40,24 @@ for (const source of await files(join(root, "assets"))) {
 if (!openai.has("assets/icon.png") && openai.has("assets/logo.png")) {
   openai.set("assets/icon.png", openai.get("assets/logo.png")!);
 }
-const packages = { openai, anthropic: skills };
+const localhost = Object.fromEntries(
+  ["nightly", "staging", "production"].map((environment) => {
+    const bundle = new Map(openai);
+    bundle.set(".mcp.json", renderJsonnet("mcp.jsonnet", [
+      "--tla-str", "provider=localhost", "--tla-str", `environment=${environment}`,
+    ]));
+    return [`localhost/${environment}`, bundle];
+  }),
+);
+const anthropic = new Map<string, string | Buffer>([
+  ...skills,
+  [".claude-plugin/plugin.json", renderJsonnet("plugin.jsonnet", ["--tla-str", "provider=anthropic"])],
+  [".mcp.json", renderJsonnet("mcp.jsonnet", ["--tla-str", "provider=anthropic"])],
+]);
+for (const [path, contents] of openai) {
+  if (path.startsWith("assets/")) anthropic.set(path, contents);
+}
+const packages = { ...localhost, openai, anthropic };
 
 // Render everything before replacing packages so compilation errors leave the
 // existing plugin installations intact. Replacing outputs also removes stale files.
@@ -56,7 +73,8 @@ try {
     }
   }
   await mkdir(join(root, "vendors"), { recursive: true });
-  for (const provider of Object.keys(packages)) {
+  // Replace the localhost tree once so stale nested environments are removed.
+  for (const provider of new Set(Object.keys(packages).map((path) => path.split("/")[0]!))) {
     const destination = join(root, "vendors", provider);
     await rm(destination, { recursive: true, force: true });
     await rename(join(staging, provider), destination);

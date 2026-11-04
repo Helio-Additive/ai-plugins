@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "helioadditive-dragon": {
+      "oauth": {
+        "clientId": "generic-agent",
+        "scopes": "dragon"
+      },
+      "type": "http",
+      "url": "https://mcp.helioadditive.com/dragon"
+    }
+  }
+}

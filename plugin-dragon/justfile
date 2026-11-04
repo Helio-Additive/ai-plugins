@@ -4,4 +4,5 @@ make:
 
 # Check package structure and Dragon registration safety invariants.
 validate:
+    bun test scripts/package-contract.test.ts
     bun run scripts/validate.ts

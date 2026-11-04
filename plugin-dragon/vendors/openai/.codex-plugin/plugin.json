@@ -1,10 +1,5 @@
 {
   "description": "Prepare, run, monitor, and retrieve Helio Dragon thermal workflows.",
-  "extensions": {
-    "com.openai": {
-      "onboardingSkill": "./skills/setup/SKILL.md"
-    }
-  },
   "interface": {
     "capabilities": [
       "Read",

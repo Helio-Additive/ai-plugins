@@ -8,11 +8,15 @@ generated provider packages consistent.
 - Edit `plugin.jsonnet`, `mcp.jsonnet`, `skills/**/*.mdx`, and `assets/`.
 - Do not hand-edit `vendors/`; run `just make` after source changes and commit
   the regenerated outputs alongside the source change.
-- `vendors/openai/` is the installable OpenAI package. `vendors/anthropic/`
-  intentionally contains only the shared rendered skills until a provider
-  manifest is explicitly specified.
+- `vendors/openai/` and `vendors/anthropic/` are installable production
+  packages with their respective provider manifests and MCP routes.
+- `vendors/localhost/{nightly,staging,production}/` are complete local-install
+  OpenAI-compatible bundles targeting the corresponding hosted environments.
+  Generate these from shared Jsonnet/MDX; never redirect production packages
+  to nightly. Host installation handles OAuth; setup is optional troubleshooting,
+  not a mandatory onboarding hook.
 - `.agents/plugins/marketplace.json` is shared local-marketplace integration
-  and must point to `./vendors/openai`.
+  and must point to `./vendors/localhost/nightly`.
 
 ## Dragon safety contract
 

@@ -4,10 +4,9 @@ import { join, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 import { mdxToMd } from "mdx-to-md";
 import marketplace from "../.agents/plugins/marketplace.json";
-import plugin from "../vendors/openai/.codex-plugin/plugin.json";
+import { packages, validateConnection, validateMarketplace } from "./package-contract";
 
 const root = resolve(import.meta.dir, "..");
-const pluginDirectory = resolve(root, "vendors/openai");
 const skillNames = ["setup", "helio-dragon-tools", "prepare-dragon-run", "start-dragon-run", "check-dragon-run", "get-dragon-output"];
 function fail(message: string): never { console.error(`Validation failed: ${message}`); process.exit(1); }
 function validateExclusiveDownloadHelper() {
@@ -69,30 +68,42 @@ function validatePackage(directory: string) {
     if (item.isSymbolicLink() || (!item.isDirectory() && /\.(mdx|jsonnet)$/.test(item.name))) fail(`Invalid packaged resource: ${path}`);
   }
 }
-const entry = marketplace.plugins.find((candidate) => candidate.source.source === "local" && resolve(root, candidate.source.path) === pluginDirectory);
-if (!entry || plugin.name !== "helioadditive-dragon" || entry.name !== plugin.name) fail("Marketplace and manifest must name helioadditive-dragon.");
-for (const provider of ["openai", "anthropic"]) {
-  const directory = resolve(root, "vendors", provider); validatePackage(directory);
+validateMarketplace(marketplace);
+for (const bundle of packages) {
+  const directory = resolve(root, "vendors", bundle.path); validatePackage(directory);
+  const anthropic = bundle.provider === "anthropic";
+  const manifestPath = anthropic ? ".claude-plugin/plugin.json" : ".codex-plugin/plugin.json";
+  const plugin = JSON.parse(readFileSync(resolve(directory, manifestPath), "utf8"));
+  if (plugin.name !== "helioadditive-dragon" || plugin.extensions?.["com.openai"]?.onboardingSkill !== undefined) fail(`Invalid manifest: ${bundle.path}`);
+  if (anthropic) {
+    if (plugin.author?.name !== "Helio-Additive") fail("Missing Anthropic author.");
+  } else {
+    if (plugin.skills !== "./skills/" || plugin.mcpServers !== "./.mcp.json") fail("Invalid OpenAI resource paths.");
+    for (const path of [plugin.skills, plugin.interface.composerIcon, plugin.interface.composerIconDark, plugin.interface.logo, plugin.interface.logoDark, plugin.mcpServers]) {
+      const absolute = resolve(directory, path);
+      if (!absolute.startsWith(directory + "/") || !existsSync(absolute) || lstatSync(absolute).isSymbolicLink()) fail(`Missing package resource: ${path}`);
+    }
+  }
+  validateConnection(JSON.parse(readFileSync(resolve(directory, ".mcp.json"), "utf8")), bundle);
   for (const name of skillNames) {
     const skill = resolve(directory, "skills", name, "SKILL.md");
-    if (!existsSync(skill) || !readFileSync(skill, "utf8").startsWith(`---\nname: ${name}\n`)) fail(`Missing valid ${provider} skill: ${name}.`);
+    if (!existsSync(skill) || !readFileSync(skill, "utf8").startsWith(`---\nname: ${name}\n`)) fail(`Missing valid ${bundle.path} skill: ${name}.`);
+    if (/\bPAT\b|personal access token/i.test(readFileSync(skill, "utf8"))) fail("Packaged skills must not contain PAT handling.");
   }
-}
-for (const path of [plugin.skills, plugin.extensions["com.openai"].onboardingSkill, plugin.interface.composerIcon, plugin.interface.logo, plugin.mcpServers]) {
-  const absolute = resolve(pluginDirectory, path);
-  if (!absolute.startsWith(pluginDirectory + "/") || !existsSync(absolute) || lstatSync(absolute).isSymbolicLink()) fail(`Missing package resource: ${path}`);
-}
-const mcp = JSON.parse(readFileSync(resolve(pluginDirectory, ".mcp.json"), "utf8"));
-const server = mcp.mcpServers["helioadditive-dragon"];
-if (plugin.mcpServers !== "./.mcp.json" || server?.type !== "http" || (typeof server.url !== "string" || !server.url.startsWith("https://")) || server.oauth?.callbackUrl !== "http://127.0.0.1/callback") fail("Invalid Dragon MCP configuration.");
-const hasClient = server.oauth.clientId !== undefined;
-const hasScopes = server.scopes !== undefined;
-if (hasClient !== hasScopes) fail("Configure the verified OAuth client ID and scopes together.");
-if (hasClient && (typeof server.oauth.clientId !== "string" || !server.oauth.clientId.trim() || !Array.isArray(server.scopes) || !server.scopes.length || server.scopes.some((scope: unknown) => typeof scope !== "string" || !scope.trim()))) fail("OAuth client ID and scopes must be nonempty strings.");
-if (!hasClient) console.log("OAuth client/scopes are unconfigured; hosted login is not validated.");
-for (const provider of ["openai", "anthropic"]) for (const name of skillNames) {
-  const skill = resolve(root, "vendors", provider, "skills", name, "SKILL.md");
-  if (/\bPAT\b|personal access token/i.test(readFileSync(skill, "utf8"))) fail("Packaged skills must not contain PAT handling.");
+  const manifests: Array<[string, string]> = [["plugin.jsonnet", manifestPath], ["mcp.jsonnet", ".mcp.json"]];
+  for (const [source, generated] of manifests) {
+    const provider = source === "plugin.jsonnet" && !anthropic ? "openai" : bundle.provider;
+    const expected = JSON.parse(execFileSync("jsonnet", [
+      "--tla-str", `provider=${provider}`,
+      ...(source === "mcp.jsonnet" ? ["--tla-str", `environment=${bundle.environment}`] : []),
+      resolve(root, source),
+    ], { encoding: "utf8" }));
+    const actual = JSON.parse(readFileSync(resolve(directory, generated), "utf8"));
+    if (JSON.stringify(expected) !== JSON.stringify(actual)) fail(`Stale ${bundle.path}/${generated}; rebuild packages.`);
+  }
+  for (const asset of readdirSync(resolve(root, "assets"))) {
+    if (!readFileSync(resolve(directory, "assets", asset)).equals(readFileSync(resolve(root, "assets", asset)))) fail(`Stale ${bundle.path} asset: ${asset}`);
+  }
 }
 
 // Keep committed provider output synchronized with the shared source files.
@@ -102,25 +113,14 @@ for (const name of skillNames) {
   const frontmatter = content.match(/^(?:\uFEFF)?---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/)?.[0] ?? "";
   const markdown = await mdxToMd(source);
   const expected = `${frontmatter ? `${frontmatter.trimEnd()}\n\n` : ""}${markdown.trimEnd()}\n`;
-  for (const provider of ["openai", "anthropic"]) {
-    const generated = resolve(root, "vendors", provider, "skills", name, "SKILL.md");
+  for (const bundle of packages) {
+    const generated = resolve(root, "vendors", bundle.path, "skills", name, "SKILL.md");
     if (readFileSync(generated, "utf8") !== expected) {
-      fail(`Stale generated ${provider} skill: ${name}; rebuild packages.`);
+      fail(`Stale generated ${bundle.path} skill: ${name}; rebuild packages.`);
     }
-  }
-}
-const manifests: Array<[string, string]> = [
-  ["plugin.jsonnet", ".codex-plugin/plugin.json"],
-  ["mcp.jsonnet", ".mcp.json"],
-];
-for (const [source, generated] of manifests) {
-  const expected = JSON.parse(execFileSync("jsonnet", [resolve(root, source)], { encoding: "utf8" }));
-  const actual = JSON.parse(readFileSync(resolve(pluginDirectory, generated), "utf8"));
-  if (JSON.stringify(expected) !== JSON.stringify(actual)) {
-    fail(`Stale generated manifest: ${generated}; rebuild packages.`);
   }
 }
 
 validateExclusiveDownloadHelper();
 
-console.log("Validation passed: six skills, fresh generated packages, assets, and structurally valid OAuth configuration are packaged.");
+console.log("Validation passed: five complete bundles, six shared skills, fresh manifests/assets, nightly marketplace, and exact OAuth configuration. Hosted login is not validated.");
