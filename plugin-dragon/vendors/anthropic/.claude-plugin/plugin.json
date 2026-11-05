@@ -1,0 +1,8 @@
+{
+  "author": {
+    "name": "Helio-Additive"
+  },
+  "description": "Prepare, run, monitor, and retrieve Helio Dragon thermal workflows.",
+  "name": "helioadditive-dragon",
+  "version": "0.1.0"
+}

@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "helioadditive-dragon": {
+      "oauth": {
+        "callbackUrl": "http://127.0.0.1/callback",
+        "clientId": "openai-dragon-plugin"
+      },
+      "scopes": [
+        "dragon"
+      ],
+      "type": "http",
+      "url": "https://mcp.helioadditive.com/openai/dragon"
+    }
+  }
+}
