@@ -1,0 +1,19 @@
+---
+name: create-helio-slice
+description: Create a Helio Additive slicing job when a user explicitly asks to slice a 3D model for printing.
+---
+
+Use this skill for explicit requests to create a new 3D-print slicing job. The `create_slice` MCP tool creates work and may consume manufacturing resources.
+
+For custom print settings, use `configure-helio-slice-settings` to inspect the engine's schema, choose compatible presets, and validate overrides before submission.
+
+1. Inspect the tool input schema before collecting or submitting values. Do not guess required fields, model locations, printer profiles, materials, or slicing settings.
+2. If required inputs are missing, ask one concise question that lists only the missing inputs. Preserve any values the user already supplied.
+3. Reuse a `fileId` returned by a prior probe or slice whenever available. If the user refers to a previous upload by name, use `list_uploaded_files` and `get_uploaded_file` to find it; ask the user to disambiguate duplicate names. Otherwise supply `inputType`, `inputKey`, and any upload version. Do not upload the same file again for another plate, engine, preset, or settings combination.
+4. Probing explicitly is optional: `create_slice` automatically waits for the file's one engine-independent probe before slicing. To inspect metadata first, use `create_input_probe` and poll `get_input_probe`; use the typed integer `plates`, then fetch native metadata JSON from `infoDownloadUrl` to identify the source application and embedded profiles. `infoKey` identifies that S3 document; metadata is not embedded in the response. Poll again for a fresh URL if it expires. Probes take no slicing engine or machine preset.
+5. Plate `0` or an omitted plate means **all plates**; a positive plate means that one-based plate only. Preserve the user's selection. Each selected plate runs independently against the same retained file.
+6. Call `create_slice` only after the user has explicitly requested creation. `slicingEngine` is optional: omit it to use the probe's recommendation and `fits` for an embedded 3MF, or the selected printer's release catalog for a model file. Snapmaker's own printers, including U1, use `SNAPMAKER`; other shared printers prefer Bambu. For a 3MF without a recommendation, explicit compatible presets also allow catalog selection. Explicit printer overrides use the replacement printer's compatible catalog rather than the file's original printer. Presets must be available in the selected engine; resolve any returned compatibility issues rather than bypassing them. Preserve an engine the user explicitly selected. A geometry-only file, including a shape-only 3MF, needs printer/nozzle and filament profiles; do not invent physical hardware or material.
+7. Report the resulting slice ID, reusable file ID, selected engine, and current state. A null terminal status may mean probing or waiting for plate jobs. Inspect structured `issues` and GraphQL error extensions: missing-profile issues mean ask only for the actual missing printer/nozzle or filament, then reuse `fileId` with `presetOverrides`. An already-probed incomplete project is rejected before slice creation; a fresh upload's parent can stop as FAILED after probing, before any plate jobs are created. Do not keep polling or silently retry a failed request. Report which plates were requested and each plate's `status`, native `returnCode`, and `errorString`; do not claim completion until the parent succeeds.
+8. Offer to check the slice status or download its output files when complete. Follow the `get-helio-slice-output` skill when the user asks for the files.
+
+If the service rejects the request, report its error in plain language and identify the user-correctable input when one is given. Do not silently retry a creation request.
