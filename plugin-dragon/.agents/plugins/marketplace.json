@@ -1,0 +1,10 @@
+{
+  "name": "helioadditive-dragon-plugins",
+  "interface": { "displayName": "Helio-Additive Dragon Plugins" },
+  "plugins": [{
+    "name": "helioadditive-dragon",
+    "source": { "source": "local", "path": "./vendors/localhost/nightly" },
+    "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+    "category": "Productivity"
+  }]
+}

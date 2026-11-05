@@ -1,0 +1,19 @@
+---
+name: helio-dragon-tools
+description: Explain the guided Helio Dragon workflow and its available planning, run, status, and output tools.
+---
+
+Use the `helioadditive-dragon` MCP server. Inspect connected tool schemas before using them; field names and required inputs are authoritative there.
+
+The standard lifecycle is `prepare_dragon_run`, `start_dragon_run`, `get_dragon_run`, and optionally `stop_dragon_run`. Use `dragon_catalog` for printer or material discovery and `dragon_optimization_options` for material-specific optimization priority and account information when relevant.
+
+* Prepare resolves source, catalog identities, registration, environment, layers, limits, warnings, and needed confirmations. It never starts Dragon.
+* Start only begins a confirmed prepared plan. It can consume account resources, so never call it from a request merely to inspect or prepare.
+* Get polls an existing run ID and returns server-derived status, results, and ready artifact metadata. Do not infer status or ETA.
+* Stop only stops an explicitly identified active run after the user asks to stop it.
+
+For `dragon_catalog`, set required `resource` to `printers` or `materials`. It defaults to `page: 1` and `page_size: 100` (maximum 100). Follow `resource.pageInfo.hasNextPage`; its objects provide exact IDs, names, Bambu Studio alternative names, and current metadata. Use those returned identities; do not implement or invent a fuzzy matcher. Legacy catalog tools remain available but their old expanded fields are not a discovery contract.
+
+`SLICE`, `PARSED_GCODE`, and `USER` are descriptive caller-input labels, not verification. Use exact catalog IDs and registered G-code mappings returned or verified by the MCP; do not treat a source label, filename, or embedded profile as proof. Obtain slice facts from existing slicer/reader output or explicit user input, never by inventing values or building a parser.
+
+For Assess, omit unavailable statistics and environment fields so backend defaults apply. For Enhance, obtain object-layer count from an existing slicer/reader or explicit user input; the default range is layers 2 through that count. Require all four speed/flow bounds only for explicitly selected or forced advanced limits (0.2 mm nozzle, layer height below 0.2 mm, or a reference mapping). Timing statistics are optional estimates, not preparation prerequisites. Report reference substitutions and planner warnings verbatim enough for the user to make an informed choice. Raw GraphQL and privileged mesh, thermal-history, backend-configuration, and Technician workflows are outside this plugin.
