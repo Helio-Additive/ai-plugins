@@ -19,6 +19,6 @@ mcp:
       - dragon
   anthropic:
     url: https://mcp3.helioadditive.com/anthropic/dragon
-    clientId: generic-agent
+    clientId: claude-plugin
     scopes:
       - dragon

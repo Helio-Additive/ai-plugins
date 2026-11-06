@@ -19,4 +19,6 @@ mcp:
       - slicing
   anthropic:
     url: https://mcp3.helioadditive.com/anthropic/slicing
-    clientId: generic-agent
+    clientId: claude-plugin
+    scopes:
+      - slicing

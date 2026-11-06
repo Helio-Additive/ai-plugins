@@ -2,7 +2,8 @@
   "mcpServers": {
     "helioadditive-slicing": {
       "oauth": {
-        "clientId": "generic-agent"
+        "clientId": "claude-plugin",
+        "scopes": "slicing"
       },
       "type": "http",
       "url": "https://mcp3.helioadditive.com/anthropic/slicing"
