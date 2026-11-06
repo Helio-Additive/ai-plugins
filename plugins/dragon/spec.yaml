@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=../../schemas/plugin-spec.schema.json
+name: helioadditive-dragon
+version: "0.1.0"
+description: Prepare, run, monitor, and retrieve Helio Dragon thermal workflows.
+displayName: Helio Dragon
+shortDescription: Assess and enhance G-code safely.
+longDescription: >-
+  Connect to Helio Additive to prepare, run, monitor, and retrieve standard Dragon
+  thermal assessments and G-code enhancements.
+defaultPrompts:
+  - Prepare this G-code for a Dragon assessment
+  - Check the progress of my Dragon run
+  - Download my Dragon result
+mcp:
+  openai:
+    url: https://mcp3.helioadditive.com/openai/dragon
+    clientId: openai-dragon-plugin
+    scopes:
+      - dragon
+  anthropic:
+    url: https://mcp3.helioadditive.com/anthropic/dragon
+    clientId: generic-agent
+    scopes:
+      - dragon

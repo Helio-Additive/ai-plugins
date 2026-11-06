@@ -1,0 +1,32 @@
+{
+  "name": "helioadditive-plugins",
+  "interface": {
+    "displayName": "Helio-Additive Plugins"
+  },
+  "plugins": [
+    {
+      "name": "helioadditive-dragon",
+      "source": {
+        "source": "local",
+        "path": "./plugins/dragon/_generated/test"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "helioadditive-slicing",
+      "source": {
+        "source": "local",
+        "path": "./plugins/slicing/_generated/test"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "helioadditive-dragon": {
+      "extensions": {
+        "com.openai": {
+          "auth": {
+            "baseScopes": [
+              "dragon"
+            ],
+            "client": {
+              "clientId": "openai-dragon-plugin",
+              "mode": "provided"
+            },
+            "type": "oauth"
+          }
+        }
+      },
+      "type": "streamable-http",
+      "url": "https://mcp3.helioadditive.com/openai/dragon"
+    }
+  }
+}
