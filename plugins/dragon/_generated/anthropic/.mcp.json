@@ -2,7 +2,7 @@
   "mcpServers": {
     "helioadditive-dragon": {
       "oauth": {
-        "clientId": "generic-agent",
+        "clientId": "claude-plugin",
         "scopes": "dragon"
       },
       "type": "http",

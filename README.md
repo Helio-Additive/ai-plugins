@@ -59,9 +59,18 @@ flow; no token or client secret belongs in this repository.
 
 Claude loads `.claude-plugin/plugin.json`, `.mcp.json`, and `skills/` from each
 `_generated/anthropic` bundle. Its only MCP configuration is `.mcp.json`; the root
-portable manifest is not the native Claude entrypoint. Both plugins retain their
-registered `generic-agent` client; Dragon explicitly requests scope `dragon`,
-while slicing retains its provider-default scopes.
+portable manifest is not the native Claude entrypoint. Both plugins use the
+dedicated public `claude-plugin` client; Dragon explicitly requests scope `dragon`
+and slicing explicitly requests scope `slicing`. That client is restricted to the
+two nightly `/anthropic/` resources, separate from generic clients and OpenAI.
+
+The matching nightly Auth registration permits Claude's hosted callback
+`https://claude.ai/api/mcp/auth_callback` and Claude Code's
+`http://localhost:<port>/callback`. Auth's `http://localhost/callback` loopback
+template permits a variable port while keeping the literal host and path fixed.
+No fixed callback port or client secret needs to be packaged. Deploy and reload
+that Auth policy and the matching gateway client metadata before using these builds;
+existing installations must re-authenticate to use the new client.
 
 To inspect the installed components without asking the model to run a workflow:
 
