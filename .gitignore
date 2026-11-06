@@ -1,0 +1,22 @@
+node_modules
+
+# Build staging; _generated packages are committed alongside their sources.
+.cache
+out
+dist
+*.tgz
+coverage
+*.lcov
+.eslintcache
+
+# Optional local bundles can contain machine-specific test endpoints.
+/plugins/*/_generated/test/
+
+# local credentials, diagnostics, and editor state
+.env
+.env.local
+.env.*.local
+*.log
+*.tsbuildinfo
+.DS_Store
+.idea

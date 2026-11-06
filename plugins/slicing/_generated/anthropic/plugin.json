@@ -1,0 +1,33 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "author": {
+    "name": "Helio-Additive"
+  },
+  "description": "Create, monitor, and retrieve Helio Additive slicing jobs.",
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "capabilities": [
+          "Read",
+          "Write"
+        ],
+        "category": "Productivity",
+        "composerIcon": "./assets/icon.png",
+        "composerIconDark": "./assets/logo-dark.png",
+        "defaultPrompt": [
+          "Slice this .stl file",
+          "Show me my recent slices",
+          "Check the progress of my slice"
+        ],
+        "developerName": "Helio-Additive",
+        "displayName": "Helio Slicing",
+        "logo": "./assets/logo.png",
+        "logoDark": "./assets/logo-dark.png",
+        "longDescription": "Connect to Helio Additive to create slicing jobs, check their progress, and retrieve completed outputs.",
+        "shortDescription": "Create and track 3D-print slicing jobs."
+      }
+    }
+  },
+  "name": "helioadditive-slicing",
+  "version": "0.1.0"
+}

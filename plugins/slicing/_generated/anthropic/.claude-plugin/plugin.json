@@ -1,0 +1,8 @@
+{
+  "author": {
+    "name": "Helio-Additive"
+  },
+  "description": "Create, monitor, and retrieve Helio Additive slicing jobs.",
+  "name": "helioadditive-slicing",
+  "version": "0.1.0"
+}

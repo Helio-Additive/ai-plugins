@@ -1,0 +1,23 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "helioadditive-slicing": {
+      "extensions": {
+        "com.openai": {
+          "auth": {
+            "baseScopes": [
+              "slicing"
+            ],
+            "client": {
+              "clientId": "openai-slicer-plugin",
+              "mode": "provided"
+            },
+            "type": "oauth"
+          }
+        }
+      },
+      "type": "streamable-http",
+      "url": "https://mcp3.helioadditive.com/openai/slicing"
+    }
+  }
+}

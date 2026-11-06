@@ -1,0 +1,21 @@
+{
+  "name": "helioadditive-plugins",
+  "owner": {
+    "name": "Helio-Additive"
+  },
+  "description": "Helio Additive thermal analysis and slicing plugins.",
+  "plugins": [
+    {
+      "name": "helioadditive-dragon",
+      "source": "./plugins/dragon/_generated/anthropic",
+      "description": "Prepare, run, monitor, and retrieve Helio Dragon thermal workflows.",
+      "category": "Productivity"
+    },
+    {
+      "name": "helioadditive-slicing",
+      "source": "./plugins/slicing/_generated/anthropic",
+      "description": "Create, monitor, and retrieve Helio Additive slicing jobs.",
+      "category": "Productivity"
+    }
+  ]
+}

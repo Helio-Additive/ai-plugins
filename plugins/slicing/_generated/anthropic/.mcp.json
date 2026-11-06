@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "helioadditive-slicing": {
+      "oauth": {
+        "clientId": "generic-agent"
+      },
+      "type": "http",
+      "url": "https://mcp3.helioadditive.com/anthropic/slicing"
+    }
+  }
+}

@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=../../schemas/plugin-spec.schema.json
+name: helioadditive-slicing
+version: "0.1.0"
+description: Create, monitor, and retrieve Helio Additive slicing jobs.
+displayName: Helio Slicing
+shortDescription: Create and track 3D-print slicing jobs.
+longDescription: >-
+  Connect to Helio Additive to create slicing jobs, check their progress, and
+  retrieve completed outputs.
+defaultPrompts:
+  - Slice this .stl file
+  - Show me my recent slices
+  - Check the progress of my slice
+mcp:
+  openai:
+    url: https://mcp3.helioadditive.com/openai/slicing
+    clientId: openai-slicer-plugin
+    scopes:
+      - slicing
+  anthropic:
+    url: https://mcp3.helioadditive.com/anthropic/slicing
+    clientId: generic-agent
