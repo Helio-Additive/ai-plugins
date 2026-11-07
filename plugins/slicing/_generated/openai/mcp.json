@@ -9,7 +9,7 @@
               "slicing"
             ],
             "client": {
-              "clientId": "openai-slicer-plugin",
+              "clientId": "openai-plugin",
               "mode": "provided"
             },
             "type": "oauth"

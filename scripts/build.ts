@@ -9,14 +9,14 @@ for (const { source, spec } of plugins) {
 }
 
 // Claude uses its own catalog format and discovers it at this fixed root path.
-// Derive entries from the same specs; never point Claude at OpenAI-only test bundles.
+// Derive entries from the same specs; local test contents must be generated with MCP_TEST_VENDOR=anthropic.
 const marketplace = {
   name: "helioadditive-plugins",
   owner: { name: "Helio-Additive" },
   description: "Helio Additive thermal analysis and slicing plugins.",
   plugins: plugins.map(({ source, spec }) => ({
     name: spec.name,
-    source: `./${relative(root, join(source, "_generated", "anthropic")).split(sep).join("/")}`,
+    source: `./${relative(root, join(source, "_generated", "test")).split(sep).join("/")}`,
     description: spec.description,
     category: "Productivity",
   })),

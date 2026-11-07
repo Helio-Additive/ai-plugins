@@ -74,7 +74,7 @@ with tempfile.TemporaryDirectory(prefix='helio-callback-') as tmp:
    else:
     r=result.get('result',{});url=r.get('authorizationUrl') or r.get('authorization_url')
     q=parse_qs(urlsplit(url).query) if url else {}
-    assert q.get('client_id')==['openai-slicer-plugin']
+    assert q.get('client_id')==['openai-plugin']
     assert dcr_count==0
     redirect=urlsplit(q['redirect_uri'][0])
     assert redirect.scheme=='http' and redirect.hostname=='127.0.0.1' and redirect.port
