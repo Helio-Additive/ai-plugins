@@ -20,9 +20,9 @@ in each plugin's sources, not in the generator.
 
 - Never hand-edit `lib/_generated/` or `plugins/*/_generated/`. Run `just make`;
   commit regenerated types and production bundles with source changes.
-- `GENERATE_TEST=true just make` also builds Git-ignored test bundles using each
-  plugin's OpenAI endpoint. Optional `MCP_TEST_URL=<exact endpoint>` overrides both
-  test URLs unchanged. Never commit test bundles or redirect production to the test URL.
+- `GENERATE_TEST=true MCP_TEST_URL=<base URL> just make` also builds Git-ignored
+  test bundles, appending each spec's predefined `testPath` (`/slicing` or `/dragon`)
+  without a provider prefix. Never commit test bundles or redirect production to the test URL.
   Normal builds remove test output.
 - Keep one root `.agents/plugins/marketplace.json`, listing each plugin's
   `./plugins/<plugin>/_generated/test` bundle.

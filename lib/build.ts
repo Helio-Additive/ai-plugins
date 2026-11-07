@@ -8,7 +8,7 @@ import type { AgentPluginsMCPConfiguration, StreamableHTTPMCPServer } from "./_g
 import type { PluginSpec } from "./_generated/plugin-spec";
 
 export const root = resolve(import.meta.dir, "..");
-export type BuildOptions = { generateTest?: boolean; testUrl?: string };
+export type BuildOptions = { testUrl?: string };
 export type Outputs = Map<string, string | Buffer>;
 
 const ajv = new Ajv({ allErrors: true });
@@ -27,10 +27,17 @@ function checkedUrl(value: string, label: string, allowHttp = false): string {
 
 export function readBuildOptions(env: Record<string, string | undefined>): BuildOptions {
   if (env.GENERATE_TEST !== "true") return {};
-  if (env.MCP_TEST_URL === undefined) return { generateTest: true };
-  const testUrl = env.MCP_TEST_URL.trim();
-  if (!testUrl) throw new Error("MCP_TEST_URL must not be empty when provided.");
-  return { generateTest: true, testUrl: checkedUrl(testUrl, "MCP_TEST_URL", true) };
+  const testUrl = env.MCP_TEST_URL?.trim();
+  if (!testUrl) throw new Error("GENERATE_TEST=true requires MCP_TEST_URL (a base URL).");
+  return { testUrl: checkedTestBaseUrl(testUrl) };
+}
+
+function checkedTestBaseUrl(value: string): string {
+  const url = new URL(checkedUrl(value, "MCP_TEST_URL", true));
+  if (url.pathname !== "/" || url.search) {
+    throw new Error("MCP_TEST_URL must be a base URL without a path or query; each plugin supplies its testPath.");
+  }
+  return url.origin;
 }
 
 /** Discover and validate every spec before any generated bundle is replaced. */
@@ -63,9 +70,9 @@ export async function loadPluginSpecs(directory = join(root, "plugins")) {
 }
 
 export function providersFor(options: BuildOptions = {}) {
-  return options.generateTest || options.testUrl !== undefined
-    ? ["openai", "anthropic", "test"] as const
-    : ["openai", "anthropic"] as const;
+  return options.testUrl === undefined
+    ? ["openai", "anthropic"] as const
+    : ["openai", "anthropic", "test"] as const;
 }
 
 async function files(directory: string): Promise<string[]> {
@@ -136,7 +143,7 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
     const server = {
       type: "streamable-http",
       url: provider === "test" && options.testUrl !== undefined
-        ? checkedUrl(options.testUrl, "MCP_TEST_URL", true) : connection.url,
+        ? checkedTestBaseUrl(options.testUrl) + spec.testPath : connection.url,
       extensions: {
         "com.openai": {
           auth: {

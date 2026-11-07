@@ -117,6 +117,8 @@ to update. Each spec declares:
   OpenAI's presentation extension.
 - `mcp.openai` and `mcp.anthropic`, each containing an HTTPS `url`, public OAuth
   `clientId`, and optional `scopes`. Omitted scopes preserve provider defaults.
+- `testPath`, the predefined provider-neutral test route for this plugin (a single
+  path segment such as `/slicing` or `/dragon`).
 
 The YAML files include a language-server schema comment for editor support. The
 build also validates the parsed YAML against that schema using Ajv, rejects
@@ -152,33 +154,29 @@ The former `localhost` and `orbstack` bundles are no longer generated.
 
 ### Optional local test bundle
 
-Opt in to test bundles using each plugin's `mcp.openai.url` from its spec:
+Both variables are required to opt in. Supply the base MCP URL without a route:
 
 ```sh
-GENERATE_TEST=true just make
+GENERATE_TEST=true MCP_TEST_URL=https://mcp3.helioadditive.com just make
 ```
 
 This adds a complete OpenAI-compatible `_generated/test/` bundle for each plugin.
-With the current specs, Slicing uses `https://mcp3.helioadditive.com/openai/slicing`
-and Dragon uses `https://mcp3.helioadditive.com/openai/dragon`. The test bundles
-inherit the OpenAI OAuth settings, skills, and assets as well as the endpoints.
+The generator appends each plugin's predefined `testPath` from its spec:
+Slicing uses `https://mcp3.helioadditive.com/slicing` and Dragon uses
+`https://mcp3.helioadditive.com/dragon`. Test endpoints have no `/openai` or
+`/anthropic` prefix. These routes are plugin-specific source data, not a mapping
+hardcoded in the shared generator.
 
-For a custom server, optionally supply an exact endpoint override:
-
-```sh
-GENERATE_TEST=true MCP_TEST_URL=https://test.example.invalid/mcp just make
-```
-
-`MCP_TEST_URL` is the **exact endpoint**, used unchanged for both plugins; no plugin
-path is appended. A bare host deliberately overrides both URLs with that bare host;
-omit the variable to retain the per-plugin OpenAI routes. HTTP and HTTPS
-URLs are supported, but embedded credentials and URL fragments are rejected. Do not
-put tokens or secrets in the URL. The normal OAuth client IDs and scopes remain
-unchanged, and production bundles never use this override. The portable format
+`MCP_TEST_URL` is a **base URL**, not an exact endpoint. HTTP and HTTPS are supported,
+including custom ports and an optional trailing slash. Paths, queries, embedded
+credentials, and URL fragments are rejected. Do not put tokens or secrets in the
+URL. The test bundles inherit OpenAI OAuth settings, skills, and assets; registered
+client IDs and scopes remain unchanged. Production bundles retain the provider
+URLs in the specs and never use this base URL. The portable format
 leaves callback selection to the host; register the callback used by its connection
 flow with your OAuth provider and verify login after migration.
 
-`MCP_TEST_URL` alone does nothing. An explicitly empty or invalid override with
+`MCP_TEST_URL` alone does nothing. A missing, empty, or invalid base URL with
 `GENERATE_TEST=true` fails before any output is replaced. A normal `just make`
 removes any previous test bundle. Test output is Git-ignored and must not be committed.
 

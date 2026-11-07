@@ -11,6 +11,7 @@ defaultPrompts:
   - Prepare this G-code for a Dragon assessment
   - Check the progress of my Dragon run
   - Download my Dragon result
+testPath: /dragon
 mcp:
   openai:
     url: https://mcp3.helioadditive.com/openai/dragon
