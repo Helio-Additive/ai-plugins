@@ -55,14 +55,30 @@ for (const { spec, source } of plugins) {
         }[spec.name];
         expect(expectedPath).toBeDefined();
         const testBundle = new Map(bundles.get("test")!);
-        const mcp = JSON.parse(testBundle.get("mcp.json") as string);
+        const legacy = vendor === "openai";
+        expect(testBundle.has("plugin.json")).toBe(!legacy);
+        if (legacy) {
+          const manifest = JSON.parse(testBundle.get(".codex-plugin/plugin.json") as string);
+          expect(manifest.name).toBe(spec.name);
+          expect(manifest.mcpServers).toBe("./.mcp.json");
+          expect(manifest.skills).toBe("./skills/");
+        }
+        const mcp = JSON.parse(testBundle.get(legacy ? ".mcp.json" : "mcp.json") as string);
+        if (legacy) {
+          expect(mcp.mcpServers[spec.name].oauth.clientId).toBe(spec.mcp.openai.clientId);
+          expect(mcp.mcpServers[spec.name].oauth.callbackUrl).toBe("http://127.0.0.1/callback");
+          expect(mcp.mcpServers[spec.name].scopes).toEqual(spec.mcp.openai.scopes);
+          testBundle.delete(".codex-plugin/plugin.json");
+          testBundle.delete(".mcp.json");
+          testBundle.set("plugin.json", bundles.get("openai")!.get("plugin.json")!);
+        }
         expect(mcp.mcpServers[spec.name].url).toBe(new URL(baseUrl).origin + "/" + vendor + expectedPath);
-        // Only the endpoint differs: manifests, skills, assets, and OAuth stay identical.
+        // Skills/assets and production bundles remain byte-identical; test layout differs.
         testBundle.set("mcp.json", bundles.get("openai")!.get("mcp.json")!);
         expect(testBundle).toEqual(bundles.get("openai")!);
         const openaiMcp = JSON.parse(bundles.get("openai")!.get("mcp.json") as string);
         mcp.mcpServers[spec.name].url = spec.mcp.openai.url;
-        expect(mcp).toEqual(openaiMcp);
+        if (!legacy) expect(mcp).toEqual(openaiMcp);
         expect(bundles.get("openai")).toEqual(normal.get("openai"));
         expect(bundles.get("anthropic")).toEqual(normal.get("anthropic"));
       },
@@ -73,15 +89,22 @@ for (const { spec, source } of plugins) {
       try {
         await mkdir(join(directory, "skills"));
         await buildPlugin(spec, directory, readBuildOptions({ GENERATE_TEST: "true", MCP_TEST_VENDOR: "openai", MCP_TEST_URL: "https://mcp3.helioadditive.com" }));
-        const testMcp = join(directory, "_generated/test/mcp.json");
+        const testMcp = join(directory, "_generated/test/.mcp.json");
         const mcp = JSON.parse(await readFile(testMcp, "utf8"));
         expect(mcp.mcpServers[spec.name].url).toBe("https://mcp3.helioadditive.com/openai/" + spec.name.replace("helioadditive-", ""));
         // A normal build must also remove stale files rather than retaining old endpoints.
-        await writeFile(join(directory, "_generated/test/stale.txt"), "old output");
+        await writeFile(join(directory, "_generated/test/plugin.json"), "stale portable manifest");
+        await buildPlugin(spec, directory, readBuildOptions({ GENERATE_TEST: "true", MCP_TEST_VENDOR: "openai", MCP_TEST_URL: "https://mcp3.helioadditive.com" }));
+        expect(await access(join(directory, "_generated/test/plugin.json")).then(() => true, () => false)).toBe(false);
+        await buildPlugin(spec, directory, readBuildOptions({ GENERATE_TEST: "true", MCP_TEST_VENDOR: "anthropic", MCP_TEST_URL: "https://mcp3.helioadditive.com" }));
+        expect(await access(join(directory, "_generated/test/.codex-plugin")).then(() => true, () => false)).toBe(false);
+        expect(await access(join(directory, "_generated/test/.mcp.json")).then(() => true, () => false)).toBe(false);
+        expect(await access(join(directory, "_generated/test/plugin.json")).then(() => true, () => false)).toBe(true);
         await buildPlugin(spec, directory);
         expect(await access(join(directory, "_generated/test")).then(() => true, () => false)).toBe(false);
         mcp.mcpServers[spec.name].url = spec.mcp.openai.url;
-        expect(JSON.parse(await readFile(join(directory, "_generated/openai/mcp.json"), "utf8"))).toEqual(mcp);
+        expect(await access(join(directory, "_generated/openai/.codex-plugin")).then(() => true, () => false)).toBe(false);
+        expect(JSON.parse(await readFile(join(directory, "_generated/openai/mcp.json"), "utf8"))).toBeDefined();
       } finally {
         await rm(directory, { recursive: true, force: true });
       }

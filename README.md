@@ -192,3 +192,23 @@ scripts, TypeScript configuration modules, or Jsonnet dependencies.
 
 Build and TypeScript checks do not establish hosted
 OAuth login or live MCP/API behavior.
+
+Local OpenAI test bundles use `.codex-plugin/plugin.json` and `.mcp.json`, without
+root `plugin.json`: desktop runtime 0.166.0-alpha.5.1 otherwise loads skills but
+fails to discover MCP servers. Production portable and Anthropic bundles are unchanged.
+The compatibility MCP file preserves spec client IDs and scopes and requests
+`http://127.0.0.1/callback`. The host selects its local port; honoring the exact
+path requires issuer-response support advertised by authorization discovery.
+
+After generating OpenAI test bundles, run `python3 scripts/check-host-parser.py`
+for an isolated installed-host discovery check (no login, installation or tool calls).
+Set `HELIO_HOST_BINARY` to override the desktop binary location. Missing binaries
+exit 77 with UNAVAILABLE; normal unit tests alone do not establish host compatibility.
+
+Run `python3 scripts/check-host-callback.py` after generating OpenAI test output.
+This opt-in offline regression installs copied fixtures only in temporary homes and
+uses a loopback mock with captured Nightly discovery metadata (2026-11-07).
+With issuer-response support true, the explicit legacy callback preserves exact
+`/callback` with a dynamic port. Missing/false issuer support retains a suffix.
+The check requires the installed host and permission to bind a loopback listener;
+a missing host exits 77. It never completes authorization or issues tokens/grants.
