@@ -183,6 +183,19 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
           },
         },
       }));
+    } else if (provider === "test" && options.testVendor === "openai") {
+      // The desktop legacy loader ignores MCP servers when root plugin.json exists.
+      outputs.delete("plugin.json");
+      outputs.set(".codex-plugin/plugin.json", json({
+        name: manifest.name, version: manifest.version, description: manifest.description,
+        interface: manifest.extensions["com.openai"].interface,
+        skills: "./skills/", mcpServers: "./.mcp.json",
+      }));
+      outputs.set(".mcp.json", json({ mcpServers: { [spec.name]: {
+        type: "http", url: server.url,
+        oauth: { clientId: connection.clientId, callbackUrl: "http://127.0.0.1/callback" },
+        ...(connection.scopes ? { scopes: connection.scopes } : {}),
+      } } }));
     } else {
       outputs.set("mcp.json", json(mcp));
     }
