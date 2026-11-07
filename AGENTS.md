@@ -27,7 +27,7 @@ in each plugin's sources, not in the generator.
 - Keep one root `.agents/plugins/marketplace.json`, listing each plugin's
   `./plugins/<plugin>/_generated/test` bundle.
 - Root `.claude-plugin/marketplace.json` is generated from specs and lists
-  `./plugins/<plugin>/_generated/anthropic` bundles for native Claude installation.
+  `./plugins/<plugin>/_generated/test` bundles (generate with `MCP_TEST_VENDOR=anthropic` for Claude) for native Claude installation.
   Do not hand-edit it; commit it alongside regenerated production output.
 
 ## Checks and safety

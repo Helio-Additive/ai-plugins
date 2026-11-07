@@ -15,7 +15,7 @@ testPath: /slicing
 mcp:
   openai:
     url: https://mcp3.helioadditive.com/openai/slicing
-    clientId: openai-slicer-plugin
+    clientId: openai-plugin
     scopes:
       - slicing
   anthropic:

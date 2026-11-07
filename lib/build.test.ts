@@ -63,7 +63,7 @@ for (const { spec, source } of plugins) {
           expect(manifest.mcpServers).toBe("./.mcp.json");
           expect(manifest.skills).toBe("./skills/");
         }
-        const mcp = JSON.parse(testBundle.get(legacy ? ".mcp.json" : "mcp.json") as string);
+        const mcp = JSON.parse(testBundle.get(".mcp.json") as string);
         if (legacy) {
           expect(mcp.mcpServers[spec.name].oauth.clientId).toBe(spec.mcp.openai.clientId);
           expect(mcp.mcpServers[spec.name].oauth.callbackUrl).toBe("http://127.0.0.1/callback");
@@ -73,12 +73,24 @@ for (const { spec, source } of plugins) {
           testBundle.set("plugin.json", bundles.get("openai")!.get("plugin.json")!);
         }
         expect(mcp.mcpServers[spec.name].url).toBe(new URL(baseUrl).origin + "/" + vendor + expectedPath);
+        if (!legacy) {
+          expect(testBundle.has(".codex-plugin/plugin.json")).toBe(false);
+          expect(JSON.parse(testBundle.get(".claude-plugin/plugin.json") as string).name).toBe(spec.name);
+          expect(mcp.mcpServers[spec.name].type).toBe("http");
+          expect(mcp.mcpServers[spec.name].oauth).toEqual({
+            clientId: spec.mcp.anthropic.clientId,
+            ...(spec.mcp.anthropic.scopes ? { scopes: spec.mcp.anthropic.scopes.join(" ") } : {}),
+          });
+          mcp.mcpServers[spec.name].url = spec.mcp.anthropic.url;
+          testBundle.set(".mcp.json", JSON.stringify(mcp, null, 2) + "\n");
+          expect(testBundle).toEqual(bundles.get("anthropic")!);
+        }
         // Skills/assets and production bundles remain byte-identical; test layout differs.
-        testBundle.set("mcp.json", bundles.get("openai")!.get("mcp.json")!);
-        expect(testBundle).toEqual(bundles.get("openai")!);
+        if (legacy) testBundle.set("mcp.json", bundles.get("openai")!.get("mcp.json")!);
+        if (legacy) expect(testBundle).toEqual(bundles.get("openai")!);
         const openaiMcp = JSON.parse(bundles.get("openai")!.get("mcp.json") as string);
         mcp.mcpServers[spec.name].url = spec.mcp.openai.url;
-        if (!legacy) expect(mcp).toEqual(openaiMcp);
+
         expect(bundles.get("openai")).toEqual(normal.get("openai"));
         expect(bundles.get("anthropic")).toEqual(normal.get("anthropic"));
       },
@@ -98,7 +110,7 @@ for (const { spec, source } of plugins) {
         expect(await access(join(directory, "_generated/test/plugin.json")).then(() => true, () => false)).toBe(false);
         await buildPlugin(spec, directory, readBuildOptions({ GENERATE_TEST: "true", MCP_TEST_VENDOR: "anthropic", MCP_TEST_URL: "https://mcp3.helioadditive.com" }));
         expect(await access(join(directory, "_generated/test/.codex-plugin")).then(() => true, () => false)).toBe(false);
-        expect(await access(join(directory, "_generated/test/.mcp.json")).then(() => true, () => false)).toBe(false);
+        expect(await access(join(directory, "_generated/test/.mcp.json")).then(() => true, () => false)).toBe(true);
         expect(await access(join(directory, "_generated/test/plugin.json")).then(() => true, () => false)).toBe(true);
         await buildPlugin(spec, directory);
         expect(await access(join(directory, "_generated/test")).then(() => true, () => false)).toBe(false);
@@ -116,4 +128,15 @@ for (const { spec, source } of plugins) {
 
 test.each([undefined, "", "OpenAI", "other", "../openai"])("rejects invalid vendor %s", (vendor) => {
   expect(() => readBuildOptions({ GENERATE_TEST: "true", MCP_TEST_URL: "https://example.com", MCP_TEST_VENDOR: vendor })).toThrow("MCP_TEST_VENDOR");
+});
+
+test("both local marketplaces reference test bundles", async () => {
+  for (const path of [".agents/plugins/marketplace.json", ".claude-plugin/marketplace.json"]) {
+    const catalog = JSON.parse(await readFile(join(import.meta.dir, "..", path), "utf8"));
+    expect(catalog.plugins).toHaveLength(plugins.length);
+    for (const entry of catalog.plugins) {
+      const source = typeof entry.source === "string" ? entry.source : entry.source.path;
+      expect(source).toMatch(/^\.\/plugins\/[^/]+\/_generated\/test$/);
+    }
+  }
 });

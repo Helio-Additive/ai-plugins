@@ -7,13 +7,13 @@
   "plugins": [
     {
       "name": "helioadditive-dragon",
-      "source": "./plugins/dragon/_generated/anthropic",
+      "source": "./plugins/dragon/_generated/test",
       "description": "Prepare, run, monitor, and retrieve Helio Dragon thermal workflows.",
       "category": "Productivity"
     },
     {
       "name": "helioadditive-slicing",
-      "source": "./plugins/slicing/_generated/anthropic",
+      "source": "./plugins/slicing/_generated/test",
       "description": "Create, monitor, and retrieve Helio Additive slicing jobs.",
       "category": "Productivity"
     }

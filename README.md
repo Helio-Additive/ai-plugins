@@ -12,7 +12,7 @@ Helio Additive AI plugins, with native provider marketplaces and one shared buil
   `./plugins/slicing/_generated/test`. Generate these optional local bundles before
   installing from the marketplace. Authentication happens on installation.
 - `.claude-plugin/marketplace.json` — generated Claude Code marketplace, listing
-  each plugin's committed `_generated/anthropic` bundle.
+  each plugin's Git-ignored `_generated/test` bundle (generate with vendor `anthropic`).
 - `lib/build.ts` — discovers YAML specs, checks build inputs, and generates bundles.
 - `lib/_generated/` — schema-generated document and plugin-spec types.
 - `schemas/` — the plugin-spec schema and pinned published Agent Plugins schemas.
@@ -41,12 +41,92 @@ bun run test
 The root package also exposes `bun run build`; `make`
 is an alternative to `just make`. There are no per-plugin dependency installs.
 
+### Local installation prerequisites
+
+Use an existing authorized host login and Helio account, Bun, Just, and a plugin-capable
+OpenAI host or Claude Code. Install dependencies with `bun install --frozen-lockfile`.
+These bundles contact nightly services, even when installed from a local folder.
+Do not approve new OAuth grants or unexpected permissions as part of unattended testing.
+
+### One-command local installation
+
+```sh
+just install codex
+# Or:
+just install claude
+```
+
+The selected host generates Nightly test bundles at `https://mcp3.helioadditive.com`
+with vendor `openai` or `anthropic`, then replaces only the two named Helio plugins
+and the `helioadditive-plugins` marketplace with this checkout. Claude operations
+use user scope and preserve plugin data. Unrelated marketplaces/plugins are left
+alone; additional plugins in the Helio marketplace cause the installer to stop.
+Missing entries are skipped based on successful JSON inventory reads; CLI or parse
+failures stop the command. The final action installs slicing, with no trailing list.
+Dependencies must already be installed. Unsupported host arguments are rejected.
+Switching hosts replaces the shared test folder; restart/reload the selected host.
+
+For isolated testing, prefix the command with
+`CLAUDE_CONFIG_DIR=/private/tmp/helio-local-plugin-test` for Claude, or use a newly
+created temporary `CODEX_HOME` for Codex. Do not use the normal user configuration
+for automated tests. Installation may request OAuth; do not approve new grants
+unattended.
+
+OpenAI manifests now use the coordinated Nightly client `openai-plugin`, preserving
+per-plugin `slicing`/`dragon` scopes and `/openai/` resources. The local callback
+remains `http://127.0.0.1/callback` with a host-selected port; the existing hosted
+callback contract is `https://chatgpt.com/connector_platform_oauth_redirect`.
+This repository's specs currently target Nightly even in committed production-format
+bundles. Production/staging Auth retains older IDs: changing spec URLs to those
+environments requires matching their client registrations, not reusing this Nightly
+client blindly. Coordinated policy: [DevOps PR #4584](https://github.com/Helio-Additive/devops/pull/4584).
+DevOps deployment and coordinated consumer rollout are pending;
+existing Nightly OpenAI users must reconnect after the cutover. Package validation
+does not establish live client registration. Claude retains `claude-plugin` and its
+recorded live **Unknown client** blocker.
+
+### Install in the OpenAI app
+
+Generate the local bundles from this checkout first (normal builds remove them):
+
+```sh
+GENERATE_TEST=true MCP_TEST_URL=https://mcp3.helioadditive.com MCP_TEST_VENDOR=openai just make
+```
+
+1. Open the ChatGPT desktop app with this repository as the working project.
+   This checkout already supplies `.agents/plugins/marketplace.json`; its plugin
+   paths resolve from the repository root. If explicit registration is needed,
+   run `codex plugin marketplace add "$PWD"` from this root.
+2. Restart the app, open the Plugins tab / Plugins Directory, and select the
+   **Helio-Additive Plugins** marketplace. Open each Helio plugin and install it.
+3. Follow the host's browser authentication redirect. Review the destination and
+   permissions before consenting; new persistent grants require user approval.
+   Never paste credentials into chat or repository files.
+4. Start a new chat and run the read-only smoke test below.
+
+This is the app flow supported by [official packaging guidance](https://developers.openai.com/plugins/build/plugins)
+and [plugin usage guidance](https://learn.chatgpt.com/docs/plugins), not a completed
+local UI test. Direct inspection of the installed OpenAI app was denied by the
+computer-use tool. The exact in-app marketplace-add control, install button label,
+and redirect screens could not be verified; do not infer them from these steps.
+Marketplace authentication is configured as `ON_INSTALL`; successful login and
+MCP access still need live verification.
+
+CLI alternative (syntax checked against installed CLI help):
+
+```sh
+codex plugin marketplace add "$PWD"
+codex plugin add helioadditive-dragon@helioadditive-plugins
+codex plugin add helioadditive-slicing@helioadditive-plugins
+codex plugin list
+```
+
 ### Install in Claude Code
 
 From the repository root, build the bundles and add this local marketplace:
 
 ```sh
-just make
+GENERATE_TEST=true MCP_TEST_URL=https://mcp3.helioadditive.com MCP_TEST_VENDOR=anthropic just make
 claude plugin marketplace add ./
 claude plugin install helioadditive-dragon@helioadditive-plugins
 claude plugin install helioadditive-slicing@helioadditive-plugins
@@ -59,7 +139,7 @@ one, then use `/mcp` to connect and authenticate each server. Use the host's OAu
 flow; no token or client secret belongs in this repository.
 
 Claude loads `.claude-plugin/plugin.json`, `.mcp.json`, and `skills/` from each
-`_generated/anthropic` bundle. Its only MCP configuration is `.mcp.json`; the root
+`_generated/test` bundle generated with `MCP_TEST_VENDOR=anthropic`. Its only MCP configuration is `.mcp.json`; the root
 portable manifest is not the native Claude entrypoint. Both plugins use the
 dedicated public `claude-plugin` client; Dragon explicitly requests scope `dragon`
 and slicing explicitly requests scope `slicing`. That client is restricted to the
@@ -91,8 +171,11 @@ claude plugin validate . --strict
 Normal installation and public-directory submission are different checks. License,
 privacy-policy, and other directory-review requirements must be resolved before
 public submission; local installation does not establish approval or live OAuth/API
-behavior. Claude's marketplace always uses the committed Anthropic bundles, not
-the opt-in OpenAI `_generated/test` bundles.
+behavior. Both root marketplaces point to `_generated/test`. The shared test folder contains
+only the selected vendor's format: regenerate with `anthropic` before Claude
+installation and with `openai` before OpenAI installation. Switching vendors replaces
+that folder; do not run both local installations against it concurrently. A normal
+build removes it, so regenerate before using either local marketplace.
 
 ### Schema-generated types
 
@@ -160,16 +243,19 @@ All three variables are required to opt in. Supply the base MCP URL without a ro
 GENERATE_TEST=true MCP_TEST_URL=https://mcp3.helioadditive.com MCP_TEST_VENDOR=openai just make
 ```
 
-This adds a complete OpenAI-compatible `_generated/test/` bundle for each plugin.
+This adds a vendor-specific `_generated/test/` bundle for each plugin.
 The generator appends each plugin's predefined `testPath` from its spec:
 Slicing uses `https://mcp3.helioadditive.com/openai/slicing` and Dragon uses
-`https://mcp3.helioadditive.com/openai/dragon`. Set `MCP_TEST_VENDOR` to `openai` or `anthropic` to select the route prefix. These routes are plugin-specific source data, not a mapping
+`https://mcp3.helioadditive.com/openai/dragon`. Set `MCP_TEST_VENDOR` to `openai` or `anthropic` to select both the route prefix and package format.
+Anthropic test output includes `.claude-plugin/plugin.json` and `.mcp.json` with
+its registered Claude client/scopes; OpenAI test output uses `.codex-plugin/plugin.json`
+and its existing loopback callback configuration. Production output is unchanged. These routes are plugin-specific source data, not a mapping
 hardcoded in the shared generator.
 
 `MCP_TEST_URL` is a **base URL**, not an exact endpoint. HTTP and HTTPS are supported,
 including custom ports and an optional trailing slash. Paths, queries, embedded
 credentials, and URL fragments are rejected. Do not put tokens or secrets in the
-URL. The test bundles inherit OpenAI OAuth settings, skills, and assets; registered
+URL. The test bundles inherit the selected vendor’s OAuth settings, skills, and assets; registered
 client IDs and scopes remain unchanged. Production bundles retain the provider
 URLs in the specs and never use this base URL. The portable format
 leaves callback selection to the host; register the callback used by its connection
@@ -212,3 +298,77 @@ With issuer-response support true, the explicit legacy callback preserves exact
 `/callback` with a dynamic port. Missing/false issuer support retains a suffix.
 The check requires the installed host and permission to bind a loopback listener;
 a missing host exits 77. It never completes authorization or issues tokens/grants.
+
+### Read-only smoke test and troubleshooting
+
+After authentication, ask: “Use Helio slicing to list available printer profiles
+only. Do not create a job, upload a file, or start slicing.” A successful profile
+response establishes authenticated read access; skill discovery alone does not.
+For Claude, `/mcp` is the interactive connection entrypoint; inspect the server and
+follow its authentication prompt. Stop before granting new access unless approved.
+
+- Missing OpenAI MCP servers: regenerate test bundles and run
+  `python3 scripts/check-host-parser.py`; verify the marketplace points to this
+  checkout and `_generated/test` exists. Normal builds delete those directories.
+- Claude already has `helioadditive-plugins`: `claude plugin marketplace list`
+  distinguishes a Git source from this local directory. Do not replace an existing
+  marketplace blindly. Test independently with `CLAUDE_CONFIG_DIR` pointing to a
+  temporary directory; prefix **every** marketplace/install/list command with it.
+  This isolates host configuration and does not reuse the existing OAuth login.
+- `ENOTFOUND mcp3.helioadditive.com` means DNS resolution failed before OAuth.
+  Compare a supported escalated read-only host check before diagnosing service
+  DNS: this test failed in the sandbox but reached the service when escalated.
+  Do not change network/security settings or bypass an escalation denial.
+- Validation can pass while reporting missing license/privacy metadata for public
+  directory submission. Local installation does not establish publication readiness.
+
+### Local verification record (2026-11-07)
+
+Baseline: `899411e` (merged discovery/authentication PR #6); production bundles
+were retained. Claude Code 2.1.319 successfully added this worktree marketplace
+and installed both plugins in `/private/tmp/helio-local-plugin-test` using
+`CLAUDE_CONFIG_DIR`. `plugin list` showed both enabled and read from this checkout's
+Anthropic directories. Both bundles passed `claude plugin validate <path> --strict`;
+the root marketplace passed validation. Existing user plugins were already enabled
+from a Git marketplace and were left unchanged.
+
+The default sandbox's Claude health checks returned `ENOTFOUND` for the nightly
+Anthropic endpoints. Follow-up default-context `curl -I` requests reached both
+`https://mcp3.helioadditive.com/anthropic/slicing` and `/anthropic/dragon`, returning
+HTTP 401 with protected-resource metadata challenges. A supported escalated
+`claude mcp get plugin:helioadditive-slicing:helioadditive-slicing` reached slicing
+and reported **Needs authentication**. The equivalent escalated Dragon check
+also reported **Needs authentication**. This is execution-context-dependent network
+behavior, not evidence of a service DNS outage. No network settings were changed.
+
+No OAuth consent, authenticated tool discovery, or read-only profile call was
+completed. The next user step is to open Claude's `/mcp` and review authentication
+for the Helio server. Public client `claude-plugin` requests `slicing` or `dragon`
+respectively against the nightly service. No consent screen was reached, so the
+exact authorization destination and displayed permissions remain unverified;
+stop there for user approval before establishing a new persistent grant.
+OpenAI CLI syntax was checked; desktop installation and live authentication were
+not tested because direct app inspection was denied by the computer-use tool.
+
+Follow-up local marketplace correction: both root catalogs now reference test folders.
+After generating with `MCP_TEST_VENDOR=anthropic`, both plugins were reinstalled in
+`CLAUDE_CONFIG_DIR=/private/tmp/helio-local-plugin-test` from this worktree. This
+checks local package installation only; it does not establish authenticated access.
+
+Latest manual authentication evidence (2026-11-07): the browser authorization
+request reached `https://auth3.helioadditive.com/oauth/authorize` with client
+`claude-plugin`, scope `slicing`, resource
+`https://mcp3.helioadditive.com/anthropic/slicing`, and a dynamic
+`http://localhost:<port>/callback`. Auth displayed **Unknown client**. This confirms
+the expected client ID is sent, but the live authorization server did not recognize
+it for that request. The intended registration described above is not verified as
+active. An earlier request using `generic-agent` instead displayed **Invalid redirect
+URI**; switching back to that client is not an established fix. Read-only inspection
+of the deployed Auth client registry/configuration is needed next. Registration or
+policy changes and deployment require separate authorization. Consent, callback
+acceptance, token exchange, and authenticated tool access remain unverified.
+
+Installer coverage: the full Claude replacement command passed in an isolated
+configuration. Codex installation sequencing was tested with controlled mocks and
+installed CLI help, not a live installation. Authenticated end-to-end access remains
+unverified.

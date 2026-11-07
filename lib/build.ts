@@ -142,7 +142,7 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
   const packages = new Map<string, Outputs>();
   for (const provider of providersFor(options)) {
     const outputs = new Map(shared);
-    const connection = spec.mcp[provider === "test" ? "openai" : provider];
+    const connection = spec.mcp[provider === "test" ? checkedTestVendor(options.testVendor) as "openai" | "anthropic" : provider];
     // OpenAI documents server-level auth extensions omitted by the published MCP
     // schema. Reuse the generated plugin's namespace shape; do not patch the schema.
     const server = {
@@ -164,7 +164,7 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
       mcpServers: { [spec.name]: server },
     } satisfies AgentPluginsMCPConfiguration;
     outputs.set("plugin.json", json(manifest));
-    if (provider === "anthropic") {
+    if (provider === "anthropic" || (provider === "test" && options.testVendor === "anthropic")) {
       // Claude's native installer still uses these compatibility entrypoints.
       // Project portable identity and connection data; do not maintain parallel types.
       outputs.set(".claude-plugin/plugin.json", json({

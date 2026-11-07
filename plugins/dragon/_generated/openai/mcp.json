@@ -9,7 +9,7 @@
               "dragon"
             ],
             "client": {
-              "clientId": "openai-dragon-plugin",
+              "clientId": "openai-plugin",
               "mode": "provided"
             },
             "type": "oauth"
