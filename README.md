@@ -154,17 +154,16 @@ The former `localhost` and `orbstack` bundles are no longer generated.
 
 ### Optional local test bundle
 
-Both variables are required to opt in. Supply the base MCP URL without a route:
+All three variables are required to opt in. Supply the base MCP URL without a route:
 
 ```sh
-GENERATE_TEST=true MCP_TEST_URL=https://mcp3.helioadditive.com just make
+GENERATE_TEST=true MCP_TEST_URL=https://mcp3.helioadditive.com MCP_TEST_VENDOR=openai just make
 ```
 
 This adds a complete OpenAI-compatible `_generated/test/` bundle for each plugin.
 The generator appends each plugin's predefined `testPath` from its spec:
-Slicing uses `https://mcp3.helioadditive.com/slicing` and Dragon uses
-`https://mcp3.helioadditive.com/dragon`. Test endpoints have no `/openai` or
-`/anthropic` prefix. These routes are plugin-specific source data, not a mapping
+Slicing uses `https://mcp3.helioadditive.com/openai/slicing` and Dragon uses
+`https://mcp3.helioadditive.com/openai/dragon`. Set `MCP_TEST_VENDOR` to `openai` or `anthropic` to select the route prefix. These routes are plugin-specific source data, not a mapping
 hardcoded in the shared generator.
 
 `MCP_TEST_URL` is a **base URL**, not an exact endpoint. HTTP and HTTPS are supported,

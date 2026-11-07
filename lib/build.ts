@@ -8,7 +8,7 @@ import type { AgentPluginsMCPConfiguration, StreamableHTTPMCPServer } from "./_g
 import type { PluginSpec } from "./_generated/plugin-spec";
 
 export const root = resolve(import.meta.dir, "..");
-export type BuildOptions = { testUrl?: string };
+export type BuildOptions = { testUrl?: string; testVendor?: string };
 export type Outputs = Map<string, string | Buffer>;
 
 const ajv = new Ajv({ allErrors: true });
@@ -29,7 +29,12 @@ export function readBuildOptions(env: Record<string, string | undefined>): Build
   if (env.GENERATE_TEST !== "true") return {};
   const testUrl = env.MCP_TEST_URL?.trim();
   if (!testUrl) throw new Error("GENERATE_TEST=true requires MCP_TEST_URL (a base URL).");
-  return { testUrl: checkedTestBaseUrl(testUrl) };
+  return { testUrl: checkedTestBaseUrl(testUrl), testVendor: checkedTestVendor(env.MCP_TEST_VENDOR) };
+}
+
+function checkedTestVendor(value: string | undefined): string {
+  if (value !== "openai" && value !== "anthropic") throw new Error("MCP_TEST_VENDOR must be openai or anthropic.");
+  return value;
 }
 
 function checkedTestBaseUrl(value: string): string {
@@ -143,7 +148,7 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
     const server = {
       type: "streamable-http",
       url: provider === "test" && options.testUrl !== undefined
-        ? checkedTestBaseUrl(options.testUrl) + spec.testPath : connection.url,
+        ? checkedTestBaseUrl(options.testUrl) + "/" + checkedTestVendor(options.testVendor) + spec.testPath : connection.url,
       extensions: {
         "com.openai": {
           auth: {
