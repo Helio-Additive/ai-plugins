@@ -20,8 +20,9 @@ in each plugin's sources, not in the generator.
 
 - Never hand-edit `lib/_generated/` or `plugins/*/_generated/`. Run `just make`;
   commit regenerated types and production bundles with source changes.
-- `GENERATE_TEST=true MCP_TEST_URL=<exact endpoint> just make` also builds
-  Git-ignored test bundles. Never commit these or redirect production to the test URL.
+- `GENERATE_TEST=true MCP_TEST_URL=<base URL> just make` also builds Git-ignored
+  test bundles, appending each spec's predefined `testPath` (`/slicing` or `/dragon`)
+  without a provider prefix. Never commit test bundles or redirect production to the test URL.
   Normal builds remove test output.
 - Keep one root `.agents/plugins/marketplace.json`, listing each plugin's
   `./plugins/<plugin>/_generated/test` bundle.
@@ -31,7 +32,7 @@ in each plugin's sources, not in the generator.
 
 ## Checks and safety
 
-After source or generator changes, run `just make` and `bun run typecheck`.
+After source or generator changes, run `just make`, `bun run typecheck`, and `bun run test`.
 Local checks do not establish hosted OAuth or API behavior.
 Preserve registered OAuth contracts and explicit consent for actions that create
 work. Never invent IDs, results, or credentials, or package tokens/client secrets.

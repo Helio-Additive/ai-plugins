@@ -11,6 +11,7 @@ defaultPrompts:
   - Slice this .stl file
   - Show me my recent slices
   - Check the progress of my slice
+testPath: /slicing
 mcp:
   openai:
     url: https://mcp3.helioadditive.com/openai/slicing

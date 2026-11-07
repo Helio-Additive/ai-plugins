@@ -23,6 +23,8 @@ jobs:
         run: bun run build
       - name: Typecheck
         run: bun run typecheck
+      - name: Test endpoint generation
+        run: bun run test
       - name: Check generated output is committed
         run: |
           git diff --exit-code -- .claude-plugin/marketplace.json lib/_generated plugins/*/_generated

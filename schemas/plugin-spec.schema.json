@@ -12,7 +12,8 @@
     "shortDescription",
     "longDescription",
     "defaultPrompts",
-    "mcp"
+    "mcp",
+    "testPath"
   ],
   "properties": {
     "name": {
@@ -50,6 +51,11 @@
         "type": "string",
         "minLength": 1
       }
+    },
+    "testPath": {
+      "description": "Predefined provider-neutral test route for this plugin, appended to MCP_TEST_URL. A single absolute path segment, without a provider prefix.",
+      "type": "string",
+      "pattern": "^/[a-z0-9]+(?:-[a-z0-9]+)*$"
     },
     "mcp": {
       "type": "object",

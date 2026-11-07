@@ -28,8 +28,16 @@ function checkedUrl(value: string, label: string, allowHttp = false): string {
 export function readBuildOptions(env: Record<string, string | undefined>): BuildOptions {
   if (env.GENERATE_TEST !== "true") return {};
   const testUrl = env.MCP_TEST_URL?.trim();
-  if (!testUrl) throw new Error("GENERATE_TEST=true requires MCP_TEST_URL.");
-  return { testUrl: checkedUrl(testUrl, "MCP_TEST_URL", true) };
+  if (!testUrl) throw new Error("GENERATE_TEST=true requires MCP_TEST_URL (a base URL).");
+  return { testUrl: checkedTestBaseUrl(testUrl) };
+}
+
+function checkedTestBaseUrl(value: string): string {
+  const url = new URL(checkedUrl(value, "MCP_TEST_URL", true));
+  if (url.pathname !== "/" || url.search) {
+    throw new Error("MCP_TEST_URL must be a base URL without a path or query; each plugin supplies its testPath.");
+  }
+  return url.origin;
 }
 
 /** Discover and validate every spec before any generated bundle is replaced. */
@@ -135,7 +143,7 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
     const server = {
       type: "streamable-http",
       url: provider === "test" && options.testUrl !== undefined
-        ? checkedUrl(options.testUrl, "MCP_TEST_URL", true) : connection.url,
+        ? checkedTestBaseUrl(options.testUrl) + spec.testPath : connection.url,
       extensions: {
         "com.openai": {
           auth: {
