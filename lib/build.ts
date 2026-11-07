@@ -8,7 +8,7 @@ import type { AgentPluginsMCPConfiguration, StreamableHTTPMCPServer } from "./_g
 import type { PluginSpec } from "./_generated/plugin-spec";
 
 export const root = resolve(import.meta.dir, "..");
-export type BuildOptions = { testUrl?: string };
+export type BuildOptions = { generateTest?: boolean; testUrl?: string };
 export type Outputs = Map<string, string | Buffer>;
 
 const ajv = new Ajv({ allErrors: true });
@@ -27,9 +27,10 @@ function checkedUrl(value: string, label: string, allowHttp = false): string {
 
 export function readBuildOptions(env: Record<string, string | undefined>): BuildOptions {
   if (env.GENERATE_TEST !== "true") return {};
-  const testUrl = env.MCP_TEST_URL?.trim();
-  if (!testUrl) throw new Error("GENERATE_TEST=true requires MCP_TEST_URL.");
-  return { testUrl: checkedUrl(testUrl, "MCP_TEST_URL", true) };
+  if (env.MCP_TEST_URL === undefined) return { generateTest: true };
+  const testUrl = env.MCP_TEST_URL.trim();
+  if (!testUrl) throw new Error("MCP_TEST_URL must not be empty when provided.");
+  return { generateTest: true, testUrl: checkedUrl(testUrl, "MCP_TEST_URL", true) };
 }
 
 /** Discover and validate every spec before any generated bundle is replaced. */
@@ -62,9 +63,9 @@ export async function loadPluginSpecs(directory = join(root, "plugins")) {
 }
 
 export function providersFor(options: BuildOptions = {}) {
-  return options.testUrl === undefined
-    ? ["openai", "anthropic"] as const
-    : ["openai", "anthropic", "test"] as const;
+  return options.generateTest || options.testUrl !== undefined
+    ? ["openai", "anthropic", "test"] as const
+    : ["openai", "anthropic"] as const;
 }
 
 async function files(directory: string): Promise<string[]> {

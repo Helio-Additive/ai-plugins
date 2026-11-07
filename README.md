@@ -35,6 +35,7 @@ Install [Bun](https://bun.sh) and [Just](https://just.systems). From this root:
 bun install --frozen-lockfile
 just make
 bun run typecheck
+bun run test
 ```
 
 The root package also exposes `bun run build`; `make`
@@ -151,24 +152,35 @@ The former `localhost` and `orbstack` bundles are no longer generated.
 
 ### Optional local test bundle
 
-Both variables are required to opt in:
+Opt in to test bundles using each plugin's `mcp.openai.url` from its spec:
+
+```sh
+GENERATE_TEST=true just make
+```
+
+This adds a complete OpenAI-compatible `_generated/test/` bundle for each plugin.
+With the current specs, Slicing uses `https://mcp3.helioadditive.com/openai/slicing`
+and Dragon uses `https://mcp3.helioadditive.com/openai/dragon`. The test bundles
+inherit the OpenAI OAuth settings, skills, and assets as well as the endpoints.
+
+For a custom server, optionally supply an exact endpoint override:
 
 ```sh
 GENERATE_TEST=true MCP_TEST_URL=https://test.example.invalid/mcp just make
 ```
 
-This adds a complete OpenAI-compatible `_generated/test/` bundle for each plugin.
 `MCP_TEST_URL` is the **exact endpoint**, used unchanged for both plugins; no plugin
-path is appended. Use the endpoint appropriate for your test server. HTTP and HTTPS
+path is appended. A bare host deliberately overrides both URLs with that bare host;
+omit the variable to retain the per-plugin OpenAI routes. HTTP and HTTPS
 URLs are supported, but embedded credentials and URL fragments are rejected. Do not
 put tokens or secrets in the URL. The normal OAuth client IDs and scopes remain
 unchanged, and production bundles never use this override. The portable format
 leaves callback selection to the host; register the callback used by its connection
 flow with your OAuth provider and verify login after migration.
 
-`MCP_TEST_URL` alone does nothing. `GENERATE_TEST=true` with a missing or invalid URL
-fails before any output is replaced. A normal `just make` removes any previous test
-bundle. Test output is Git-ignored and must not be committed.
+`MCP_TEST_URL` alone does nothing. An explicitly empty or invalid override with
+`GENERATE_TEST=true` fails before any output is replaced. A normal `just make`
+removes any previous test bundle. Test output is Git-ignored and must not be committed.
 
 Each plugin is fully rendered before its `_generated/` directory is replaced, so a
 rendering error preserves that plugin's previous outputs. Successful builds

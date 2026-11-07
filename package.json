@@ -5,6 +5,7 @@
   "scripts": {
     "generate:types": "bun run scripts/generate-types.ts",
     "build": "bun run generate:types && bun run scripts/build.ts",
+    "test": "bun test",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
