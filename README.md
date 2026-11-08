@@ -413,4 +413,3 @@ sections for operations, fields, arguments and schema types. Refresh its validat
 Hive snapshot with `REFRESH_API_SCHEMA=true just make`; ordinary builds verify the
 recorded SHA-256 and reject snapshots older than seven days. Rendering and refresh
 logic live in `plugins/scripting/skills/api-schema/SKILL.mdx`. No API mutation is used.
-
