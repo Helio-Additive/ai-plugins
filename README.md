@@ -60,9 +60,14 @@ The selected host generates Nightly test bundles at `https://mcp3.helioadditive.
 with vendor `openai` or `anthropic`, then replaces only the two named Helio plugins
 and the `helioadditive-plugins` marketplace with this checkout. Claude operations
 use user scope and preserve plugin data. Unrelated marketplaces/plugins are left
-alone; additional plugins in the Helio marketplace cause the installer to stop.
-Missing entries are skipped based on successful JSON inventory reads; CLI or parse
-failures stop the command. The final action installs slicing, with no trailing list.
+alone; additional installed plugins in the Helio marketplace cause the installer to stop.
+Codex reads its plugin inventory with `--marketplace helioadditive-plugins`, so an
+unrelated stale marketplace does not prevent installation. It re-adds the local
+marketplace idempotently; only the specific CLI error for a different existing
+source triggers removal and replacement of `helioadditive-plugins`. It does not
+use Codex's global marketplace inventory, which also fails on stale registrations.
+Claude skips missing entries based on successful JSON inventory reads. Unexpected
+CLI or parse failures stop the command. The final action installs slicing, with no trailing list.
 Dependencies must already be installed. Unsupported host arguments are rejected.
 Switching hosts replaces the shared test folder; restart/reload the selected host.
 
@@ -71,6 +76,16 @@ For isolated testing, prefix the command with
 created temporary `CODEX_HOME` for Codex. Do not use the normal user configuration
 for automated tests. Installation may request OAuth; do not approve new grants
 unattended.
+
+Run `python3 scripts/check-codex-install.py` for the opt-in Codex installer
+regression check (Python 3.11+, Bun, Just and Codex required). It uses temporary
+homes and inert local plugins without MCP servers, covering fresh/repeated installs,
+source replacement, stale unrelated catalogs, preservation of unrelated settings
+and plugin caches, and failure cases. Its fixture build is a marker only; run
+`just make`, `bun run typecheck`, and `bun run test` separately for repository checks.
+CLI behavior was verified against Codex 0.167.0. If future CLI versions change
+the source-conflict diagnostic, installation stops rather than guessing whether
+to remove a registration. This check does not establish hosted OAuth or MCP access.
 
 OpenAI manifests now use the coordinated Nightly client `openai-plugin`, preserving
 per-plugin `slicing`/`dragon` scopes and `/openai/` resources. The local callback
@@ -369,6 +384,7 @@ policy changes and deployment require separate authorization. Consent, callback
 acceptance, token exchange, and authenticated tool access remain unverified.
 
 Installer coverage: the full Claude replacement command passed in an isolated
-configuration. Codex installation sequencing was tested with controlled mocks and
-installed CLI help, not a live installation. Authenticated end-to-end access remains
-unverified.
+configuration. Codex 0.167.0 passed the isolated installer regression above using
+inert local fixtures, including the reported stale `helio-devops` failure and
+repeated installations. Unit tests cover sequencing and command failures for both
+hosts. Authenticated end-to-end access remains unverified.
