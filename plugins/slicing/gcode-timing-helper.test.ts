@@ -28,7 +28,12 @@ def log(**value):
 
 class DownloadResponse:
     status = 200
-    def __init__(self): self.calls = 0
+    def __init__(self):
+        self.calls = 0
+        if mode == "download-truncated": self.headers = {"Content-Length": "100000"}
+        elif mode == "download-malformed-length": self.headers = {"Content-Length": "six"}
+        elif mode == "download-no-length": self.headers = {}
+        else: self.headers = {"Content-Length": "6"}
     def __enter__(self): return self
     def __exit__(self, *_args): return False
     def read(self, _size):
@@ -37,7 +42,7 @@ class DownloadResponse:
         if mode == "download-empty": return b""
         if mode == "download-midstream" and self.calls == 2:
             raise OSError("https://signed.example.invalid/should-not-escape?token=secret")
-        return b"part" if self.calls == 1 else b""
+        return b"part!!" if self.calls == 1 else b""
 
 class Opener:
     def open(self, url, timeout=None):
@@ -201,14 +206,14 @@ test("downloads through an HTTPS-only private streaming path without leaking sig
     expect(output).toBeDefined();
     expect(await stat(output!)).toMatchObject({ mode: expect.any(Number) });
     expect((await stat(output!)).mode & 0o777).toBe(0o600);
-    expect(await readFile(output!, "utf8")).toBe("part");
+    expect(await readFile(output!, "utf8")).toBe("part!!");
     expect(result.entries).toContainEqual({ open_url: signedUrl });
   } finally {
     await rm(result.root, { recursive: true, force: true });
   }
 });
 
-test.each(["download-empty", "download-midstream", "download-redirect", "download-timeout-connect", "download-timeout-read"])(
+test.each(["download-empty", "download-midstream", "download-redirect", "download-timeout-connect", "download-timeout-read", "download-truncated", "download-malformed-length"])(
   "sanitizes failed %s downloads and removes its partial private directory",
   async (mode) => {
     const result = await runHelper(mode, "download", [], signedUrl);
@@ -222,6 +227,16 @@ test.each(["download-empty", "download-midstream", "download-redirect", "downloa
     }
   },
 );
+
+test("accepts a complete download with no declared Content-Length", async () => {
+  const result = await runHelper("download-no-length", "download", [], signedUrl);
+  try {
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("bytes=6");
+  } finally {
+    await rm(result.root, { recursive: true, force: true });
+  }
+});
 
 test("applies an idle socket timeout and a wall deadline to downloads", async () => {
   const result = await runHelper("download-success", "download", [], signedUrl);
@@ -338,5 +353,14 @@ test("Dragon output helper disables proxies and rejects HTTPS-to-HTTP redirects"
     expect(await stat(join(redirect.destination, "enhanced.gcode")).then(() => true, () => false)).toBe(false);
   } finally {
     await rm(redirect.root, { recursive: true, force: true });
+  }
+
+  const truncated = await runDragonHelper("download-truncated");
+  try {
+    expect(truncated.exitCode).not.toBe(0);
+    expect(truncated.stderr).toContain("artifact download failed");
+    expect(await stat(join(truncated.destination, "enhanced.gcode")).then(() => true, () => false)).toBe(false);
+  } finally {
+    await rm(truncated.root, { recursive: true, force: true });
   }
 });

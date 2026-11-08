@@ -60,6 +60,15 @@ def open_regular_readonly(path):
 def is_lowercase_sha256(value):
     return len(value) == 64 and all(character in "0123456789abcdef" for character in value)
 
+def declared_content_length(response):
+    value = response.headers.get("Content-Length")
+    if value is None:
+        return None
+    value = value.strip()
+    if not value or not value.isascii() or not all(character in "0123456789" for character in value):
+        raise RuntimeError("download returned an invalid Content-Length")
+    return int(value)
+
 def url_from_stdin():
     value = sys.stdin.read().strip()
     parsed = urllib.parse.urlsplit(value)
@@ -110,10 +119,13 @@ elif command == "download":
             with os.fdopen(descriptor, "wb") as output, opener.open(url, timeout=SOCKET_TIMEOUT_SECONDS) as response:
                 if not 200 <= response.status < 300:
                     raise RuntimeError("download returned an unsuccessful HTTP status")
+                expected_size = declared_content_length(response)
                 while block := response.read(CHUNK):
                     total += len(block)
                     hasher.update(block)
                     output.write(block)
+                if expected_size is not None and total != expected_size:
+                    raise RuntimeError("download ended before its declared Content-Length")
             return total, hasher
         total, hasher = with_deadline(download)
         if total == 0:

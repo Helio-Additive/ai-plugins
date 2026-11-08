@@ -15,7 +15,6 @@ Use this reusable helper after setting `download_url`, `destination`, and a safe
 ```sh
 printf '%s' "$download_url" | python3 -c '
 import os
-import shutil
 import sys
 import urllib.request
 import urllib.parse
@@ -52,7 +51,20 @@ else:
 try:
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), HTTPSOnlyRedirect())
     with output, opener.open(download_url, timeout=30) as response:
-        shutil.copyfileobj(response, output, length=1024 * 1024)
+        raw_length = response.headers.get("Content-Length")
+        if raw_length is None:
+            expected_length = None
+        else:
+            raw_length = raw_length.strip()
+            if not raw_length or not raw_length.isascii() or not all(character in "0123456789" for character in raw_length):
+                raise RuntimeError("artifact returned an invalid Content-Length")
+            expected_length = int(raw_length)
+        total = 0
+        while block := response.read(1024 * 1024):
+            total += len(block)
+            output.write(block)
+        if expected_length is not None and total != expected_length:
+            raise RuntimeError("artifact ended before its declared Content-Length")
     if output_path.stat().st_size == 0:
         raise RuntimeError("downloaded artifact was empty")
 except Exception:
