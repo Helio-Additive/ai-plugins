@@ -5,12 +5,13 @@ Helio Additive AI plugins, with native provider marketplaces and one shared buil
 ## Layout
 
 - `plugins/dragon/` — Dragon thermal workflow skills and generated bundles.
+- `plugins/scripting/` — skills-only GraphQL client generation templates; no MCP or OAuth registration.
 - `plugins/slicing/` — slicing plugin skills and generated bundles.
 - `assets/` — shared branding images, copied into every generated bundle.
-- `.agents/plugins/marketplace.json` — one local marketplace listing both plugins,
+- `.agents/plugins/marketplace.json` — one local marketplace listing all plugins,
   using `./plugins/dragon/_generated/test` and
   `./plugins/slicing/_generated/test`. Generate these optional local bundles before
-  installing from the marketplace. Authentication happens on installation.
+  installing from the marketplace. MCP plugin authentication happens on installation; scripting has no MCP authentication.
 - `.claude-plugin/marketplace.json` — generated Claude Code marketplace, listing
   each plugin's Git-ignored `_generated/test` bundle (generate with vendor `anthropic`).
 - `lib/build.ts` — discovers YAML specs, checks build inputs, and generates bundles.
@@ -29,7 +30,8 @@ them directly. Production bundles are committed; `_generated/test/` is Git-ignor
 
 ## Generate both plugins
 
-Install [Bun](https://bun.sh) and [Just](https://just.systems). From this root:
+Install Nix and Devbox, then run `devbox shell` from this root. The root
+`devbox.json` and `devbox.lock` pin Bun, Just, Node and Make. Inside that shell:
 
 ```sh
 bun install --frozen-lockfile
@@ -372,3 +374,26 @@ Installer coverage: the full Claude replacement command passed in an isolated
 configuration. Codex installation sequencing was tested with controlled mocks and
 installed CLI help, not a live installation. Authenticated end-to-end access remains
 unverified.
+
+Scripting uses `skills/graphql-scripting/SKILL.mdx` as its discoverable entrypoint;
+MDX supporting templates become Markdown in generated bundles. Its schema workflow
+fetches fresh SDL instead of packaging a schema. Local marketplace generation still
+uses the existing vendor test-build flags, but scripting emits no MCP files.
+
+The existing `just install` helper continues to manage Dragon and Slicing only.
+Scripting is listed in the marketplaces for explicit host installation; the helper
+will refuse marketplace replacement when additional installed plugins are present.
+
+Scripting templates cover TypeScript, Python, Rust, C++, Ruby, Go, Java, Kotlin,
+Swift (macOS) and C#. The entrypoint links each language recipe and explains
+schema refresh, code generation, runtime authentication and execution.
+
+Scripting’s `SKILL.mdx` is a build-time composition entrypoint. Its MDX code discovers the template directory tree and inlines each current
+template file directly, without a separate rendering helper. Add or edit template files and run `just make`;
+there is no hand-maintained language index or copied template content in the entrypoint.
+
+The `helio-api-schema` skill traverses `schema.graphqls` into native Markdown
+sections for operations, fields, arguments and schema types. Refresh its validated
+Hive snapshot with `REFRESH_API_SCHEMA=true just make`; ordinary builds verify the
+recorded SHA-256 and reject snapshots older than seven days. Rendering and refresh
+logic live in `plugins/scripting/skills/api-schema/SKILL.mdx`. No API mutation is used.

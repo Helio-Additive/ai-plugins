@@ -1,0 +1,93 @@
+# Swift template
+
+Use [Apollo iOS](https://github.com/apollographql/apollo-ios) with Swift Package Manager and its matching codegen CLI. It supplies typed operation models and an async client on Apple platforms. This recipe targets macOS with Swift 6.1 or newer and Apollo 2.5.0; it is not a Linux Swift recipe.
+
+Create `Package.swift`:
+
+```swift
+// swift-tools-version: 6.1
+import PackageDescription
+let package = Package(
+    name: "HelioScript",
+    platforms: [.macOS(.v12)],
+    dependencies: [
+        .package(url: "https://github.com/apollographql/apollo-ios.git", exact: "2.5.0")
+    ],
+    targets: [
+        .executableTarget(name: "HelioScript", dependencies: [
+            .product(name: "Apollo", package: "apollo-ios")
+        ])
+    ]
+)
+```
+
+```sh
+mkdir -p Sources/HelioScript queries
+swift package resolve
+swift package --allow-writing-to-package-directory --allow-network-connections all apollo-cli-install
+```
+
+The install plugin creates a local `apollo-ios-cli` link. Keep `Package.resolved`; codegen and runtime must use matching versions. Acquire `schema.graphqls` through the [schema workflow](../../references/schema-workflow.md). Write `queries/Probe.graphql` containing `query Probe { __typename }`. Create `apollo-codegen-configuration.json`:
+
+```json
+{
+  "schemaNamespace": "HelioAPI",
+  "input": {
+    "schemaSearchPaths": ["./schema.graphqls"],
+    "operationSearchPaths": ["./queries/*.graphql"]
+  },
+  "output": {
+    "testMocks": { "none": {} },
+    "schemaTypes": {
+      "path": "./Sources/HelioScript/Generated",
+      "moduleType": { "embeddedInTarget": { "name": "HelioScript" } }
+    },
+    "operations": { "inSchemaModule": {} }
+  }
+}
+```
+
+No mock output or test target is configured. Generate from the local snapshot:
+
+```sh
+./apollo-ios-cli generate --path apollo-codegen-configuration.json
+```
+
+Create `Sources/HelioScript/App.swift`:
+
+```swift
+import Apollo
+import Foundation
+
+@main
+struct App {
+    static func main() async throws {
+        let env = ProcessInfo.processInfo.environment
+        guard let endpoint = env["HELIO_GRAPHQL_URL"].flatMap(URL.init(string:)),
+              let token = env["HELIO_PAT_TOKEN"] else {
+            throw NSError(domain: "Supply endpoint and PAT through the host", code: 1)
+        }
+        let store = ApolloStore(cache: InMemoryNormalizedCache())
+        let transport = RequestChainNetworkTransport(
+            urlSession: URLSession(configuration: .ephemeral),
+            interceptorProvider: DefaultInterceptorProvider.shared,
+            store: store,
+            endpointURL: endpoint,
+            additionalHeaders: ["Authorization": "Bearer " + token]
+        )
+        let client = ApolloClient(networkTransport: transport, store: store)
+        let result = try await client.fetch(query: HelioAPI.ProbeQuery(), cachePolicy: .networkOnly)
+        guard result.errors?.isEmpty != false, let data = result.data else {
+            throw NSError(domain: "GraphQL request failed", code: 2)
+        }
+        print(data)
+    }
+}
+```
+
+```sh
+swift build
+swift run HelioScript
+```
+
+Apollo 2 uses async APIs; do not copy older callback or `URLSessionClient` initializers. Inspect generated nesting and optional fields when adding real operations. Implement custom scalar `JSONDecodable`/`JSONEncodable` behavior only from verified contracts. Keep credentials runtime-only; no schema download is performed implicitly during generation.

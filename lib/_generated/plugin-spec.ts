@@ -26,8 +26,8 @@ export interface PluginSpec {
   /**
    * Predefined provider-neutral test route for this plugin, appended to MCP_TEST_URL. A single absolute path segment, without a provider prefix.
    */
-  testPath: string;
-  mcp: {
+  testPath?: string;
+  mcp?: {
     openai: MCPConnection;
     anthropic: MCPConnection;
   };

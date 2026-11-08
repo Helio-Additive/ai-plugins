@@ -1,0 +1,129 @@
+---
+name: helio-api-schema
+description: Understand what the Helio GraphQL API offers using the complete generated schema reference, including operations, fields, arguments, defaults and deprecations.
+---
+
+import { readFileSync, writeFileSync, renameSync, rmSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { createHash } from "node:crypto";
+import { spawnSync } from "node:child_process";
+import { parse, buildASTSchema, validateSchema, print } from "graphql";
+
+export function SchemaReference() {
+  const directory = fileURLToPath(new URL("./", import.meta.url));
+  const schemaPath = directory + "schema.graphqls";
+  const metadataPath = directory + "schema-metadata.json";
+  const endpoint = "https://api.helioadditive.com/graphql";
+  const hash = text => createHash("sha256").update(text).digest("hex");
+  function validate(text) {
+    const ast = parse(text);
+    const schema = buildASTSchema(ast);
+    const errors = validateSchema(schema);
+    if (errors.length) throw new Error(errors.map(error => error.message).join("\n"));
+    return { ast, schema };
+  }
+  if (process.env.REFRESH_API_SCHEMA === "true") {
+    const temporary = schemaPath + ".refresh.graphqls";
+    try {
+      const result = spawnSync("bun", ["hive", "introspect", endpoint, "--write", temporary], {
+        cwd: fileURLToPath(new URL("../../../../", import.meta.url)), encoding: "utf8",
+      });
+      if (result.error || result.status !== 0) throw new Error("Hive introspection failed; no cached fallback was used");
+      const text = readFileSync(temporary, "utf8");
+      validate(text);
+      const previous = JSON.parse(readFileSync(metadataPath, "utf8"));
+      renameSync(temporary, schemaPath);
+      writeFileSync(metadataPath, JSON.stringify({ ...previous, endpoint, retrievedAt: new Date().toISOString(), sha256: hash(text) }, null, 2) + "\n");
+    } finally { rmSync(temporary, { force: true }); }
+  }
+  const text = readFileSync(schemaPath, "utf8");
+  const metadata = JSON.parse(readFileSync(metadataPath, "utf8"));
+  if (metadata.filename !== "schema.graphqls" || metadata.endpoint !== endpoint || hash(text) !== metadata.sha256) throw new Error("Schema provenance mismatch; refresh the reference");
+  const age = Date.now() - Date.parse(metadata.retrievedAt);
+  if (!Number.isFinite(age) || age < -60000 || age > 7 * 86400000) throw new Error("Schema snapshot older than seven days or invalid; run REFRESH_API_SCHEMA=true just make");
+  const { ast, schema } = validate(text);
+  const roots = new Map([[schema.getQueryType()?.name, "Queries"], [schema.getMutationType()?.name, "Mutations"], [schema.getSubscriptionType()?.name, "Subscriptions"]].filter(([name]) => name));
+  const groups = new Map(["Schema", "Queries", "Mutations", "Subscriptions", "Objects", "Inputs", "Enums", "Scalars", "Interfaces", "Unions", "Directives", "Other definitions"].map(name => [name, []]));
+  const kinds = { ObjectTypeDefinition: "Objects", InputObjectTypeDefinition: "Inputs", EnumTypeDefinition: "Enums", ScalarTypeDefinition: "Scalars", InterfaceTypeDefinition: "Interfaces", UnionTypeDefinition: "Unions", DirectiveDefinition: "Directives", SchemaDefinition: "Schema" };
+  const definitions = ast.definitions.filter(definition => !definition.name?.value.startsWith("__"));
+  for (const definition of definitions) {
+    const group = roots.get(definition.name?.value) ?? kinds[definition.kind] ?? "Other definitions";
+    groups.get(group).push(definition);
+  }
+  const fields = definitions.reduce((sum, definition) => sum + (definition.fields?.length ?? 0), 0);
+  const args = definitions.reduce((sum, definition) => sum + (definition.arguments?.length ?? 0) + (definition.fields ?? []).reduce((count, field) => count + (field.arguments?.length ?? 0), 0), 0);
+  function heading(level, label) {
+    if (level === 3) return <h3>{label}</h3>;
+    if (level === 4) return <h4>{label}</h4>;
+    if (level === 5) return <h5>{label}</h5>;
+    return <h6>{label}</h6>;
+  }
+  function details(node, path, level) {
+    return <>
+      {node.description && <p>{node.description.value}</p>}
+      {node.type && <p>Type: <code>{print(node.type)}</code></p>}
+      {node.defaultValue && <p>Default: <code>{print(node.defaultValue)}</code></p>}
+      {(node.directives ?? []).map((directive, index) => <p key={index}>Directive: <code>{print(directive)}</code></p>)}
+      {node.repeatable !== undefined && <p>Repeatable: {String(node.repeatable)}</p>}
+      {(node.arguments ?? []).map(argument => <section key={argument.name.value}>
+        {heading(level, path + " argument " + argument.name.value)}
+        {details(argument, path + " argument " + argument.name.value, level + 1)}
+      </section>)}
+      {(node.fields ?? []).map(field => <section key={field.name.value}>
+        {heading(level, path + "." + field.name.value)}
+        {details(field, path + "." + field.name.value, level + 1)}
+      </section>)}
+      {(node.values ?? []).map(value => <section key={value.name.value}>
+        {heading(level, path + "." + value.name.value)}
+        {details(value, path + "." + value.name.value, level + 1)}
+      </section>)}
+      {(node.interfaces ?? []).map(type => <section key={type.name.value}>
+        {heading(level, path + " implements " + type.name.value)}
+        <p>Interface: <code>{print(type)}</code></p>
+      </section>)}
+      {(node.types ?? []).map(type => <section key={type.name.value}>
+        {heading(level, path + " member " + type.name.value)}
+        <p>Member: <code>{print(type)}</code></p>
+      </section>)}
+      {(node.locations ?? []).map(location => <section key={location.value}>
+        {heading(level, path + " location " + location.value)}
+      </section>)}
+      {(node.operationTypes ?? []).map(operation => <section key={operation.operation}>
+        {heading(level, path + " " + operation.operation)}
+        <p>Root type: <code>{print(operation.type)}</code></p>
+      </section>)}
+    </>;
+  }
+  return <>
+    <p>Endpoint: {metadata.endpoint}</p>
+    <p>Retrieved UTC: {metadata.retrievedAt}</p>
+    <p>SDL SHA-256: {metadata.sha256}</p>
+    <p>Coverage: {definitions.length} definitions; {fields} fields/input fields; {args} arguments.</p>
+    <p>Root types: query={schema.getQueryType()?.name ?? "none"}; mutation={schema.getMutationType()?.name ?? "none"}; subscription={schema.getSubscriptionType()?.name ?? "none"}.</p>
+    {[...groups].map(([group, entries]) => <section key={group}>
+      <h2>{group}</h2>
+      {!entries.length && <p>None in this schema.</p>}
+      {entries.map((definition, index) => <section key={index}>
+        {roots.has(definition.name?.value)
+          ? <><p>Root definition: <code>{definition.name.value}</code></p>{details(definition, definition.name.value, 3)}</>
+          : <>{heading(3, definition.name?.value ?? "schema")}{details(definition, definition.name?.value ?? "schema", 4)}</>}
+      </section>)}
+    </section>)}
+  </>;
+}
+
+# Helio API schema reference
+
+Use the complete definitions below to discover available operations and their exact contracts. Definitions retain descriptions, all fields, arguments, list/non-null wrappers, defaults, enums, interface implementations, union members, scalar specifications, directives and deprecations present in introspected SDL. Only introspection-internal `__` definitions are omitted. Introspection cannot expose arbitrary applied server directives or undocumented runtime behavior. Do not invent scalar encodings or treat schema availability as permission to run mutations.
+
+This is a dated snapshot, not a live API response. Builds validate its hash and SDL and reject snapshots older than seven days. Refresh before relying on changed API behavior. From the repository root, run:
+
+```sh
+REFRESH_API_SCHEMA=true just make
+```
+
+Refresh uses the repository-local official `@graphql-hive/cli` package and the public command `bun hive introspect https://api.helioadditive.com/graphql --write schema.graphqls` with a temporary output path. It validates SDL before replacing the snapshot. Failed acquisition fails the build; it never silently falls back. Ordinary builds are offline and reuse only the explicitly dated, validated snapshot. Do not put tokens on command lines or copy registry credentials. If public introspection stops working, report the exact failure before using an existing documented authenticated flow.
+
+Section organization adapts the active website rewrite's `src/lib/docs-graphql.ts` and `src/components/docs/ApiReference.astro`, inspected read-only at revision `14212e931d64bca559a139b9f1c5f4217eda1757` with uncommitted rewrite implementation. Their exact inspected hashes are recorded in `schema-metadata.json` in source. The available rewrite renders Astro HTML, not Markdown; this adaptation emits Markdown through the plugin's existing MDX build. Interfaces, unions and directives are included explicitly beyond the website's seven groups. Native headings are generated by traversing the SDL AST. GraphQL's printer is used only for inline type, default and directive syntax, preserving exact wrappers without whole-definition fences.
+
+<SchemaReference />

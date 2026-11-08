@@ -1,0 +1,11 @@
+{
+  "endpoint": "https://api.helioadditive.com/graphql",
+  "retrievedAt": "2026-11-08T03:48:27.688Z",
+  "sha256": "9c698d0adaca245d0d097d480c26615c550afafa7a0d5b6d5ac388cd13bdfb8c",
+  "websiteRevision": "14212e931d64bca559a139b9f1c5f4217eda1757",
+  "websiteFiles": {
+    "src/lib/docs-graphql.ts": "981f6ceaf66961f8d5e78ca195e44f9a500384cae76cba238c233d085b342bd6",
+    "src/components/docs/ApiReference.astro": "32c9325c0d520131239ff9049b1a563ea065a11909699e61a74d1badc316f00f"
+  },
+  "filename": "schema.graphqls"
+}

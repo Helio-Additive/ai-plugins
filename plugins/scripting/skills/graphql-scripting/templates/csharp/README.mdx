@@ -1,0 +1,67 @@
+# C# template
+
+Use [Strawberry Shake](https://chillicream.com/docs/strawberryshake/get-started/console), which generates operation-specific clients during `dotnet build` and integrates with .NET dependency injection. Prefer its HTTP client package for a console script; no GraphQL server or web host is needed.
+
+Use the .NET 10 SDK for this recipe: the published StrawberryShake.Server 16.7.3 package targets net10.0. This recipe uses matching 16.7.3 packages; keep all Strawberry Shake packages on the same version and lock restored dependencies.
+
+```sh
+dotnet new console --name HelioScript
+cd HelioScript
+dotnet add package StrawberryShake.Server --version 16.7.3
+dotnet add package Microsoft.Extensions.DependencyInjection
+dotnet restore --use-lock-file
+mkdir -p queries
+```
+
+Acquire `schema.graphqls` through the [schema workflow](../../references/schema-workflow.md). Create `queries/Probe.graphql` containing `query Probe { __typename }` and `.graphqlrc.json`:
+
+```json
+{
+  "schema": "schema.graphqls",
+  "documents": "queries/**/*.graphql",
+  "extensions": {
+    "strawberryShake": {
+      "name": "HelioClient",
+      "namespace": "HelioScript.GraphQL"
+    }
+  }
+}
+```
+
+Unlike the CLI's `init` command, this setup consumes the already validated local snapshot and does not download a second schema. Generate before writing callers:
+
+```sh
+dotnet build
+```
+
+Create `Program.cs`:
+
+```csharp
+using System.Net.Http.Headers;
+using Microsoft.Extensions.DependencyInjection;
+using StrawberryShake;
+using HelioScript.GraphQL;
+
+var endpoint = Environment.GetEnvironmentVariable("HELIO_GRAPHQL_URL")
+    ?? throw new InvalidOperationException("Supply the GraphQL endpoint");
+var token = Environment.GetEnvironmentVariable("HELIO_PAT_TOKEN")
+    ?? throw new InvalidOperationException("Supply the PAT through the host");
+var collection = new ServiceCollection();
+collection.AddHelioClient().ConfigureHttpClient(http => {
+    http.BaseAddress = new Uri(endpoint);
+    http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+});
+using var services = collection.BuildServiceProvider();
+var client = services.GetRequiredService<IHelioClient>();
+var result = await client.Probe.ExecuteAsync();
+result.EnsureNoErrors();
+if (result.Data is null) throw new InvalidOperationException("Missing GraphQL data");
+Console.WriteLine(result.Data);
+```
+
+```sh
+dotnet build
+dotnet run
+```
+
+Inspect generated models for renamed fields and nullable results. Use documented scalar serializers for nonstandard types rather than assuming string encodings. The minimal probe checks transport only. Keep API execution and any future mutations within the shared skill's authorization rules.

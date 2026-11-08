@@ -44,6 +44,8 @@ test("specs must define a valid neutral test route", async () => {
 
 for (const vendor of ["openai", "anthropic"]) {
 for (const { spec, source } of plugins) {
+  const connectionSpec = spec.mcp;
+  if (!connectionSpec) continue;
   describe(spec.name, () => {
     test.each(["https://mcp3.helioadditive.com", "https://mcp3.helioadditive.com/", "http://localhost:8080", "http://localhost:8080/"])(
       "appends the predefined neutral route to %s without changing other bundle contents", async (baseUrl) => {
@@ -65,9 +67,9 @@ for (const { spec, source } of plugins) {
         }
         const mcp = JSON.parse(testBundle.get(".mcp.json") as string);
         if (legacy) {
-          expect(mcp.mcpServers[spec.name].oauth.clientId).toBe(spec.mcp.openai.clientId);
+          expect(mcp.mcpServers[spec.name].oauth.clientId).toBe(connectionSpec.openai.clientId);
           expect(mcp.mcpServers[spec.name].oauth.callbackUrl).toBe("http://127.0.0.1/callback");
-          expect(mcp.mcpServers[spec.name].scopes).toEqual(spec.mcp.openai.scopes);
+          expect(mcp.mcpServers[spec.name].scopes).toEqual(connectionSpec.openai.scopes);
           testBundle.delete(".codex-plugin/plugin.json");
           testBundle.delete(".mcp.json");
           testBundle.set("plugin.json", bundles.get("openai")!.get("plugin.json")!);
@@ -78,10 +80,10 @@ for (const { spec, source } of plugins) {
           expect(JSON.parse(testBundle.get(".claude-plugin/plugin.json") as string).name).toBe(spec.name);
           expect(mcp.mcpServers[spec.name].type).toBe("http");
           expect(mcp.mcpServers[spec.name].oauth).toEqual({
-            clientId: spec.mcp.anthropic.clientId,
-            ...(spec.mcp.anthropic.scopes ? { scopes: spec.mcp.anthropic.scopes.join(" ") } : {}),
+            clientId: connectionSpec.anthropic.clientId,
+            ...(connectionSpec.anthropic.scopes ? { scopes: connectionSpec.anthropic.scopes.join(" ") } : {}),
           });
-          mcp.mcpServers[spec.name].url = spec.mcp.anthropic.url;
+          mcp.mcpServers[spec.name].url = connectionSpec.anthropic.url;
           testBundle.set(".mcp.json", JSON.stringify(mcp, null, 2) + "\n");
           expect(testBundle).toEqual(bundles.get("anthropic")!);
         }
@@ -89,7 +91,7 @@ for (const { spec, source } of plugins) {
         if (legacy) testBundle.set("mcp.json", bundles.get("openai")!.get("mcp.json")!);
         if (legacy) expect(testBundle).toEqual(bundles.get("openai")!);
         const openaiMcp = JSON.parse(bundles.get("openai")!.get("mcp.json") as string);
-        mcp.mcpServers[spec.name].url = spec.mcp.openai.url;
+        mcp.mcpServers[spec.name].url = connectionSpec.openai.url;
 
         expect(bundles.get("openai")).toEqual(normal.get("openai"));
         expect(bundles.get("anthropic")).toEqual(normal.get("anthropic"));
@@ -114,7 +116,7 @@ for (const { spec, source } of plugins) {
         expect(await access(join(directory, "_generated/test/plugin.json")).then(() => true, () => false)).toBe(true);
         await buildPlugin(spec, directory);
         expect(await access(join(directory, "_generated/test")).then(() => true, () => false)).toBe(false);
-        mcp.mcpServers[spec.name].url = spec.mcp.openai.url;
+        mcp.mcpServers[spec.name].url = connectionSpec.openai.url;
         expect(await access(join(directory, "_generated/openai/.codex-plugin")).then(() => true, () => false)).toBe(false);
         expect(JSON.parse(await readFile(join(directory, "_generated/openai/mcp.json"), "utf8"))).toBeDefined();
       } finally {
@@ -140,3 +142,19 @@ test("both local marketplaces reference test bundles", async () => {
     }
   }
 });
+
+for (const vendor of ["openai", "anthropic"]) {
+  test(`skills-only bundles omit every MCP/auth entrypoint (${vendor})`, async () => {
+    const { spec, source } = plugins.find(p => p.spec.name === "scripting")!;
+    const bundles = await renderPlugin(spec, source, { testUrl: "https://example.com", testVendor: vendor });
+    for (const outputs of bundles.values()) {
+      expect(outputs.has("mcp.json")).toBe(false);
+      expect(outputs.has(".mcp.json")).toBe(false);
+      expect(outputs.has("skills/graphql-scripting/SKILL.md")).toBe(true);
+      expect(outputs.has("skills/graphql-scripting/templates/cpp/README.md")).toBe(true);
+      for (const [path, content] of outputs) {
+        if (path.endsWith("plugin.json")) expect(String(content)).not.toMatch(/mcpServers|oauth|clientId/);
+      }
+    }
+  });
+}

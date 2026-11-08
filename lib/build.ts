@@ -1,7 +1,7 @@
 import { mkdir, mkdtemp, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve } from "node:path";
 import Ajv from "ajv";
-import { mdxToMd } from "mdx-to-md";
+import { mdxToMd } from "./mdx";
 import pluginSpecSchema from "../schemas/plugin-spec.schema.json";
 import type { AgentPluginsManifest } from "./_generated/plugin";
 import type { AgentPluginsMCPConfiguration, StreamableHTTPMCPServer } from "./_generated/mcp";
@@ -61,7 +61,7 @@ export async function loadPluginSpecs(directory = join(root, "plugins")) {
     if (!isPluginSpec(spec)) {
       throw new Error(`Invalid ${relative(root, file)}: ${ajv.errorsText(isPluginSpec.errors, { separator: "; " })}`);
     }
-    for (const [provider, connection] of Object.entries(spec.mcp)) {
+    for (const [provider, connection] of Object.entries(spec.mcp ?? {})) {
       checkedUrl(connection.url, `${relative(root, file)} mcp.${provider}.url`);
     }
     return { source, spec };
@@ -142,6 +142,17 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
   const packages = new Map<string, Outputs>();
   for (const provider of providersFor(options)) {
     const outputs = new Map(shared);
+    if (!spec.mcp) {
+      outputs.set("plugin.json", json(manifest));
+      if (provider === "anthropic" || (provider === "test" && options.testVendor === "anthropic")) {
+        outputs.set(".claude-plugin/plugin.json", json({ name: manifest.name, version: manifest.version, description: manifest.description, author: manifest.author }));
+      } else if (provider === "test") {
+        outputs.delete("plugin.json");
+        outputs.set(".codex-plugin/plugin.json", json({ name: manifest.name, version: manifest.version, description: manifest.description, interface: manifest.extensions["com.openai"].interface, skills: "./skills/" }));
+      }
+      packages.set(provider, outputs);
+      continue;
+    }
     const connection = spec.mcp[provider === "test" ? checkedTestVendor(options.testVendor) as "openai" | "anthropic" : provider];
     // OpenAI documents server-level auth extensions omitted by the published MCP
     // schema. Reuse the generated plugin's namespace shape; do not patch the schema.
