@@ -11,9 +11,7 @@
     "displayName",
     "shortDescription",
     "longDescription",
-    "defaultPrompts",
-    "mcp",
-    "testPath"
+    "defaultPrompts"
   ],
   "properties": {
     "name": {
@@ -60,7 +58,10 @@
     "mcp": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["openai", "anthropic"],
+      "required": [
+        "openai",
+        "anthropic"
+      ],
       "properties": {
         "openai": {
           "$ref": "#/definitions/connection"
@@ -77,7 +78,10 @@
       "description": "Provider MCP endpoint and public OAuth registration. Secrets must never be stored in a plugin spec.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["url", "clientId"],
+      "required": [
+        "url",
+        "clientId"
+      ],
       "properties": {
         "url": {
           "description": "Absolute HTTPS provider endpoint, without credentials or a fragment.",
@@ -102,5 +106,13 @@
         }
       }
     }
+  },
+  "dependencies": {
+    "mcp": [
+      "testPath"
+    ],
+    "testPath": [
+      "mcp"
+    ]
   }
 }

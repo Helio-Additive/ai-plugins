@@ -14,17 +14,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
+      - uses: jetify-com/devbox-install-action@a0d2d53632934ae004f878c840055956d9f741b0 # v0.14.0
         with:
-          bun-version: "1.4.3"
+          enable-cache: true
       - name: Install locked dependencies
-        run: bun install --frozen-lockfile
+        run: devbox run bun install --frozen-lockfile
       - name: Build packages
-        run: bun run build
+        run: devbox run bun run build
       - name: Typecheck
-        run: bun run typecheck
+        run: devbox run bun run typecheck
       - name: Test endpoint generation
-        run: bun run test
+        run: devbox run bun run test
       - name: Check generated output is committed
         run: |
           git diff --exit-code -- .claude-plugin/marketplace.json lib/_generated plugins/*/_generated

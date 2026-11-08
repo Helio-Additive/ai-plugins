@@ -27,6 +27,17 @@
         "authentication": "ON_INSTALL"
       },
       "category": "Productivity"
+    },
+    {
+      "name": "scripting",
+      "source": {
+        "source": "local",
+        "path": "./plugins/scripting/_generated/test"
+      },
+      "policy": {
+        "installation": "AVAILABLE"
+      },
+      "category": "Productivity"
     }
   ]
 }

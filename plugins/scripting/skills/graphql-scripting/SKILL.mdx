@@ -1,0 +1,74 @@
+---
+name: graphql-scripting
+description: Build Helio Additive GraphQL scripts using schema discovery and the bundled language templates. Use when integrating the Helio API or generating typed clients.
+---
+
+import { readdirSync, readFileSync } from "node:fs";
+import { dirname, join, posix, relative } from "node:path";
+import { fileURLToPath } from "node:url";
+import { evaluateSync } from "@mdx-js/mdx";
+import * as runtime from "react/jsx-runtime";
+
+export function ScriptingSkill({ directory }) {
+  const root = fileURLToPath(directory);
+  const templates = join(root, "templates");
+  const paths = [];
+  const lines = ["templates/"];
+  function walk(directory, prefix = "") {
+    const entries = readdirSync(directory, { withFileTypes: true })
+      .filter(entry => !entry.name.startsWith("."))
+      .sort((a, b) => a.name.localeCompare(b.name, "en"));
+    entries.forEach((entry, index) => {
+      const last = index === entries.length - 1;
+      lines.push(`${prefix}${last ? "└── " : "├── "}${entry.name}${entry.isDirectory() ? "/" : ""}`);
+      const path = join(directory, entry.name);
+      if (entry.isDirectory()) walk(path, prefix + (last ? "    " : "│   "));
+      else if (entry.isFile()) paths.push(path);
+      else throw new Error(`Template must be a regular file or directory: ${path}`);
+    });
+  }
+  walk(templates);
+  if (!paths.length) throw new Error("Scripting templates directory is empty");
+
+  function markdown(path) {
+    // Included prose is authored MDX, just like the entrypoint. Rebase its
+    // relative Markdown links to the entrypoint rather than the included file.
+    const base = relative(root, dirname(path)).split("\\").join("/");
+    const source = readFileSync(path, "utf8").replace(
+      /(\]\()([^\s)#]+)(\))/g,
+      (match, open, target, close) => /^[a-z][a-z\d+.-]*:|^\//i.test(target)
+        ? match : `${open}${posix.normalize(posix.join(base, target))}${close}`,
+    );
+    const Content = evaluateSync(source, runtime).default;
+    return <Content />;
+  }
+
+  return <>
+    <h2>Template tree</h2>
+    <pre><code className="language-text">{lines.join("\n")}</code></pre>
+    <h2>Template files</h2>
+    {paths.map(path => <section key={path}>
+      <h3>{relative(root, path).split("\\").join("/")}</h3>
+      {path.endsWith(".mdx") || path.endsWith(".md")
+        ? markdown(path)
+        : <pre><code>{readFileSync(path, "utf8")}</code></pre>}
+    </section>)}
+  </>;
+}
+
+# Helio GraphQL scripting
+
+1. Establish the user's intended operation and environment. This plugin supplies instructions only; it has no MCP server or credential store.
+2. Read the [complete generated API reference](../api-schema/SKILL.md) to understand available operations. Follow [schema discovery](references/schema-workflow.md) before choosing fields, arguments, enums or scalar mappings. Never infer API fields from template names.
+3. Choose a language from the generated template tree below and follow its included files. These are setup recipes to materialize in the user’s project, not scripts to execute in the installed plugin.
+4. Write named `.graphql` operations from the verified schema, validate them through codegen, and use generated types. Inspect generated names and import paths before writing callers. Preserve list/null wrappers and distinguish transport errors, GraphQL errors, missing data and nullable fields.
+5. Obtain credentials only through the host's secure secret mechanism. The documented API uses a user PAT in an Authorization Bearer header. Read it at runtime; never embed tokens in source, shell history, logs, generated artifacts or plugin files. Do not assume schema downloads require the same authentication.
+6. Generate and compile locally first. Execute API reads only within the user's requested scope. Obtain explicit consent before mutations that upload data, create jobs, consume credits or otherwise create work; code generation itself grants no such consent. Never invent IDs or results. Do not overwrite G-code artifacts.
+
+Templates intentionally contain no tests or test scaffolding. Adapt package versions to the target project, lock resolved dependencies, and smoke-check generation and compilation. Report whether actual authenticated API execution was performed.
+
+Sources: [Helio code generation](https://docs.helioadditive.com/en/developers/code-generation/) and [docs examples](https://github.com/Helio-Additive/docs/tree/main/examples/codegen).
+
+See [language selection rationale and upstream evidence](references/language-selection.md) for maintenance, generation-style and platform tradeoffs.
+
+<ScriptingSkill directory={new URL("./", import.meta.url)} />

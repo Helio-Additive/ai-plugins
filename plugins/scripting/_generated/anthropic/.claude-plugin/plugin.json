@@ -1,0 +1,8 @@
+{
+  "author": {
+    "name": "Helio-Additive"
+  },
+  "description": "Generate typed Helio GraphQL clients from a fresh schema.",
+  "name": "scripting",
+  "version": "0.1.0"
+}

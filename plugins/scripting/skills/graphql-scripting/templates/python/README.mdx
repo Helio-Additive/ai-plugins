@@ -1,0 +1,49 @@
+# Python template
+
+Use uv, Ariadne Codegen and httpx, following the [docs example](https://github.com/Helio-Additive/docs/tree/main/examples/codegen/python).
+
+```sh
+uv init
+uv add ariadne-codegen httpx
+mkdir -p queries
+```
+
+Place validated SDL at `schema.graphqls`, named operations in `queries/`, and append to `pyproject.toml`:
+
+```toml
+[tool.ariadne-codegen]
+schema_path = "schema.graphqls"
+queries_path = "queries"
+target_package_path = "."
+target_package_name = "graphql_client"
+async_client = true
+convert_to_snake_case = true
+```
+
+```sh
+uv run ariadne-codegen --config pyproject.toml
+uv run python -m compileall -q graphql_client
+uv run main.py
+```
+
+Create `main.py` importing `Client` from `graphql_client.client`. Instantiate it with the selected endpoint and a runtime PAT Bearer header, invoke the generated async method for the named operation within `asyncio.run`, and close the client using its generated context-manager API. Inspect the generated method signature, return model and client lifecycle before writing the caller. Avoid the docs example's inconsistent `client.client` import when the configured package is `graphql_client`. Configure custom scalar serializers/parsers only from verified contracts; inspect generated models for unchecked scalar fallbacks.
+
+For a first transport check, save `queries/Probe.graphql` containing `query Probe { __typename }`, generate, and use this `main.py`:
+
+```python
+import asyncio
+import os
+from graphql_client.client import Client
+
+async def main():
+    async with Client(
+        url=os.environ['HELIO_GRAPHQL_URL'],
+        headers={'Authorization': 'Bearer ' + os.environ['HELIO_PAT_TOKEN']},
+    ) as client:
+        result = await client.probe()
+        print(result)
+
+asyncio.run(main())
+```
+
+`__typename` is a standard GraphQL meta-field. This probes transport, not business API correctness. Inspect generated method names when changing the operation.

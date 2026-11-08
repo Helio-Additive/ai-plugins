@@ -12,6 +12,12 @@
       "category": "Productivity"
     },
     {
+      "name": "scripting",
+      "source": "./plugins/scripting/_generated/test",
+      "description": "Generate typed Helio GraphQL clients from a fresh schema.",
+      "category": "Productivity"
+    },
+    {
       "name": "helioadditive-slicing",
       "source": "./plugins/slicing/_generated/test",
       "description": "Create, monitor, and retrieve Helio Additive slicing jobs.",
