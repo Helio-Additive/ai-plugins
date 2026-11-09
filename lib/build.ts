@@ -32,8 +32,12 @@ export function readBuildOptions(env: Record<string, string | undefined>): Build
   return { testUrl: checkedTestBaseUrl(testUrl), testVendor: checkedTestVendor(env.MCP_TEST_VENDOR) };
 }
 
-function checkedTestVendor(value: string | undefined): string {
-  if (value !== "openai" && value !== "anthropic") throw new Error("MCP_TEST_VENDOR must be openai or anthropic.");
+type Vendor = "openai" | "anthropic" | "kimi";
+
+function checkedTestVendor(value: string | undefined): Vendor {
+  if (value !== "openai" && value !== "anthropic" && value !== "kimi") {
+    throw new Error("MCP_TEST_VENDOR must be openai, anthropic, or kimi.");
+  }
   return value;
 }
 
@@ -76,8 +80,8 @@ export async function loadPluginSpecs(directory = join(root, "plugins")) {
 
 export function providersFor(options: BuildOptions = {}) {
   return options.testUrl === undefined
-    ? ["openai", "anthropic"] as const
-    : ["openai", "anthropic", "test"] as const;
+    ? ["openai", "anthropic", "kimi"] as const
+    : ["openai", "anthropic", "kimi", "test"] as const;
 }
 
 async function files(directory: string): Promise<string[]> {
@@ -139,10 +143,29 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
       },
     },
   } satisfies AgentPluginsManifest;
+  // Kimi Code CLI reads only kimi.plugin.json (https://www.kimi.com/code/docs/en/kimi-code-cli/customization/plugins.html).
+  // Its mcpServers reuse Kimi's MCP schema, which has no OAuth client or scope fields:
+  // the CLI discovers OAuth metadata and registers a public client dynamically, so only
+  // the endpoint is projected. Presentation uses Kimi's own `interface` fields.
+  const kimiManifest = (url?: string) => json({
+    name: spec.name, version: spec.version, description: spec.description, author: manifest.author,
+    skills: "./skills/",
+    interface: {
+      displayName: spec.displayName, shortDescription: spec.shortDescription,
+      longDescription: spec.longDescription, developerName: manifest.author.name,
+    },
+    ...(url === undefined ? {} : { mcpServers: { [spec.name]: { url } } }),
+  });
   const packages = new Map<string, Outputs>();
   for (const provider of providersFor(options)) {
     const outputs = new Map(shared);
+    const kimi = provider === "kimi" || (provider === "test" && options.testVendor === "kimi");
     if (!spec.mcp) {
+      if (kimi) {
+        outputs.set("kimi.plugin.json", kimiManifest());
+        packages.set(provider, outputs);
+        continue;
+      }
       outputs.set("plugin.json", json(manifest));
       if (provider === "anthropic" || (provider === "test" && options.testVendor === "anthropic")) {
         outputs.set(".claude-plugin/plugin.json", json({ name: manifest.name, version: manifest.version, description: manifest.description, author: manifest.author }));
@@ -153,13 +176,20 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
       packages.set(provider, outputs);
       continue;
     }
-    const connection = spec.mcp[provider === "test" ? checkedTestVendor(options.testVendor) as "openai" | "anthropic" : provider];
+    const vendor = provider === "test" ? checkedTestVendor(options.testVendor) : provider;
+    const endpoint = (declared: string) => provider === "test" && options.testUrl !== undefined
+      ? checkedTestBaseUrl(options.testUrl) + "/" + vendor + spec.testPath : declared;
+    if (vendor === "kimi") {
+      outputs.set("kimi.plugin.json", kimiManifest(endpoint(spec.mcp.kimi.url)));
+      packages.set(provider, outputs);
+      continue;
+    }
+    const connection = spec.mcp[vendor];
     // OpenAI documents server-level auth extensions omitted by the published MCP
     // schema. Reuse the generated plugin's namespace shape; do not patch the schema.
     const server = {
       type: "streamable-http",
-      url: provider === "test" && options.testUrl !== undefined
-        ? checkedTestBaseUrl(options.testUrl) + "/" + checkedTestVendor(options.testVendor) + spec.testPath : connection.url,
+      url: endpoint(connection.url),
       extensions: {
         "com.openai": {
           auth: {

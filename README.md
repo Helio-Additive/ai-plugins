@@ -217,6 +217,8 @@ to update. Each spec declares:
   OpenAI's presentation extension.
 - `mcp.openai` and `mcp.anthropic`, each containing an HTTPS `url`, public OAuth
   `clientId`, and optional `scopes`. Omitted scopes preserve provider defaults.
+- `mcp.kimi`, containing only an HTTPS `url`. Kimi plugin manifests have no OAuth
+  client or scope fields (see [Kimi Code CLI](#kimi-code-cli)), and the schema rejects them.
 - `testPath`, the predefined provider-neutral test route for this plugin (a single
   path segment such as `/slicing` or `/dragon`).
 
@@ -232,7 +234,8 @@ is under `plugin.json`'s `extensions.com.openai.interface`; skills are discovere
 from `skills/` without a manifest path override. MCP uses `streamable-http` with
 OAuth under each server's `extensions.com.openai.auth`, following OpenAI's docs.
 The Anthropic bundle retains `.claude-plugin/plugin.json` for its native installer,
-with native files projected from the shared definitions.
+with native files projected from the shared definitions. The Kimi bundle has no root
+`plugin.json`; its only manifest is `kimi.plugin.json` (see below).
 
 The published MCP schema currently omits server-level `extensions` even though
 OpenAI documents that authentication layout. The builder uses the generated MCP
@@ -242,10 +245,11 @@ See `schemas/README.md` for source URLs and this upstream discrepancy.
 
 The generator builds JSON from TypeScript, converts MDX to Markdown while retaining skill
 frontmatter, and copies assets into each provider bundle. Normal builds generate
-only `openai` and `anthropic`, using the endpoints and OAuth settings in each spec.
+only `openai`, `anthropic` and `kimi`, using the endpoints and OAuth settings in each spec.
 **Both plugins currently target nightly services at `https://mcp3.helioadditive.com`**
 for testing. Their provider-specific route paths and registered clients/scopes are
-preserved: `/openai/<plugin>` for OpenAI and `/anthropic/<plugin>` for Anthropic.
+preserved: `/openai/<plugin>` for OpenAI, `/anthropic/<plugin>` for Anthropic, and
+`/kimi/<plugin>` for Kimi.
 The matching gateway routes and OAuth resource registrations must be deployed
 before testing the new Anthropic paths. Before official publication, update the spec URLs to the production
 services, regenerate, and verify live authentication and tool workflows. These
@@ -263,10 +267,11 @@ GENERATE_TEST=true MCP_TEST_URL=https://mcp3.helioadditive.com MCP_TEST_VENDOR=o
 This adds a vendor-specific `_generated/test/` bundle for each plugin.
 The generator appends each plugin's predefined `testPath` from its spec:
 Slicing uses `https://mcp3.helioadditive.com/openai/slicing` and Dragon uses
-`https://mcp3.helioadditive.com/openai/dragon`. Set `MCP_TEST_VENDOR` to `openai` or `anthropic` to select both the route prefix and package format.
+`https://mcp3.helioadditive.com/openai/dragon`. Set `MCP_TEST_VENDOR` to `openai`, `anthropic` or `kimi` to select both the route prefix and package format.
 Anthropic test output includes `.claude-plugin/plugin.json` and `.mcp.json` with
 its registered Claude client/scopes; OpenAI test output uses `.codex-plugin/plugin.json`
-and its existing loopback callback configuration. Production output is unchanged. These routes are plugin-specific source data, not a mapping
+and its existing loopback callback configuration; Kimi test output is the production
+`kimi.plugin.json` layout with the test endpoint (`/kimi/<testPath>`). Production output is unchanged. These routes are plugin-specific source data, not a mapping
 hardcoded in the shared generator.
 
 `MCP_TEST_URL` is a **base URL**, not an exact endpoint. HTTP and HTTPS are supported,
@@ -315,6 +320,53 @@ With issuer-response support true, the explicit legacy callback preserves exact
 `/callback` with a dynamic port. Missing/false issuer support retains a suffix.
 The check requires the installed host and permission to bind a loopback listener;
 a missing host exits 77. It never completes authorization or issues tokens/grants.
+
+### Kimi Code CLI
+
+The `kimi` vendor targets [Kimi Code CLI](https://www.kimi.com/code/docs/en/kimi-code-cli/customization/plugins.html)
+(Moonshot AI). Each `_generated/kimi/` bundle contains `kimi.plugin.json`, `skills/`
+(the same `SKILL.md` files every vendor receives) and `assets/`. The manifest
+carries `name`, `version`, `description`, `author`, `skills: "./skills/"`, Kimi's
+`interface` (`displayName`, `shortDescription`, `longDescription`, `developerName`)
+and, for plugins with MCP, `mcpServers.<name>.url`.
+
+How Kimi differs from the other vendors:
+
+- **No OAuth registration in the manifest.** Kimi plugin `mcpServers` reuse Kimi's
+  MCP schema, whose documented HTTP fields are `url`, `headers` and `bearerTokenEnvVar`.
+  There is no `clientId`, `scopes` or callback field, so none are emitted and the spec
+  does not accept them. Kimi's own OAuth client (`mcpCore/oauth/provider.ts` in
+  [MoonshotAI/kimi-code](https://github.com/MoonshotAI/kimi-code)) runs the MCP SDK
+  flow when the user runs `/mcp-config login <server>`: protected-resource and
+  authorization-server discovery, **dynamic client registration** as a public client
+  (`token_endpoint_auth_method: none`, `client_name` `Kimi ...`), and a loopback redirect
+  `http://127.0.0.1:<port>/callback`.
+- **No default prompts or icons.** Kimi's manifest has no field for suggested prompts or
+  logos, so `defaultPrompts` and the branding images are not referenced (assets are still
+  copied for parity).
+- **No test marketplace or install helper.** Kimi plugins are managed inside the CLI. A
+  `just install kimi` host is not provided because there is no scriptable `kimi plugin`
+  command that was verified. Install a built bundle from the TUI instead:
+
+  ```sh
+  GENERATE_TEST=true MCP_TEST_URL=https://mcp3.helioadditive.com MCP_TEST_VENDOR=kimi just make
+  # In Kimi Code CLI:
+  /plugins install /absolute/path/to/ai-plugins/plugins/slicing/_generated/test
+  /reload
+  /mcp-config login helioadditive-slicing
+  ```
+
+  Local installs are copied to `$KIMI_CODE_HOME/plugins/managed/<id>/`, so reinstall after
+  rebuilding. Plugin skills are invoked as `/skill:<plugin>:<skill>`. A Kimi custom
+  marketplace (`version: "2"`, `plugins[].id`/`source`) is supported by the CLI but is
+  not generated here, so no repository catalog is committed for Kimi.
+
+**Backend gap.** As of this change `https://mcp3.helioadditive.com/kimi/slicing`
+returns `404 route not found` (the `/anthropic/` route returns `401` with
+protected-resource metadata). The `/kimi/<plugin>` gateway routes must be deployed with
+OAuth discovery and RFC 7591 dynamic client registration permitting Kimi's loopback
+redirect before the bundle works. Package validation does not establish live
+authentication, and the Kimi CLI itself was not run to load these bundles.
 
 ### Read-only smoke test and troubleshooting
 

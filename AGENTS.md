@@ -13,7 +13,9 @@ in each plugin's sources, not in the generator.
 - `lib/build.ts`: shared generation. Use schema-generated document types from
   `lib/_generated/`; do not add handwritten document interfaces.
 - Keep OpenAI metadata/auth in their documented `extensions.com.openai` locations
-  and retain native Anthropic compatibility files. See `schemas/README.md` for
+  and retain native Anthropic compatibility files. The `kimi` vendor emits only
+  Kimi's native `kimi.plugin.json`; Kimi manifests have no OAuth client/scope fields,
+  so `mcp.kimi` is URL-only. Do not add `clientId`/`scopes` for Kimi. See `schemas/README.md` for
   schema provenance and the upstream MCP authentication-schema discrepancy.
 
 ## Generated output
@@ -22,7 +24,7 @@ in each plugin's sources, not in the generator.
   commit regenerated types and production bundles with source changes.
 - `GENERATE_TEST=true MCP_TEST_URL=<base URL> MCP_TEST_VENDOR=<openai|anthropic> just make` also builds Git-ignored
   test bundles, appending each spec's predefined `testPath` (`/slicing` or `/dragon`)
-  with the selected vendor prefix. Never commit test bundles or redirect production to the test URL.
+  with the selected vendor prefix (`openai`, `anthropic`, or `kimi`). Never commit test bundles or redirect production to the test URL.
   Normal builds remove test output.
 - Keep one root `.agents/plugins/marketplace.json`, listing each plugin's
   `./plugins/<plugin>/_generated/test` bundle.

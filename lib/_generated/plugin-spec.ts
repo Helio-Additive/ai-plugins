@@ -30,6 +30,7 @@ export interface PluginSpec {
   mcp?: {
     openai: MCPConnection;
     anthropic: MCPConnection;
+    kimi: MCPURLOnlyConnection;
   };
 }
 /**
@@ -50,4 +51,13 @@ export interface MCPConnection {
    * @minItems 1
    */
   scopes?: [string, ...string[]];
+}
+/**
+ * Provider MCP endpoint for hosts whose plugin manifests cannot carry an OAuth client registration or scopes (Kimi Code CLI registers a public client dynamically and runs OAuth itself). Secrets must never be stored in a plugin spec.
+ */
+export interface MCPURLOnlyConnection {
+  /**
+   * Absolute HTTPS provider endpoint, without credentials or a fragment.
+   */
+  url: string;
 }
