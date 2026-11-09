@@ -32,14 +32,21 @@ export function readBuildOptions(env: Record<string, string | undefined>): Build
   return { testUrl: checkedTestBaseUrl(testUrl), testVendor: checkedTestVendor(env.MCP_TEST_VENDOR) };
 }
 
-type Vendor = "openai" | "anthropic" | "kimi";
+const kimiVendors = ["kimi-global", "kimi-china"] as const;
+type KimiVendor = (typeof kimiVendors)[number];
+type Vendor = "openai" | "anthropic" | KimiVendor;
+
+const isKimiVendor = (value: unknown): value is KimiVendor => kimiVendors.includes(value as KimiVendor);
 
 function checkedTestVendor(value: string | undefined): Vendor {
-  if (value !== "openai" && value !== "anthropic" && value !== "kimi") {
-    throw new Error("MCP_TEST_VENDOR must be openai, anthropic, or kimi.");
+  if (value !== "openai" && value !== "anthropic" && !isKimiVendor(value)) {
+    throw new Error("MCP_TEST_VENDOR must be openai, anthropic, kimi-global, or kimi-china.");
   }
   return value;
 }
+
+/** Gateway route prefix for a vendor. Both Kimi regions share `/kimi/<plugin>` on their own domains. */
+const routePrefix = (vendor: Vendor) => isKimiVendor(vendor) ? "kimi" : vendor;
 
 function checkedTestBaseUrl(value: string): string {
   const url = new URL(checkedUrl(value, "MCP_TEST_URL", true));
@@ -80,8 +87,8 @@ export async function loadPluginSpecs(directory = join(root, "plugins")) {
 
 export function providersFor(options: BuildOptions = {}) {
   return options.testUrl === undefined
-    ? ["openai", "anthropic", "kimi"] as const
-    : ["openai", "anthropic", "kimi", "test"] as const;
+    ? ["openai", "anthropic", "kimi-global", "kimi-china"] as const
+    : ["openai", "anthropic", "kimi-global", "kimi-china", "test"] as const;
 }
 
 async function files(directory: string): Promise<string[]> {
@@ -159,7 +166,7 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
   const packages = new Map<string, Outputs>();
   for (const provider of providersFor(options)) {
     const outputs = new Map(shared);
-    const kimi = provider === "kimi" || (provider === "test" && options.testVendor === "kimi");
+    const kimi = isKimiVendor(provider) || (provider === "test" && isKimiVendor(options.testVendor));
     if (!spec.mcp) {
       if (kimi) {
         outputs.set("kimi.plugin.json", kimiManifest());
@@ -178,9 +185,9 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
     }
     const vendor = provider === "test" ? checkedTestVendor(options.testVendor) : provider;
     const endpoint = (declared: string) => provider === "test" && options.testUrl !== undefined
-      ? checkedTestBaseUrl(options.testUrl) + "/" + vendor + spec.testPath : declared;
-    if (vendor === "kimi") {
-      outputs.set("kimi.plugin.json", kimiManifest(endpoint(spec.mcp.kimi.url)));
+      ? checkedTestBaseUrl(options.testUrl) + "/" + routePrefix(vendor) + spec.testPath : declared;
+    if (isKimiVendor(vendor)) {
+      outputs.set("kimi.plugin.json", kimiManifest(endpoint(spec.mcp[vendor].url)));
       packages.set(provider, outputs);
       continue;
     }

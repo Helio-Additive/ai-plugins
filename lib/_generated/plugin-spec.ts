@@ -30,7 +30,8 @@ export interface PluginSpec {
   mcp?: {
     openai: MCPConnection;
     anthropic: MCPConnection;
-    kimi: MCPURLOnlyConnection;
+    "kimi-global": MCPURLOnlyConnection;
+    "kimi-china": MCPURLOnlyConnection;
   };
 }
 /**

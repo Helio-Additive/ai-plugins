@@ -1,0 +1,20 @@
+{
+  "author": {
+    "name": "Helio-Additive"
+  },
+  "description": "Create, monitor, and retrieve Helio Additive slicing jobs.",
+  "interface": {
+    "developerName": "Helio-Additive",
+    "displayName": "Helio Slicing",
+    "longDescription": "Connect to Helio Additive to create slicing jobs, check their progress, and retrieve completed outputs.",
+    "shortDescription": "Create and track 3D-print slicing jobs."
+  },
+  "mcpServers": {
+    "helioadditive-slicing": {
+      "url": "https://mcp2.helioam.cn/kimi/slicing"
+    }
+  },
+  "name": "helioadditive-slicing",
+  "skills": "./skills/",
+  "version": "0.1.0"
+}

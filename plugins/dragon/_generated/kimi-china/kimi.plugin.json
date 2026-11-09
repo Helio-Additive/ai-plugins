@@ -1,0 +1,20 @@
+{
+  "author": {
+    "name": "Helio-Additive"
+  },
+  "description": "Prepare, run, monitor, and retrieve Helio Dragon thermal workflows.",
+  "interface": {
+    "developerName": "Helio-Additive",
+    "displayName": "Helio Dragon",
+    "longDescription": "Connect to Helio Additive to prepare, run, monitor, and retrieve standard Dragon thermal assessments and G-code enhancements.",
+    "shortDescription": "Assess and enhance G-code safely."
+  },
+  "mcpServers": {
+    "helioadditive-dragon": {
+      "url": "https://mcp2.helioam.cn/kimi/dragon"
+    }
+  },
+  "name": "helioadditive-dragon",
+  "skills": "./skills/",
+  "version": "0.1.0"
+}

@@ -4,7 +4,7 @@
 
 `plugin-spec.schema.json` is this project's schema for `plugins/<plugin>/spec.yaml`.
 It defines per-plugin identity, presentation text, suggested prompts, and
-provider-specific endpoints/public OAuth registrations (Kimi is URL-only: its
+provider-specific endpoints/public OAuth registrations (the `kimi-global` and `kimi-china` targets are URL-only: Kimi's
 plugin manifest has no OAuth client or scope fields). It is a source
 configuration schema, not a replacement for the published output schemas below.
 
@@ -36,7 +36,7 @@ Do not edit generated type files by hand.
 
 The builders use only the generated document types and emit root `plugin.json`.
 OpenAI/test bundles use portable `mcp.json`; Anthropic bundles emit only native
-`.mcp.json` for their MCP configuration. Kimi bundles emit only `kimi.plugin.json`
+`.mcp.json` for their MCP configuration. `kimi-global` and `kimi-china` bundles emit only `kimi.plugin.json`
 (documented at https://www.kimi.com/code/docs/en/kimi-code-cli/customization/plugins.html),
 with no `$schema`, since Kimi publishes none. OpenAI presentation metadata lives under
 `extensions.com.openai.interface`, not a separate top-level interface contract.
