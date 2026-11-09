@@ -9,12 +9,12 @@ const plugins = await loadPluginSpecs();
 describe("test bundle build options", () => {
   test("test bundles opt in with a base URL", () => {
     const options = readBuildOptions({ GENERATE_TEST: "true", MCP_TEST_VENDOR: "openai", MCP_TEST_URL: "https://mcp3.helioadditive.com" });
-    expect(providersFor(options)).toEqual(["openai", "anthropic", "test"]);
+    expect(providersFor(options)).toEqual(["openai", "anthropic", "kimi", "test"]);
   });
 
   test("normal builds ignore even invalid test base URLs", () => {
     expect(readBuildOptions({ MCP_TEST_URL: "invalid" })).toEqual({});
-    expect(providersFor()).toEqual(["openai", "anthropic"]);
+    expect(providersFor()).toEqual(["openai", "anthropic", "kimi"]);
   });
 
   test("requires a base URL when test generation is enabled", () => {
@@ -128,7 +128,7 @@ for (const { spec, source } of plugins) {
 
 }
 
-test.each([undefined, "", "OpenAI", "other", "../openai"])("rejects invalid vendor %s", (vendor) => {
+test.each([undefined, "", "OpenAI", "Kimi", "kimi-code", "other", "../openai"])("rejects invalid vendor %s", (vendor) => {
   expect(() => readBuildOptions({ GENERATE_TEST: "true", MCP_TEST_URL: "https://example.com", MCP_TEST_VENDOR: vendor })).toThrow("MCP_TEST_VENDOR");
 });
 
@@ -143,7 +143,7 @@ test("both local marketplaces reference test bundles", async () => {
   }
 });
 
-for (const vendor of ["openai", "anthropic"]) {
+for (const vendor of ["openai", "anthropic", "kimi"]) {
   test(`skills-only bundles omit every MCP/auth entrypoint (${vendor})`, async () => {
     const { spec, source } = plugins.find(p => p.spec.name === "scripting")!;
     const bundles = await renderPlugin(spec, source, { testUrl: "https://example.com", testVendor: vendor });
@@ -156,5 +156,101 @@ for (const vendor of ["openai", "anthropic"]) {
         if (path.endsWith("plugin.json")) expect(String(content)).not.toMatch(/mcpServers|oauth|clientId/);
       }
     }
+    const kimi = JSON.parse(bundles.get("kimi")!.get("kimi.plugin.json") as string);
+    expect(kimi).toMatchObject({ name: spec.name, skills: "./skills/" });
+    expect(kimi.mcpServers).toBeUndefined();
+    expect(bundles.get("kimi")!.has("plugin.json")).toBe(false);
   });
 }
+
+describe("kimi vendor", () => {
+  const withMcp = plugins.filter(({ spec }) => spec.mcp);
+  const base = "https://mcp3.helioadditive.com";
+
+  test.each(withMcp.map(({ spec, source }) => [spec.name, spec, source] as const))(
+    "%s: emits only the native Kimi manifest, with the endpoint and no OAuth client data", async (_name, spec, source) => {
+      const outputs = (await renderPlugin(spec, source)).get("kimi")!;
+      const kimiUrl = spec.mcp!.kimi.url;
+      expect(new URL(kimiUrl).pathname).toBe("/kimi" + spec.testPath);
+      const manifest = JSON.parse(outputs.get("kimi.plugin.json") as string);
+      expect(manifest).toEqual({
+        name: spec.name, version: spec.version, description: spec.description,
+        author: { name: "Helio-Additive" }, skills: "./skills/",
+        interface: {
+          displayName: spec.displayName, shortDescription: spec.shortDescription,
+          longDescription: spec.longDescription, developerName: "Helio-Additive",
+        },
+        mcpServers: { [spec.name]: { url: kimiUrl } },
+      });
+      // Kimi plugin MCP entries document only transport fields, so nothing OAuth-shaped is emitted.
+      expect(outputs.get("kimi.plugin.json") as string).not.toMatch(/oauth|clientId|scopes|extensions|\$schema/i);
+      for (const absent of ["plugin.json", "mcp.json", ".mcp.json", ".claude-plugin/plugin.json", ".codex-plugin/plugin.json"]) {
+        expect(outputs.has(absent)).toBe(false);
+      }
+      // Skills and assets are the same shared outputs every vendor receives.
+      const anthropic = (await renderPlugin(spec, source)).get("anthropic")!;
+      for (const [path, contents] of anthropic) {
+        if (path.startsWith("skills/") || path.startsWith("assets/")) expect(outputs.get(path)).toEqual(contents);
+      }
+      expect([...outputs.keys()].some(path => path.startsWith("skills/") && path.endsWith("/SKILL.md"))).toBe(true);
+    },
+  );
+
+  test.each(withMcp.map(({ spec, source }) => [spec.name, spec, source] as const))(
+    "%s: test bundle uses the Kimi layout and /kimi route without changing production bundles", async (_name, spec, source) => {
+      const normal = await renderPlugin(spec, source);
+      for (const baseUrl of [base, base + "/", "http://localhost:8080"]) {
+        const bundles = await renderPlugin(spec, source, readBuildOptions({ GENERATE_TEST: "true", MCP_TEST_VENDOR: "kimi", MCP_TEST_URL: baseUrl }));
+        const test = new Map(bundles.get("test")!);
+        const manifest = JSON.parse(test.get("kimi.plugin.json") as string);
+        expect(manifest.mcpServers[spec.name].url).toBe(new URL(baseUrl).origin + "/kimi" + spec.testPath);
+        manifest.mcpServers[spec.name].url = spec.mcp!.kimi.url;
+        test.set("kimi.plugin.json", JSON.stringify(manifest, null, 2) + "\n");
+        expect(test).toEqual(bundles.get("kimi")!);
+        for (const vendor of ["openai", "anthropic", "kimi"]) expect(bundles.get(vendor)).toEqual(normal.get(vendor));
+      }
+    },
+  );
+
+  test("writes _generated/kimi and removes the test bundle on a normal build", async () => {
+    const { spec } = withMcp[0]!;
+    const directory = await mkdtemp(join(tmpdir(), "ai-plugins-kimi-test-"));
+    try {
+      await mkdir(join(directory, "skills"));
+      await buildPlugin(spec, directory, readBuildOptions({ GENERATE_TEST: "true", MCP_TEST_VENDOR: "kimi", MCP_TEST_URL: base }));
+      const testManifest = JSON.parse(await readFile(join(directory, "_generated/test/kimi.plugin.json"), "utf8"));
+      expect(testManifest.mcpServers[spec.name].url).toBe(`${base}/kimi/${spec.name.replace("helioadditive-", "")}`);
+      await buildPlugin(spec, directory);
+      expect(await access(join(directory, "_generated/test")).then(() => true, () => false)).toBe(false);
+      const manifest = JSON.parse(await readFile(join(directory, "_generated/kimi/kimi.plugin.json"), "utf8"));
+      expect(manifest.mcpServers[spec.name].url).toBe(spec.mcp!.kimi.url);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  test("specs require a URL-only kimi connection", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "ai-plugins-kimi-spec-"));
+    try {
+      const source = join(directory, "example");
+      await mkdir(source);
+      const { spec } = withMcp[0]!;
+      const url = spec.mcp!.kimi.url;
+      const cases: Record<string, unknown> = {
+        "missing kimi": { openai: spec.mcp!.openai, anthropic: spec.mcp!.anthropic },
+        "clientId (Kimi manifests cannot carry one)": { ...spec.mcp, kimi: { url, clientId: "kimi-plugin" } },
+        "scopes": { ...spec.mcp, kimi: { url, scopes: ["slicing"] } },
+        "non-HTTPS URL": { ...spec.mcp, kimi: { url: "http://mcp3.helioadditive.com/kimi/slicing" } },
+        "credentials in URL": { ...spec.mcp, kimi: { url: "https://user:secret@mcp3.helioadditive.com/kimi/slicing" } },
+      };
+      for (const mcp of Object.values(cases)) {
+        await writeFile(join(source, "spec.yaml"), JSON.stringify({ ...spec, mcp }));
+        await expect(loadPluginSpecs(directory)).rejects.toThrow();
+      }
+      await writeFile(join(source, "spec.yaml"), JSON.stringify({ ...spec, mcp: { ...spec.mcp, kimi: { url } } }));
+      await expect(loadPluginSpecs(directory)).resolves.toHaveLength(1);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+});

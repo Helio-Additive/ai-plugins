@@ -60,7 +60,8 @@
       "additionalProperties": false,
       "required": [
         "openai",
-        "anthropic"
+        "anthropic",
+        "kimi"
       ],
       "properties": {
         "openai": {
@@ -68,11 +69,31 @@
         },
         "anthropic": {
           "$ref": "#/definitions/connection"
+        },
+        "kimi": {
+          "$ref": "#/definitions/urlConnection"
         }
       }
     }
   },
   "definitions": {
+    "urlConnection": {
+      "title": "MCP URL-only connection",
+      "description": "Provider MCP endpoint for hosts whose plugin manifests cannot carry an OAuth client registration or scopes (Kimi Code CLI registers a public client dynamically and runs OAuth itself). Secrets must never be stored in a plugin spec.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "url"
+      ],
+      "properties": {
+        "url": {
+          "description": "Absolute HTTPS provider endpoint, without credentials or a fragment.",
+          "type": "string",
+          "pattern": "^https://",
+          "minLength": 1
+        }
+      }
+    },
     "connection": {
       "title": "MCP connection",
       "description": "Provider MCP endpoint and public OAuth registration. Secrets must never be stored in a plugin spec.",
