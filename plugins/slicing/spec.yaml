@@ -23,5 +23,7 @@ mcp:
     clientId: claude-plugin
     scopes:
       - slicing
-  kimi:
+  kimi-global:
     url: https://mcp3.helioadditive.com/kimi/slicing
+  kimi-china:
+    url: https://mcp2.helioam.cn/kimi/slicing

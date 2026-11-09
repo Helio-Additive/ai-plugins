@@ -23,5 +23,7 @@ mcp:
     clientId: claude-plugin
     scopes:
       - dragon
-  kimi:
+  kimi-global:
     url: https://mcp3.helioadditive.com/kimi/dragon
+  kimi-china:
+    url: https://mcp2.helioam.cn/kimi/dragon

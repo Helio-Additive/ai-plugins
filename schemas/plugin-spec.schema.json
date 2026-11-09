@@ -61,7 +61,8 @@
       "required": [
         "openai",
         "anthropic",
-        "kimi"
+        "kimi-global",
+        "kimi-china"
       ],
       "properties": {
         "openai": {
@@ -70,7 +71,10 @@
         "anthropic": {
           "$ref": "#/definitions/connection"
         },
-        "kimi": {
+        "kimi-global": {
+          "$ref": "#/definitions/urlConnection"
+        },
+        "kimi-china": {
           "$ref": "#/definitions/urlConnection"
         }
       }
