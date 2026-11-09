@@ -255,8 +255,9 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
 export async function buildPlugin(spec: PluginSpec, source: string, options: BuildOptions = {}): Promise<void> {
   // Render everything first, preserving previous installations on compilation errors.
   const packages = await renderPlugin(spec, source, options);
-  await mkdir(join(root, ".cache"), { recursive: true });
-  const staging = await mkdtemp(join(root, ".cache/generated-"));
+  const destination = join(source, "_generated");
+  // Stage beside the destination so the final rename is always on the same filesystem.
+  const staging = await mkdtemp(join(dirname(destination), ".generated-"));
   try {
     for (const [bundle, outputs] of packages) {
       for (const [path, contents] of outputs) {
@@ -265,7 +266,6 @@ export async function buildPlugin(spec: PluginSpec, source: string, options: Bui
         await writeFile(destination, contents);
       }
     }
-    const destination = join(source, "_generated");
     // Everything below _generated is owned by this generator, including stale bundles.
     await rm(destination, { recursive: true, force: true });
     await rename(staging, destination);
