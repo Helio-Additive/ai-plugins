@@ -28,8 +28,13 @@ in each plugin's sources, not in the generator.
   test bundles, appending each spec's predefined `testPath` (`/slicing` or `/dragon`)
   with the selected vendor prefix (`openai`, `anthropic`, `kimi-global`, or `kimi-china`; both Kimi ids use the `/kimi` route prefix). Never commit test bundles or redirect production to the test URL.
   Normal builds remove test output.
-- Keep one root `.agents/plugins/marketplace.json`, listing each plugin's
-  `./plugins/<plugin>/_generated/test` bundle.
+- Keep the root `.agents/plugins/marketplace.json` Git-installable, listing each
+  committed `./plugins/<plugin>/_generated/codex` bundle. Native Codex packages
+  use the declared OpenAI endpoint/OAuth settings and are independent of test flags.
+- Preserve local/test installation through the ignored `.cache/codex-local-marketplace`.
+  OpenAI test builds copy the test packages into this self-contained catalog;
+  normal/other-vendor builds remove it. Never commit this catalog or its packages.
+  `just install codex` uses this catalog; `just install claude` keeps its existing root catalog.
 - Root `.claude-plugin/marketplace.json` is generated from specs and lists
   `./plugins/<plugin>/_generated/test` bundles (generate with `MCP_TEST_VENDOR=anthropic` for Claude) for native Claude installation.
   Do not hand-edit it; commit it alongside regenerated production output.

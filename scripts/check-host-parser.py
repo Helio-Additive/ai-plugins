@@ -5,11 +5,12 @@ binary = Path(os.environ.get('HELIO_HOST_BINARY', '/Applications/ChatGPT.app/Con
 if not binary.is_file():
     print('UNAVAILABLE: desktop host binary absent; compatibility NOT verified'); raise SystemExit(77)
 repo = Path(__file__).resolve().parents[1]
+modes = {'portable': 'openai', 'compatible': 'test', 'codex': 'codex'}
 with tempfile.TemporaryDirectory(prefix='helio-host-') as tmp:
     root = Path(tmp); home = root/'home'; home.mkdir(); (home/'codex').mkdir()
-    for mode in ['portable', 'compatible']:
+    for mode, bundle in modes.items():
         d = root/mode
-        shutil.copytree(repo/'plugins/slicing/_generated'/('openai' if mode == 'portable' else 'test'), d)
+        shutil.copytree(repo/'plugins/slicing/_generated'/bundle, d)
         market = d/'.agents/plugins'; market.mkdir(parents=True)
         (market/'marketplace.json').write_text(json.dumps({'name': 'fixture-'+mode, 'plugins': [{'name':'helioadditive-slicing','source':{'source':'local','path':'./'}}]}))
     env = dict(os.environ, HOME=str(home), CODEX_HOME=str(home/'codex'))
@@ -31,11 +32,11 @@ with tempfile.TemporaryDirectory(prefix='helio-host-') as tmp:
         try:
             request(1,'initialize',{'clientInfo':{'name':'helio-fixture','version':'1'},'capabilities':{'experimentalApi':True}})
             p.stdin.write('{"method":"initialized"}\n'); p.stdin.flush()
-            request(2,'plugin/list',{'cwds':[str(root/m) for m in ['portable','compatible']], 'marketplaceKinds':['local'],'forceRefetch':False})
-            for i, mode in enumerate(['portable','compatible'],3):
+            request(2,'plugin/list',{'cwds':[str(root/m) for m in modes], 'marketplaceKinds':['local'],'forceRefetch':False})
+            for i, mode in enumerate(modes,3):
                 plugin=request(i,'plugin/read',{'marketplacePath':str(root/mode/'.agents/plugins/marketplace.json'),'pluginName':'helioadditive-slicing'})['plugin']
                 servers=plugin.get('mcpServers',{})
                 print(mode, 'MCP servers:', sorted(servers), 'skills:', len(plugin.get('skills',[])))
-                if mode=='compatible': assert 'helioadditive-slicing' in servers, 'MCP discovery failed'
+                if mode in ('compatible', 'codex'): assert 'helioadditive-slicing' in servers, 'MCP discovery failed'
         finally:
             p.terminate(); p.wait(timeout=5)

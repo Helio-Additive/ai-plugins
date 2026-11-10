@@ -88,8 +88,8 @@ export async function loadPluginSpecs(directory = join(root, "plugins")) {
 
 export function providersFor(options: BuildOptions = {}) {
   return options.testUrl === undefined
-    ? ["openai", "anthropic", "kimi-global", "kimi-china"] as const
-    : ["openai", "anthropic", "kimi-global", "kimi-china", "test"] as const;
+    ? ["openai", "anthropic", "kimi-global", "kimi-china", "codex"] as const
+    : ["openai", "anthropic", "kimi-global", "kimi-china", "codex", "test"] as const;
 }
 
 async function files(directory: string): Promise<string[]> {
@@ -169,6 +169,7 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
   const packages = new Map<string, Outputs>();
   for (const provider of providersFor(options)) {
     const outputs = new Map(shared);
+    const codex = provider === "codex" || (provider === "test" && options.testVendor === "openai");
     const kimi = isKimiVendor(provider) || (provider === "test" && isKimiVendor(options.testVendor));
     if (!spec.mcp) {
       if (kimi) {
@@ -179,14 +180,15 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
       outputs.set("plugin.json", json(manifest));
       if (provider === "anthropic" || (provider === "test" && options.testVendor === "anthropic")) {
         outputs.set(".claude-plugin/plugin.json", json({ name: manifest.name, version: manifest.version, description: manifest.description, author: manifest.author, ...(spec.homepage === undefined ? {} : { homepage: spec.homepage }) }));
-      } else if (provider === "test") {
+      } else if (codex) {
         outputs.delete("plugin.json");
         outputs.set(".codex-plugin/plugin.json", json({ name: manifest.name, version: manifest.version, description: manifest.description, interface: manifest.extensions["com.openai"].interface, skills: "./skills/" }));
       }
       packages.set(provider, outputs);
       continue;
     }
-    const vendor = provider === "test" ? checkedTestVendor(options.testVendor) : provider;
+    const vendor = provider === "test" ? checkedTestVendor(options.testVendor)
+      : provider === "codex" ? "openai" : provider;
     const endpoint = (declared: string) => provider === "test" && options.testUrl !== undefined
       ? checkedTestBaseUrl(options.testUrl) + "/" + routePrefix(vendor) + spec.testPath : declared;
     if (isKimiVendor(vendor)) {
@@ -235,7 +237,7 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
           },
         },
       }));
-    } else if (provider === "test" && options.testVendor === "openai") {
+    } else if (codex) {
       // The desktop legacy loader ignores MCP servers when root plugin.json exists.
       outputs.delete("plugin.json");
       outputs.set(".codex-plugin/plugin.json", json({

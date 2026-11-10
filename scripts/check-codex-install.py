@@ -28,6 +28,12 @@ def fixture(path, market=MARKET, names=NAMES):
         {"name": name, "source": {"source": "local", "path": "./" + name}}
         for name in names
     ]}))
+    test_catalog = path / ".cache/codex-local-marketplace/.agents/plugins/marketplace.json"
+    test_catalog.parent.mkdir(parents=True)
+    test_catalog.write_text(json.dumps({"name": market, "plugins": [
+        {"name": name, "source": {"source": "local", "path": "./plugins/" + name}}
+        for name in names
+    ]}))
     for name in names:
         plugin = path / name
         (plugin / ".codex-plugin").mkdir(parents=True)
@@ -37,6 +43,8 @@ def fixture(path, market=MARKET, names=NAMES):
         (plugin / "skills/fixture").mkdir(parents=True)
         (plugin / "skills/fixture/SKILL.md").write_text(
             "---\nname: fixture\ndescription: Inert installer fixture\n---\nOriginal content.\n")
+    for name in names:
+        shutil.copytree(path / name, path / ".cache/codex-local-marketplace/plugins" / name)
     (path / "scripts").mkdir()
     shutil.copyfile(REPO / "scripts/install.ts", path / "scripts/install.ts")
     (path / "justfile").write_text(
@@ -119,12 +127,12 @@ with tempfile.TemporaryDirectory(prefix="helio-codex-install-") as temporary:
             assert len(entries) == 1 and entries[0]["enabled"] is False
 
         for repeat in range(2):
-            skill = target / NAMES[0] / "skills/fixture/SKILL.md"
+            skill = target / ".cache/codex-local-marketplace/plugins" / NAMES[0] / "skills/fixture/SKILL.md"
             skill.write_text(skill.read_text() + f"Refreshed {scenario}, pass {repeat}.\n")
             run(["just", "install", "codex"])
             assert (target / "built").exists()
             assert {p["pluginId"] for p in inventory()} == {f"{n}@{MARKET}" for n in NAMES}
-            assert config()["marketplaces"][MARKET]["source"] == str(target.resolve())
+            assert config()["marketplaces"][MARKET]["source"] == str((target / ".cache/codex-local-marketplace").resolve())
             cached_skill = codex_home / "plugins/cache" / MARKET / NAMES[0] / "1.0.0/skills/fixture/SKILL.md"
             assert cached_skill.read_text() == skill.read_text()
             preserved()
@@ -134,7 +142,7 @@ with tempfile.TemporaryDirectory(prefix="helio-codex-install-") as temporary:
         print(f"PASS {scenario}: install, repeat, refreshed cache, unrelated config/plugin preserved")
 
         # Selected-marketplace errors and extra installed plugins must fail before removal.
-        manifest = target / ".agents/plugins/marketplace.json"
+        manifest = target / ".cache/codex-local-marketplace/.agents/plugins/marketplace.json"
         original = manifest.read_text()
         snapshot = (config_file.read_bytes(), files(codex_home / "plugins/cache"))
         manifest.write_text("invalid JSON")
@@ -144,9 +152,9 @@ with tempfile.TemporaryDirectory(prefix="helio-codex-install-") as temporary:
         manifest.write_text(original)
 
         extra = fixture(base / (scenario + "-extra"), MARKET, ["extra-plugin"])
-        shutil.copytree(extra / "extra-plugin", target / "extra-plugin")
+        shutil.copytree(extra / "extra-plugin", target / ".cache/codex-local-marketplace/plugins/extra-plugin")
         expanded = json.loads(original)
-        expanded["plugins"].append({"name": "extra-plugin", "source": {"source": "local", "path": "./extra-plugin"}})
+        expanded["plugins"].append({"name": "extra-plugin", "source": {"source": "local", "path": "./plugins/extra-plugin"}})
         manifest.write_text(json.dumps(expanded))
         cli("add", f"extra-plugin@{MARKET}")
         snapshot = (config_file.read_bytes(), files(codex_home / "plugins/cache"))
@@ -155,7 +163,7 @@ with tempfile.TemporaryDirectory(prefix="helio-codex-install-") as temporary:
         assert snapshot == (config_file.read_bytes(), files(codex_home / "plugins/cache"))
         cli("remove", f"extra-plugin@{MARKET}")
         manifest.write_text(original)
-        shutil.rmtree(target / "extra-plugin")
+        shutil.rmtree(target / ".cache/codex-local-marketplace/plugins/extra-plugin")
         preserved()
 
         (target / "built").unlink()

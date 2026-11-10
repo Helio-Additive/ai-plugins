@@ -46,7 +46,9 @@ export function install(host: string, run: Run, root: string) {
   } else {
     // Marketplace list is also global in Codex. Add is idempotent for the same
     // source; replace only our registration on the CLI's specific source conflict.
-    const add = [host, "plugin", "marketplace", "add", root];
+    // Keep the local installer on generated test bundles. The repository-root
+    // catalog is independently installable from Git and uses committed bundles.
+    const add = [host, "plugin", "marketplace", "add", resolve(root, ".cache/codex-local-marketplace")];
     try { run(add); } catch (error) {
       if (!(error instanceof CommandError) || error.exitCode !== 1
         || JSON.stringify(error.args) !== JSON.stringify(add)

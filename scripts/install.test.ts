@@ -24,6 +24,7 @@ for (const host of ["codex", "claude"]) for (const present of [false, true]) {
       return "";
     }, "/repo");
     expect(calls.at(-1)).toEqual([host, "plugin", host === "claude" ? "install" : "add", "helioadditive-slicing@helioadditive-plugins"]);
+    expect(calls).toContainEqual([host, "plugin", "marketplace", "add", host === "codex" ? "/repo/.cache/codex-local-marketplace" : "/repo"]);
     expect(calls.filter(c => c.includes("uninstall") || (c.includes("remove") && !c.includes("marketplace")))).toHaveLength(present ? 1 : 0);
     expect(calls.flat()).not.toContain("other@other");
   });
@@ -46,7 +47,7 @@ test("inventory parse failures and extra Helio plugins fail before removal", () 
 });
 
 const conflict = `Error: marketplace '${marketplace}' is already added from a different source; remove it before adding this source\n`;
-const add = ["codex", "plugin", "marketplace", "add", "/repo"];
+const add = ["codex", "plugin", "marketplace", "add", "/repo/.cache/codex-local-marketplace"];
 
 test("Codex replaces only its marketplace on a source conflict, then installs both plugins", () => {
   const calls: string[][] = [];
