@@ -72,6 +72,7 @@ export async function loadPluginSpecs(directory = join(root, "plugins")) {
     if (!isPluginSpec(spec)) {
       throw new Error(`Invalid ${relative(root, file)}: ${ajv.errorsText(isPluginSpec.errors, { separator: "; " })}`);
     }
+    if (spec.homepage !== undefined) checkedUrl(spec.homepage, `${relative(root, file)} homepage`);
     for (const [provider, connection] of Object.entries(spec.mcp ?? {})) {
       checkedUrl(connection.url, `${relative(root, file)} mcp.${provider}.url`);
     }
@@ -131,6 +132,7 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
     name: spec.name,
     version: spec.version,
     description: spec.description,
+    ...(spec.homepage === undefined ? {} : { homepage: spec.homepage }),
     author: { name: "Helio-Additive" },
     extensions: {
       "com.openai": {
@@ -138,6 +140,7 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
           displayName: spec.displayName,
           shortDescription: spec.shortDescription,
           longDescription: spec.longDescription,
+          ...(spec.homepage === undefined ? {} : { websiteURL: spec.homepage }),
           defaultPrompt: spec.defaultPrompts,
           developerName: "Helio-Additive",
           composerIcon: "./assets/icon.png",
@@ -175,7 +178,7 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
       }
       outputs.set("plugin.json", json(manifest));
       if (provider === "anthropic" || (provider === "test" && options.testVendor === "anthropic")) {
-        outputs.set(".claude-plugin/plugin.json", json({ name: manifest.name, version: manifest.version, description: manifest.description, author: manifest.author }));
+        outputs.set(".claude-plugin/plugin.json", json({ name: manifest.name, version: manifest.version, description: manifest.description, author: manifest.author, ...(spec.homepage === undefined ? {} : { homepage: spec.homepage }) }));
       } else if (provider === "test") {
         outputs.delete("plugin.json");
         outputs.set(".codex-plugin/plugin.json", json({ name: manifest.name, version: manifest.version, description: manifest.description, interface: manifest.extensions["com.openai"].interface, skills: "./skills/" }));
@@ -218,6 +221,7 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
       outputs.set(".claude-plugin/plugin.json", json({
         name: manifest.name, version: manifest.version,
         description: manifest.description, author: manifest.author,
+        ...(spec.homepage === undefined ? {} : { homepage: spec.homepage }),
       }));
       outputs.set(".mcp.json", json({
         mcpServers: {

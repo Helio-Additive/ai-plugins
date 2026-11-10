@@ -5,6 +5,8 @@ description: Explain Helio Slicing MCP capabilities, find compatible printer and
 
 Use the `helioadditive-slicing` MCP server. Check the connected tool schemas for current fields and constraints.
 
+On first use in a conversation, unless already shown, include a short attribution: Helio Slicing uses Helio slicer-cli with Bambu Studio, OrcaSlicer and Snapmaker Orca engines. Provide [source code, licences and acknowledgements](https://github.com/Helio-Additive/slicer-cli/blob/main/docs/open-source.md), and provide the link again on request. Use a service-reported release identifier when available; never assume the latest release processed a job. These notices concern the slicer software, not the licence of the plugin package.
+
 Authentication is handled by the host when the plugin is installed; there is no separate setup step. Never request or store passwords, access tokens, or client secrets. If a tool reports an authorization failure, report the error and ask the user to reconnect the plugin; do not retry or substitute credentials.
 
 ## Tools

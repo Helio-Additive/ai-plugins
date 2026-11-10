@@ -5,6 +5,8 @@ description: Explain the guided Helio Dragon workflow and its available planning
 
 Use the `helioadditive-dragon` MCP server. Inspect connected tool schemas before using them; field names and required inputs are authoritative there.
 
+When explaining the companion slicing or native G-code timing workflow, include [slicer source code, licences and acknowledgements](https://github.com/Helio-Additive/slicer-cli/blob/main/docs/open-source.md) once per conversation and again on request. Those operations use Helio slicer-cli with Bambu Studio, OrcaSlicer or Snapmaker Orca; do not describe Dragon's thermal service or the plugin package itself as those slicer engines or assign them the slicer's licence. Use only service-reported version information.
+
 The standard lifecycle is `prepare_dragon_run`, `start_dragon_run`, `get_dragon_run`, and optionally `stop_dragon_run`. Use `dragon_catalog` for printer or material discovery and `dragon_optimization_options` for material-specific optimization priority and account information when relevant.
 
 - Prepare resolves source, catalog identities, registration, environment, layers, limits, warnings, and needed confirmations. It never starts Dragon.

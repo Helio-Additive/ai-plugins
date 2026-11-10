@@ -14,6 +14,10 @@ export interface PluginSpec {
   name: string;
   version: string;
   description: string;
+  /**
+   * Public company or product website. Mapped to portable/native homepage and OpenAI interface.websiteURL; separate from source and licence links in descriptions.
+   */
+  homepage?: string;
   displayName: string;
   shortDescription: string;
   longDescription: string;

@@ -1,12 +1,19 @@
 # yaml-language-server: $schema=../../schemas/plugin-spec.schema.json
 name: helioadditive-slicing
 version: "0.1.0"
-description: Create, monitor, and retrieve Helio Additive slicing jobs.
+description: >-
+  Create, monitor, and retrieve Helio Additive slicing jobs. Powered by Helio
+  slicer-cli with Bambu Studio, OrcaSlicer and Snapmaker Orca engines.
+  Source code, licences and acknowledgements:
+  https://github.com/Helio-Additive/slicer-cli/blob/main/docs/open-source.md
+homepage: https://www.helioadditive.com
 displayName: Helio Slicing
-shortDescription: Create and track 3D-print slicing jobs.
+shortDescription: Create and track 3D prints
 longDescription: >-
   Connect to Helio Additive to create slicing jobs, check their progress, and
-  retrieve completed outputs.
+  retrieve completed outputs. Slicing uses Helio slicer-cli with Bambu Studio,
+  OrcaSlicer and Snapmaker Orca engines. Source code, licences and acknowledgements:
+  https://github.com/Helio-Additive/slicer-cli/blob/main/docs/open-source.md
 defaultPrompts:
   - Slice this .stl file
   - Show me my recent slices
