@@ -42,7 +42,9 @@ export function install(host: string, run: Run, root: string) {
     if (entries.some((m) => m.name === marketplace)) {
       run([host, "plugin", "marketplace", "remove", marketplace, "--scope", "user"]);
     }
-    run([host, "plugin", "marketplace", "add", root]);
+    // The local installer uses the generated test bundles; the repository root
+    // catalog is independently installable from Git and uses committed bundles.
+    run([host, "plugin", "marketplace", "add", resolve(root, ".cache/claude-local-marketplace")]);
   } else {
     // Marketplace list is also global in Codex. Add is idempotent for the same
     // source; replace only our registration on the CLI's specific source conflict.

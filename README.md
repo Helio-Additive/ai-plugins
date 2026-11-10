@@ -13,8 +13,10 @@ Helio Additive AI plugins, with native provider marketplaces and one shared buil
 - `.cache/codex-local-marketplace/` — ignored, self-contained local Codex marketplace
   generated from the OpenAI test packages; used by `just install codex`.
   MCP plugin authentication happens on installation; scripting has no MCP authentication.
-- `.claude-plugin/marketplace.json` — generated Claude Code marketplace, listing
-  each plugin's Git-ignored `_generated/test` bundle (generate with vendor `anthropic`).
+- `.claude-plugin/marketplace.json` — Git-installable Claude Code marketplace, listing
+  each committed `plugins/<plugin>/_generated/anthropic` bundle. Fresh clones need no build.
+- `.cache/claude-local-marketplace/` — ignored, self-contained local Claude marketplace
+  generated from the anthropic test packages; used by `just install claude`.
 - `lib/build.ts` — discovers YAML specs, checks build inputs, and generates bundles.
 - `lib/_generated/` — schema-generated document and plugin-spec types.
 - `schemas/` — the plugin-spec schema and pinned published Agent Plugins schemas.
@@ -43,6 +45,20 @@ bun run test
 
 The root package also exposes `bun run build`; `make`
 is an alternative to `just make`. There are no per-plugin dependency installs.
+
+### Install Claude Code plugins from Git
+
+The root `.claude-plugin/marketplace.json` lists the committed anthropic
+bundles, so the repository installs as a marketplace with no build:
+
+```sh
+claude plugin marketplace add Helio-Additive/ai-plugins
+claude plugin install helioadditive-slicing@helioadditive-plugins
+```
+
+The Claude desktop app's "Add marketplace" dialog takes the same repository
+URL. The repository is private, so the account adding it needs access to it
+through the Git credentials Claude Code uses.
 
 ### Install Codex plugins from Git
 

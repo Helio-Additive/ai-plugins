@@ -35,9 +35,11 @@ in each plugin's sources, not in the generator.
   OpenAI test builds copy the test packages into this self-contained catalog;
   normal/other-vendor builds remove it. Never commit this catalog or its packages.
   `just install codex` uses this catalog; `just install claude` keeps its existing root catalog.
-- Root `.claude-plugin/marketplace.json` is generated from specs and lists
-  `./plugins/<plugin>/_generated/test` bundles (generate with `MCP_TEST_VENDOR=anthropic` for Claude) for native Claude installation.
-  Do not hand-edit it; commit it alongside regenerated production output.
+- Keep the root `.claude-plugin/marketplace.json` Git-installable, listing each
+  committed `./plugins/<plugin>/_generated/anthropic` bundle. Preserve local/test
+  installation through the ignored `.cache/claude-local-marketplace` (generated with
+  `MCP_TEST_VENDOR=anthropic`), as for Codex. Do not hand-edit either; commit the root
+  catalog alongside regenerated production output and never commit the local one.
 
 ## Checks and safety
 
