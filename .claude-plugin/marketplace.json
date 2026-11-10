@@ -8,7 +8,7 @@
     {
       "name": "helioadditive-dragon",
       "source": "./plugins/dragon/_generated/test",
-      "description": "Prepare, run, monitor, and retrieve Helio Dragon thermal workflows.",
+      "description": "Prepare, run, monitor, and retrieve Helio Dragon thermal workflows. Companion slicing and G-code timing use Helio slicer-cli. Slicer source code, licences and acknowledgements: https://github.com/Helio-Additive/slicer-cli/blob/main/docs/open-source.md",
       "category": "Productivity"
     },
     {
@@ -20,7 +20,7 @@
     {
       "name": "helioadditive-slicing",
       "source": "./plugins/slicing/_generated/test",
-      "description": "Create, monitor, and retrieve Helio Additive slicing jobs.",
+      "description": "Create, monitor, and retrieve Helio Additive slicing jobs. Powered by Helio slicer-cli with Bambu Studio, OrcaSlicer and Snapmaker Orca engines. Source code, licences and acknowledgements: https://github.com/Helio-Additive/slicer-cli/blob/main/docs/open-source.md",
       "category": "Productivity"
     }
   ]

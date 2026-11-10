@@ -1,12 +1,20 @@
 # yaml-language-server: $schema=../../schemas/plugin-spec.schema.json
 name: helioadditive-dragon
 version: "0.1.0"
-description: Prepare, run, monitor, and retrieve Helio Dragon thermal workflows.
+description: >-
+  Prepare, run, monitor, and retrieve Helio Dragon thermal workflows. Companion
+  slicing and G-code timing use Helio slicer-cli. Slicer source code, licences
+  and acknowledgements:
+  https://github.com/Helio-Additive/slicer-cli/blob/main/docs/open-source.md
+homepage: https://www.helioadditive.com
 displayName: Helio Dragon
-shortDescription: Assess and enhance G-code safely.
+shortDescription: Assess and enhance G-code
 longDescription: >-
   Connect to Helio Additive to prepare, run, monitor, and retrieve standard Dragon
-  thermal assessments and G-code enhancements.
+  thermal assessments and G-code enhancements. Companion slicing and G-code
+  timing use Helio slicer-cli with Bambu Studio, OrcaSlicer and Snapmaker Orca
+  engines. Slicer source code, licences and acknowledgements:
+  https://github.com/Helio-Additive/slicer-cli/blob/main/docs/open-source.md
 defaultPrompts:
   - Prepare this G-code for a Dragon assessment
   - Check the progress of my Dragon run

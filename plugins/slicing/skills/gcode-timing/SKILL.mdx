@@ -5,6 +5,8 @@ description: Compare native print-time estimates for two existing G-code files w
 
 Use this skill when the user asks to compare the print time of an original G-code file with an optimized or changed G-code file. Use the `helioadditive-slicing` MCP server and inspect its tool schemas before calling it.
 
+Before the first comparison in a conversation, unless already shown, include a brief note that native G-code processing uses Helio slicer-cli and the selected Bambu Studio, OrcaSlicer or Snapmaker Orca engine, with a [source code, licences and acknowledgements](https://github.com/Helio-Additive/slicer-cli/blob/main/docs/open-source.md) link. Provide it again on request. Use only reported engine/release identifiers; never infer a release from the latest available download.
+
 1. Compare the two existing, native G-code files. Do not re-slice either file and do not infer time from headers, speed factors, quality claims, or another engine.
 2. Select the exact known producer engine: `BAMBU`, `ORCA`, or `SNAPMAKER`. Do not use a fuzzy filename/profile parser or guess. For `ORCA` and `SNAPMAKER`, require the original printer's `printerVendorBbl` context; omit that field for `BAMBU`.
 3. For a Dragon result, accept an original only when it is the exact local file retained from preparation: stream-hash it first and require the known preparation SHA-256 and source identity to match. If that evidence is absent, ask for the exact original or report comparison unavailable. Never construct a source URL, substitute a same-name file, or use the enhanced file twice. A completed full-result request authorizes a temporary internal download of the ready enhanced artifact without separate download consent; otherwise download only when the user requests it.

@@ -213,6 +213,10 @@ The build discovers these directories in name order; there is no TypeScript regi
 to update. Each spec declares:
 
 - `name`, `version`, and `description` for portable identity.
+- Optional `homepage`, an HTTPS company or product website without credentials
+  or a fragment. It populates portable and native Claude `homepage`, OpenAI
+  `extensions.com.openai.interface.websiteURL`, and the local Codex
+  `interface.websiteURL`. Omit it for plugins without a verified website.
 - `displayName`, `shortDescription`, `longDescription`, and `defaultPrompts` for
   OpenAI's presentation extension.
 - `mcp.openai` and `mcp.anthropic`, each containing an HTTPS `url`, public OAuth
@@ -243,6 +247,23 @@ OpenAI documents that authentication layout. The builder uses the generated MCP
 core plus the generated plugin's generic extension-object shape; it does not patch
 the schema or claim those extra server fields pass strict 1.0.0 schema validation.
 See `schemas/README.md` for source URLs and this upstream discrepancy.
+
+### Slicer source and licence notices
+
+Dragon and Slicing use `https://www.helioadditive.com` as their company website.
+Their descriptions separately link to the public
+[slicer source, licences and acknowledgements](https://github.com/Helio-Additive/slicer-cli/blob/main/docs/open-source.md).
+The link is included in portable, native Claude and Kimi descriptions, and in
+OpenAI's long description. Slicing skills also offer it on first relevant use
+and on request. Dragon's attribution applies to companion slicer operations,
+not its thermal simulation service. No plugin-package licence is inferred from
+the slicer's AGPL licence.
+
+These fields follow the [OpenAI listing documentation](https://developers.openai.com/plugins/deploy/submission)
+and [Claude manifest reference](https://code.claude.com/docs/en/plugins-reference).
+Generated metadata and native manifest validation establish package contents;
+the exact placement and clickability of links in each desktop app still need
+checking after its installed package is refreshed.
 
 The generator builds JSON from TypeScript, converts MDX to Markdown while retaining skill
 frontmatter, and copies assets into each provider bundle. Normal builds generate

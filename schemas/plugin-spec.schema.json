@@ -29,6 +29,12 @@
       "type": "string",
       "minLength": 1
     },
+    "homepage": {
+      "description": "Public company or product website. Mapped to portable/native homepage and OpenAI interface.websiteURL; separate from source and licence links in descriptions.",
+      "type": "string",
+      "pattern": "^https://",
+      "maxLength": 1024
+    },
     "displayName": {
       "type": "string",
       "minLength": 1

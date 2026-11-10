@@ -5,6 +5,8 @@ description: Create a Helio Additive slicing job when a user explicitly asks to 
 
 Use this skill for explicit requests to create a new 3D-print slicing job. The `create_slice` MCP tool creates work and may consume manufacturing resources.
 
+Before the first slicing job in a conversation, unless already shown, include a brief note that Helio slicer-cli uses Bambu Studio, OrcaSlicer and Snapmaker Orca engines, with a [source code, licences and acknowledgements](https://github.com/Helio-Additive/slicer-cli/blob/main/docs/open-source.md) link. Provide it again on request. Do not invent the deployed release or repeat the dependency list on every response.
+
 For custom print settings, use `configure-helio-slice-settings` to inspect the engine's schema, choose compatible presets, and validate overrides before submission.
 
 1. Inspect the tool input schema before collecting or submitting values. Do not guess required fields, model locations, printer profiles, materials, or slicing settings.
