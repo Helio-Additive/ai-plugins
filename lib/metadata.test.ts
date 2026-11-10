@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -8,6 +8,17 @@ const plugins = await loadPluginSpecs();
 const sourceUrl = "https://github.com/Helio-Additive/slicer-cli/blob/main/docs/open-source.md";
 
 describe("public plugin metadata", () => {
+  let metadataSource: string;
+  beforeAll(async () => {
+    metadataSource = await mkdtemp(join(tmpdir(), "plugin-metadata-"));
+    await mkdir(join(metadataSource, "skills", "example"), { recursive: true });
+    await writeFile(join(metadataSource, "skills", "example", "SKILL.mdx"),
+      "---\nname: example\ndescription: Minimal metadata test fixture.\n---\n\nPreserve this skill.\n");
+  });
+  afterAll(async () => {
+    if (metadataSource) await rm(metadataSource, { recursive: true, force: true });
+  });
+
   test("homepage is optional and rejects invalid or credential-bearing URLs", async () => {
     const directory = await mkdtemp(join(tmpdir(), "plugin-homepage-"));
     try {
@@ -28,13 +39,15 @@ describe("public plugin metadata", () => {
     }
   });
 
-  for (const { spec, source } of plugins) {
+  for (const { spec } of plugins) {
     test(`${spec.name}: projects optional homepage without changing MCP or OAuth`, async () => {
       const homepage = "https://example.com/product";
       for (const testVendor of ["openai", "anthropic"]) {
         const options = { testUrl: "http://localhost:8080", testVendor };
-        const baseline = await renderPlugin({ ...spec, homepage: undefined }, source, options);
-        const bundles = await renderPlugin({ ...spec, homepage }, source, options);
+        // Metadata projection does not require recompiling the full scripting
+        // schema. A real small skill still checks unchanged non-manifest bytes.
+        const baseline = await renderPlugin({ ...spec, homepage: undefined }, metadataSource, options);
+        const bundles = await renderPlugin({ ...spec, homepage }, metadataSource, options);
         for (const [provider, outputs] of bundles) {
           for (const [path, content] of outputs) {
             if (!path.endsWith("plugin.json")) {
