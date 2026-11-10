@@ -132,10 +132,10 @@ test.each([undefined, "", "OpenAI", "Kimi", "kimi", "kimi-code", "Kimi-Global", 
   expect(() => readBuildOptions({ GENERATE_TEST: "true", MCP_TEST_URL: "https://example.com", MCP_TEST_VENDOR: vendor })).toThrow("MCP_TEST_VENDOR");
 });
 
-test("Git catalog resolves committed Codex packages; Claude retains test packages", async () => {
+test("Git catalogs resolve committed packages: Codex and Claude", async () => {
   for (const [path, bundle] of [
     [".agents/plugins/marketplace.json", "codex"],
-    [".claude-plugin/marketplace.json", "test"],
+    [".claude-plugin/marketplace.json", "anthropic"],
   ]) {
     const catalog = JSON.parse(await readFile(join(import.meta.dir, "..", path!), "utf8"));
     expect(catalog.plugins.map((p: { name: string }) => p.name).sort()).toEqual(plugins.map(p => p.spec.name).sort());

@@ -24,7 +24,7 @@ for (const host of ["codex", "claude"]) for (const present of [false, true]) {
       return "";
     }, "/repo");
     expect(calls.at(-1)).toEqual([host, "plugin", host === "claude" ? "install" : "add", "helioadditive-slicing@helioadditive-plugins"]);
-    expect(calls).toContainEqual([host, "plugin", "marketplace", "add", host === "codex" ? "/repo/.cache/codex-local-marketplace" : "/repo"]);
+    expect(calls).toContainEqual([host, "plugin", "marketplace", "add", `/repo/.cache/${host}-local-marketplace`]);
     expect(calls.filter(c => c.includes("uninstall") || (c.includes("remove") && !c.includes("marketplace")))).toHaveLength(present ? 1 : 0);
     expect(calls.flat()).not.toContain("other@other");
   });
