@@ -1,0 +1,28 @@
+{
+  "description": "Create, monitor, and retrieve Helio Additive slicing jobs. Powered by Helio slicer-cli with Bambu Studio, OrcaSlicer and Snapmaker Orca engines. Source code, licences and acknowledgements: https://github.com/Helio-Additive/slicer-cli/blob/main/docs/open-source.md",
+  "interface": {
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "category": "Productivity",
+    "composerIcon": "./assets/icon.png",
+    "composerIconDark": "./assets/logo-dark.png",
+    "defaultPrompt": [
+      "Slice this .stl file",
+      "Show me my recent slices",
+      "Check the progress of my slice"
+    ],
+    "developerName": "Helio-Additive",
+    "displayName": "Helio Slicing",
+    "logo": "./assets/logo.png",
+    "logoDark": "./assets/logo-dark.png",
+    "longDescription": "Connect to Helio Additive to create slicing jobs, check their progress, and retrieve completed outputs. Slicing uses Helio slicer-cli with Bambu Studio, OrcaSlicer and Snapmaker Orca engines. Source code, licences and acknowledgements: https://github.com/Helio-Additive/slicer-cli/blob/main/docs/open-source.md",
+    "shortDescription": "Create and track 3D prints",
+    "websiteURL": "https://www.helioadditive.com"
+  },
+  "mcpServers": "./.mcp.json",
+  "name": "helioadditive-slicing",
+  "skills": "./skills/",
+  "version": "0.1.0"
+}

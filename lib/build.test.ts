@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { access, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { buildPlugin, loadPluginSpecs, providersFor, readBuildOptions, renderPlugin } from "./build";
 
 const plugins = await loadPluginSpecs();
@@ -9,12 +9,12 @@ const plugins = await loadPluginSpecs();
 describe("test bundle build options", () => {
   test("test bundles opt in with a base URL", () => {
     const options = readBuildOptions({ GENERATE_TEST: "true", MCP_TEST_VENDOR: "openai", MCP_TEST_URL: "https://mcp3.helioadditive.com" });
-    expect(providersFor(options)).toEqual(["openai", "anthropic", "kimi-global", "kimi-china", "test"]);
+    expect(providersFor(options)).toEqual(["openai", "anthropic", "kimi-global", "kimi-china", "codex", "test"]);
   });
 
   test("normal builds ignore even invalid test base URLs", () => {
     expect(readBuildOptions({ MCP_TEST_URL: "invalid" })).toEqual({});
-    expect(providersFor()).toEqual(["openai", "anthropic", "kimi-global", "kimi-china"]);
+    expect(providersFor()).toEqual(["openai", "anthropic", "kimi-global", "kimi-china", "codex"]);
   });
 
   test("requires a base URL when test generation is enabled", () => {
@@ -132,13 +132,18 @@ test.each([undefined, "", "OpenAI", "Kimi", "kimi", "kimi-code", "Kimi-Global", 
   expect(() => readBuildOptions({ GENERATE_TEST: "true", MCP_TEST_URL: "https://example.com", MCP_TEST_VENDOR: vendor })).toThrow("MCP_TEST_VENDOR");
 });
 
-test("both local marketplaces reference test bundles", async () => {
-  for (const path of [".agents/plugins/marketplace.json", ".claude-plugin/marketplace.json"]) {
-    const catalog = JSON.parse(await readFile(join(import.meta.dir, "..", path), "utf8"));
-    expect(catalog.plugins).toHaveLength(plugins.length);
+test("Git catalog resolves committed Codex packages; Claude retains test packages", async () => {
+  for (const [path, bundle] of [
+    [".agents/plugins/marketplace.json", "codex"],
+    [".claude-plugin/marketplace.json", "test"],
+  ]) {
+    const catalog = JSON.parse(await readFile(join(import.meta.dir, "..", path!), "utf8"));
+    expect(catalog.plugins.map((p: { name: string }) => p.name).sort()).toEqual(plugins.map(p => p.spec.name).sort());
+    const catalogRoot = join(import.meta.dir, "..");
     for (const entry of catalog.plugins) {
       const source = typeof entry.source === "string" ? entry.source : entry.source.path;
-      expect(source).toMatch(/^\.\/plugins\/[^/]+\/_generated\/test$/);
+      const plugin = plugins.find(p => p.spec.name === entry.name)!;
+      expect(resolve(catalogRoot, source)).toBe(join(plugin.source, "_generated", bundle!));
     }
   }
 });

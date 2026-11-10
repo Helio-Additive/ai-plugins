@@ -1,0 +1,24 @@
+{
+  "description": "Generate typed Helio GraphQL clients from a fresh schema.",
+  "interface": {
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "category": "Productivity",
+    "composerIcon": "./assets/icon.png",
+    "composerIconDark": "./assets/logo-dark.png",
+    "defaultPrompt": [
+      "Help me generate a typed Helio GraphQL client"
+    ],
+    "developerName": "Helio-Additive",
+    "displayName": "Helio Scripting",
+    "logo": "./assets/logo.png",
+    "logoDark": "./assets/logo-dark.png",
+    "longDescription": "Skills and language templates for schema discovery and typed Helio API scripting, without an MCP server.",
+    "shortDescription": "Build typed GraphQL scripts."
+  },
+  "name": "scripting",
+  "skills": "./skills/",
+  "version": "0.1.0"
+}

@@ -8,7 +8,7 @@
       "name": "helioadditive-dragon",
       "source": {
         "source": "local",
-        "path": "./plugins/dragon/_generated/test"
+        "path": "./plugins/dragon/_generated/codex"
       },
       "policy": {
         "installation": "AVAILABLE",
@@ -20,7 +20,7 @@
       "name": "helioadditive-slicing",
       "source": {
         "source": "local",
-        "path": "./plugins/slicing/_generated/test"
+        "path": "./plugins/slicing/_generated/codex"
       },
       "policy": {
         "installation": "AVAILABLE",
@@ -32,7 +32,7 @@
       "name": "scripting",
       "source": {
         "source": "local",
-        "path": "./plugins/scripting/_generated/test"
+        "path": "./plugins/scripting/_generated/codex"
       },
       "policy": {
         "installation": "AVAILABLE"
