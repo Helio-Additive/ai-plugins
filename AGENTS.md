@@ -41,6 +41,11 @@ in each plugin's sources, not in the generator.
   `MCP_TEST_VENDOR=anthropic`), as for Codex. Do not hand-edit either; commit the root
   catalog alongside regenerated production output and never commit the local one.
 
+- `mcp.openai.appId` is optional. When set, the build also emits
+  `_generated/openai-app`, which references that registered ChatGPT app through
+  `.app.json` and carries no `mcp.json`; `just package` zips it into ignored `out/`.
+  Commit an `appId` only for a registration every intended user can reach.
+
 ## Checks and safety
 
 After source or generator changes, run `just make`, `bun run typecheck`, and `bun run test`.

@@ -255,6 +255,15 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
     }
     packages.set(provider, outputs);
   }
+  // ChatGPT runs a package that carries mcp.json only in its desktop app. One that
+  // references a registered app instead also runs on mobile.
+  const appId = spec.mcp?.openai.appId;
+  if (appId !== undefined) {
+    const openai = manifest.extensions["com.openai"];
+    packages.set("openai-app", new Map(shared)
+      .set("plugin.json", json({ ...manifest, extensions: { "com.openai": { ...openai, apps: "./.app.json" } } } satisfies AgentPluginsManifest))
+      .set(".app.json", json({ apps: { [spec.name]: { id: appId, required: true } } })));
+  }
   return packages;
 }
 

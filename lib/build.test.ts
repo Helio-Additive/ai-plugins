@@ -280,3 +280,45 @@ describe.each(kimiRegions)("%s vendor", (vendor, host) => {
     }
   });
 });
+
+describe("ChatGPT app-reference bundle", () => {
+  const { source, spec } = plugins.find(({ spec }) => spec.mcp)!;
+  const withApp = (appId: string) => ({ ...spec, mcp: { ...spec.mcp!, openai: { ...spec.mcp!.openai, appId } } });
+
+  test("is emitted only when the spec names a registered app", async () => {
+    expect((await renderPlugin(spec, source)).has("openai-app")).toBe(false);
+    const bundles = await renderPlugin(withApp("asdk_app_0123abc"), source);
+    const app = bundles.get("openai-app")!;
+    const openai = bundles.get("openai")!;
+    // Same skills, assets and metadata as the portable package; the app replaces mcp.json.
+    expect([...app.keys()].sort()).toEqual([...openai.keys()].filter((path) => path !== "mcp.json").concat(".app.json").sort());
+    expect(JSON.parse(String(app.get(".app.json")))).toEqual({ apps: { [spec.name]: { id: "asdk_app_0123abc", required: true } } });
+    const manifest = JSON.parse(String(app.get("plugin.json")));
+    const { apps, ...rest } = manifest.extensions["com.openai"];
+    expect(apps).toBe("./.app.json");
+    expect({ ...manifest, extensions: { "com.openai": rest } }).toEqual(JSON.parse(String(openai.get("plugin.json"))));
+    // Every other bundle is unchanged by the field.
+    const plain = await renderPlugin(spec, source);
+    for (const [provider, outputs] of plain) expect(bundles.get(provider)).toEqual(outputs);
+  });
+
+  test("the app id must be the form ChatGPT accepts, and only OpenAI takes one", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "ai-plugins-app-test-"));
+    try {
+      const example = join(directory, "example");
+      await mkdir(example);
+      const write = (value: unknown) => writeFile(join(example, "spec.yaml"), JSON.stringify(value));
+      // ChatGPT's uploader rejects the plugin_-prefixed ID shown in its settings URL.
+      for (const appId of ["plugin_asdk_app_0123abc", "asdk_app_", "connector_0123abc", ""]) {
+        await write(withApp(appId));
+        await expect(loadPluginSpecs(directory)).rejects.toThrow("Invalid");
+      }
+      await write({ ...spec, mcp: { ...spec.mcp!, anthropic: { ...spec.mcp!.anthropic, appId: "asdk_app_0123abc" } } });
+      await expect(loadPluginSpecs(directory)).rejects.toThrow("Invalid");
+      await write(withApp("asdk_app_0123abc"));
+      await expect(loadPluginSpecs(directory)).resolves.toHaveLength(1);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+});

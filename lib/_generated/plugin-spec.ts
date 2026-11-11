@@ -32,11 +32,34 @@ export interface PluginSpec {
    */
   testPath?: string;
   mcp?: {
-    openai: MCPConnection;
+    openai: OpenAIMCPConnection;
     anthropic: MCPConnection;
     "kimi-global": MCPURLOnlyConnection;
     "kimi-china": MCPURLOnlyConnection;
   };
+}
+/**
+ * Provider MCP endpoint and public OAuth registration. Secrets must never be stored in a plugin spec.
+ */
+export interface OpenAIMCPConnection {
+  /**
+   * Absolute HTTPS provider endpoint, without credentials or a fragment.
+   */
+  url: string;
+  /**
+   * Registered public OAuth client identifier, not a client secret.
+   */
+  clientId: string;
+  /**
+   * Scopes always requested. Omit to preserve provider defaults.
+   *
+   * @minItems 1
+   */
+  scopes?: [string, ...string[]];
+  /**
+   * Technical ID of this MCP server registered as a ChatGPT app (ChatGPT Plugins, Add custom MCP server). When set, the build also emits `_generated/openai-app`, which references the app instead of carrying `mcp.json`. The ID exists only in the account or workspace that registered it.
+   */
+  appId?: string;
 }
 /**
  * Provider MCP endpoint and public OAuth registration. Secrets must never be stored in a plugin spec.

@@ -72,7 +72,7 @@
       ],
       "properties": {
         "openai": {
-          "$ref": "#/definitions/connection"
+          "$ref": "#/definitions/openaiConnection"
         },
         "anthropic": {
           "$ref": "#/definitions/connection"
@@ -134,6 +134,44 @@
             "type": "string",
             "pattern": "^\\S+$"
           }
+        }
+      }
+    },
+    "openaiConnection": {
+      "title": "OpenAI MCP connection",
+      "description": "Provider MCP endpoint and public OAuth registration. Secrets must never be stored in a plugin spec.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "url",
+        "clientId"
+      ],
+      "properties": {
+        "url": {
+          "description": "Absolute HTTPS provider endpoint, without credentials or a fragment.",
+          "type": "string",
+          "pattern": "^https://",
+          "minLength": 1
+        },
+        "clientId": {
+          "description": "Registered public OAuth client identifier, not a client secret.",
+          "type": "string",
+          "minLength": 1
+        },
+        "scopes": {
+          "description": "Scopes always requested. Omit to preserve provider defaults.",
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^\\S+$"
+          }
+        },
+        "appId": {
+          "description": "Technical ID of this MCP server registered as a ChatGPT app (ChatGPT Plugins, Add custom MCP server). When set, the build also emits `_generated/openai-app`, which references the app instead of carrying `mcp.json`. The ID exists only in the account or workspace that registered it.",
+          "type": "string",
+          "pattern": "^asdk_app_[A-Za-z0-9][A-Za-z0-9_-]*$"
         }
       }
     }

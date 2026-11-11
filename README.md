@@ -158,6 +158,26 @@ existing Nightly OpenAI users must reconnect after the cutover. Package validati
 does not establish live client registration. Claude retains `claude-plugin` and its
 recorded live **Unknown client** blocker.
 
+### ChatGPT on mobile
+
+ChatGPT runs an uploaded package that carries `mcp.json` (`_generated/openai`) only in
+its desktop app; on iOS it shows "Only available on desktop app", with or without skills.
+A package that references a registered app instead also runs on mobile. Checked on
+Nightly with the slicing plugin on one account: sign-in, listing files and creating a slice.
+
+1. In ChatGPT on the web, open Plugins, **Add custom MCP server**, and register the
+   plugin's `mcp.openai` URL with OAuth and its `clientId`.
+2. Copy the app ID from the app's details (`asdk_app_…`). The uploader rejects the
+   `plugin_asdk_app_…` form shown in the settings URL.
+3. Set it as `mcp.openai.appId` in the plugin's `spec.yaml` and run `just package`.
+   The build adds `_generated/openai-app` (the portable manifest and skills, with
+   `.app.json` in place of `mcp.json`) and writes `out/helioadditive-<plugin>-chatgpt.zip`.
+4. Upload the ZIP on the ChatGPT web Plugins page.
+
+An app ID exists only in the account or workspace that registered it, so no spec
+carries one yet: commit an `appId` only for a registration every intended user can reach.
+A chat on mobile cannot reach the upload host, so it works with files already uploaded.
+
 ### Install in the OpenAI app
 
 Generate the local bundles from this checkout first (normal builds remove them):
