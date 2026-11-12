@@ -1,0 +1,27 @@
+name: Release packages
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jetify-com/devbox-install-action@a0d2d53632934ae004f878c840055956d9f741b0 # v0.14.0
+        with:
+          enable-cache: true
+      - name: Install locked dependencies
+        run: devbox run bun install --frozen-lockfile
+      # Fails, attaching nothing, while any package names a non-production server.
+      - name: Package official ChatGPT uploads
+        run: devbox run just package
+      - name: Attach packages to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "$TAG" out/*.zip --clobber

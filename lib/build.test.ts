@@ -9,7 +9,29 @@ const plugins = await loadPluginSpecs();
 describe("test bundle build options", () => {
   test("test bundles opt in with a base URL", () => {
     const options = readBuildOptions({ GENERATE_TEST: "true", MCP_TEST_VENDOR: "openai", MCP_TEST_URL: "https://mcp3.helioadditive.com" });
-    expect(providersFor(options)).toEqual(["openai", "anthropic", "kimi-global", "kimi-china", "codex", "test"]);
+    expect(providersFor(options)).toEqual(["openai", "anthropic", "kimi-global", "kimi-china", "codex", "test", "test-chatgpt"]);
+    expect(providersFor({ ...options, testVendor: "anthropic" })).toEqual(["openai", "anthropic", "kimi-global", "kimi-china", "codex", "test"]);
+  });
+
+  test("OpenAI test builds also emit the ChatGPT upload layout for the test endpoint", async () => {
+    const options = readBuildOptions({ GENERATE_TEST: "true", MCP_TEST_VENDOR: "openai", MCP_TEST_URL: "https://test.invalid" });
+    for (const { spec, source } of plugins) {
+      const bundles = await renderPlugin(spec, source, options);
+      const upload = bundles.get("test-chatgpt")!;
+      const official = bundles.get("openai")!;
+      // Same files as the official upload package; only the server differs.
+      expect([...upload.keys()]).toEqual([...official.keys()]);
+      for (const [path, contents] of upload) {
+        if (path !== "mcp.json") { expect(contents).toEqual(official.get(path)!); continue; }
+        const server = JSON.parse(String(contents)).mcpServers[spec.name];
+        const declared = JSON.parse(String(official.get(path))).mcpServers[spec.name];
+        expect(server.url).toBe("https://test.invalid/openai" + spec.testPath);
+        expect({ ...server, url: declared.url }).toEqual(declared);
+      }
+      // The native test package keeps its Codex desktop layout.
+      expect(bundles.get("test")!.has(".codex-plugin/plugin.json")).toBe(true);
+      expect(bundles.get("test")!.has("plugin.json")).toBe(false);
+    }
   });
 
   test("normal builds ignore even invalid test base URLs", () => {

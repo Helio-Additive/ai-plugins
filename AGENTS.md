@@ -28,6 +28,11 @@ in each plugin's sources, not in the generator.
   test bundles, appending each spec's predefined `testPath` (`/slicing` or `/dragon`)
   with the selected vendor prefix (`openai`, `anthropic`, `kimi-global`, or `kimi-china`; both Kimi ids use the `/kimi` route prefix). Never commit test bundles or redirect production to the test URL.
   Normal builds remove test output.
+- OpenAI test builds also emit the ignored `_generated/test-chatgpt/`: the `openai`
+  upload layout with the test endpoint. `just package <base URL>` zips it into the
+  ignored `out/`; `just package` zips the committed `openai` bundles and must keep
+  refusing any server other than the production gateway. Only those official ZIPs
+  are release assets.
 - Keep the root `.agents/plugins/marketplace.json` Git-installable, listing each
   committed `./plugins/<plugin>/_generated/codex` bundle. Native Codex packages
   use the declared OpenAI endpoint/OAuth settings and are independent of test flags.

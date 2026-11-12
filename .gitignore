@@ -11,6 +11,7 @@ coverage
 
 # Optional local bundles can contain machine-specific test endpoints.
 /plugins/*/_generated/test/
+/plugins/*/_generated/test-chatgpt/
 
 # local credentials, diagnostics, and editor state
 .env

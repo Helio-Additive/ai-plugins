@@ -401,6 +401,38 @@ With issuer-response support true, the explicit legacy callback preserves exact
 The check requires the installed host and permission to bind a loopback listener;
 a missing host exits 77. It never completes authorization or issues tokens/grants.
 
+### ChatGPT upload packages
+
+ChatGPT's web **Plugins** page takes a ZIP of the portable layout in
+`_generated/openai` (`plugin.json`, `mcp.json`, `skills/`, `assets/`). It does not take the Codex desktop layout that an OpenAI
+`_generated/test/` bundle uses. `just package` writes these ZIPs to the ignored
+`out/` folder, one per plugin:
+
+```sh
+# Test packages for one environment, named after its host:
+just package https://mcp3.helioadditive.com
+# Official packages:
+just package
+```
+
+With a base URL, an OpenAI test build also emits `_generated/test-chatgpt/`: the same
+files as `_generated/openai` with only the server URL replaced, as for other test
+bundles. Its ZIP is `out/<name>-<version>-chatgpt-<host>.zip`. These are for
+internal testing only; do not attach them to a release.
+
+With no argument, the ZIP is `out/<name>-<version>-chatgpt.zip`, built from the
+committed `_generated/openai` bundle. The command refuses to write any package
+unless every MCP server is `https://mcp.helioadditive.com`, so it fails while the
+specs target Nightly. Publishing a GitHub release runs the same command and attaches
+the ZIPs to that release (`.github/workflows/release.yml`); the release keeps no
+assets when the command refuses.
+
+Both forms run `just make` first, so they replace the local test bundles and the
+`.cache` catalogs like any other build. The package step needs `zip` on `PATH`.
+Recorded 2026-11-11 on one account, with hand-zipped Nightly bundles of this
+layout: the upload was accepted, and the ChatGPT iOS app listed the plugin as
+available on desktop only. The release workflow has not run yet.
+
 ### Kimi Code CLI
 
 The `kimi-global` and `kimi-china` vendors target [Kimi Code CLI](https://www.kimi.com/code/docs/en/kimi-code-cli/customization/plugins.html)

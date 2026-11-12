@@ -87,9 +87,14 @@ export async function loadPluginSpecs(directory = join(root, "plugins")) {
 }
 
 export function providersFor(options: BuildOptions = {}) {
-  return options.testUrl === undefined
-    ? ["openai", "anthropic", "kimi-global", "kimi-china", "codex"] as const
-    : ["openai", "anthropic", "kimi-global", "kimi-china", "codex", "test"] as const;
+  const production = ["openai", "anthropic", "kimi-global", "kimi-china", "codex"] as const;
+  if (options.testUrl === undefined) return production;
+  // `test` is the selected vendor's native package, which for OpenAI is the Codex
+  // desktop layout. ChatGPT's upload page takes the portable `openai` layout, so
+  // OpenAI test builds also emit that layout for the test endpoint.
+  return options.testVendor === "openai"
+    ? [...production, "test", "test-chatgpt"] as const
+    : [...production, "test"] as const;
 }
 
 async function files(directory: string): Promise<string[]> {
@@ -187,9 +192,10 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
       packages.set(provider, outputs);
       continue;
     }
-    const vendor = provider === "test" ? checkedTestVendor(options.testVendor)
+    const test = provider === "test" || provider === "test-chatgpt";
+    const vendor = test ? checkedTestVendor(options.testVendor)
       : provider === "codex" ? "openai" : provider;
-    const endpoint = (declared: string) => provider === "test" && options.testUrl !== undefined
+    const endpoint = (declared: string) => test && options.testUrl !== undefined
       ? checkedTestBaseUrl(options.testUrl) + "/" + routePrefix(vendor) + spec.testPath : declared;
     if (isKimiVendor(vendor)) {
       outputs.set("kimi.plugin.json", kimiManifest(endpoint(spec.mcp[vendor].url)));
