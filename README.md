@@ -1,5 +1,16 @@
 ## Production testing
 
+Run `python3 scripts/check-mcp-oauth.py` for an independent production OAuth
+smoke test (Python 3, standard library only). Complete browser sign-in on the
+same computer; use `--no-browser` to print the authorization URL instead.
+The script uses the registered `openai-plugin` client, PKCE, a random state,
+and a temporary loopback callback. It keeps tokens in memory, lists tools,
+checks duplicate names, calls the read-only `slicer_version`, and reports GET
+stream support. A 401 without authentication and a 405 for authenticated GET
+are diagnostic results; successful POST tool calls determine the smoke test.
+It does not install credentials into Codex or fix Codex session loading.
+
+
 The committed packages and `just install codex` / `just install claude` default to
 `https://mcp.helioadditive.com`. Restart the host after installation, connect the
 Helio plugins and sign in, then list printers/materials or inspect an existing run.
