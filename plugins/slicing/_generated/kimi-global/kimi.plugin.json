@@ -11,7 +11,7 @@
   },
   "mcpServers": {
     "helioadditive-slicing": {
-      "url": "https://mcp3.helioadditive.com/kimi/slicing"
+      "url": "https://mcp.helioadditive.com/kimi/slicing"
     }
   },
   "name": "helioadditive-slicing",

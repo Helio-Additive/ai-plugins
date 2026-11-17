@@ -172,7 +172,7 @@ for (const vendor of ["openai", "anthropic", "kimi-global", "kimi-china"]) {
 }
 
 const kimiRegions = [
-  ["kimi-global", "mcp3.helioadditive.com"],
+  ["kimi-global", "mcp.helioadditive.com"],
   ["kimi-china", "mcp2.helioam.cn"],
 ] as const;
 

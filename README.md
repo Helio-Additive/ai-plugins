@@ -1,3 +1,15 @@
+## Production testing
+
+The committed packages and `just install codex` / `just install claude` default to
+`https://mcp.helioadditive.com`. Restart the host after installation, connect the
+Helio plugins and sign in, then list printers/materials or inspect an existing run.
+Creating a slice or Dragon run still requires explicit consent.
+For nightly local installation use `MCP_TEST_URL=https://mcp3.helioadditive.com just install codex`
+(or `claude`). The nightly discovery fixture and historical observations below
+remain evidence about nightly, not production validation. China is unchanged.
+Production routes and OAuth clients were checked against devops generated
+us-west-2 production gateway routes and auth config; live sign-in remains to test.
+
 # ai-plugins
 
 Helio Additive AI plugins, with native provider marketplaces and one shared build toolchain.
@@ -326,7 +338,7 @@ checking after its installed package is refreshed.
 The generator builds JSON from TypeScript, converts MDX to Markdown while retaining skill
 frontmatter, and copies assets into each provider bundle. Normal builds generate
 `openai`, `anthropic`, `kimi-global`, `kimi-china` and native `codex` packages, using the endpoints and OAuth settings in each spec.
-**Both plugins currently target nightly services at `https://mcp3.helioadditive.com`**
+**Both plugins default to production services at `https://mcp.helioadditive.com`**
 for testing (the `kimi-china` target uses China staging, `https://mcp2.helioam.cn`; China has no nightly). Their provider-specific route paths and registered clients/scopes are
 preserved: `/openai/<plugin>` for OpenAI, `/anthropic/<plugin>` for Anthropic, and
 `/kimi/<plugin>` for both Kimi targets.
@@ -408,7 +420,7 @@ The `kimi-global` and `kimi-china` vendors target [Kimi Code CLI](https://www.ki
 
 | Vendor | Output | Slicing endpoint |
 | --- | --- | --- |
-| `kimi-global` | `_generated/kimi-global/` | `https://mcp3.helioadditive.com/kimi/slicing` |
+| `kimi-global` | `_generated/kimi-global/` | `https://mcp.helioadditive.com/kimi/slicing` |
 | `kimi-china` | `_generated/kimi-china/` | `https://mcp2.helioam.cn/kimi/slicing` |
 
 Dragon uses `/kimi/dragon` on the same hosts. The China host is `mcp2.helioam.cn` (staging) because

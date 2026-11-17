@@ -22,16 +22,16 @@ defaultPrompts:
 testPath: /dragon
 mcp:
   openai:
-    url: https://mcp3.helioadditive.com/openai/dragon
+    url: https://mcp.helioadditive.com/openai/dragon
     clientId: openai-plugin
     scopes:
       - dragon
   anthropic:
-    url: https://mcp3.helioadditive.com/anthropic/dragon
+    url: https://mcp.helioadditive.com/anthropic/dragon
     clientId: claude-plugin
     scopes:
       - dragon
   kimi-global:
-    url: https://mcp3.helioadditive.com/kimi/dragon
+    url: https://mcp.helioadditive.com/kimi/dragon
   kimi-china:
     url: https://mcp2.helioam.cn/kimi/dragon

@@ -8,7 +8,7 @@ for (const host of ["codex", "claude"]) for (const present of [false, true]) {
       if (cmd[0] === "just") {
         expect(env?.MCP_TEST_VENDOR).toBe(host === "codex" ? "openai" : "anthropic");
         expect(env?.GENERATE_TEST).toBe("true");
-        expect(env?.MCP_TEST_URL).toBe("https://mcp3.helioadditive.com");
+        expect(env?.MCP_TEST_URL).toBe("https://mcp.helioadditive.com");
       }
       if (cmd.includes("list")) {
         const entries = present ? [{ name: "helioadditive-plugins" }] : [];

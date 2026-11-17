@@ -21,16 +21,16 @@ defaultPrompts:
 testPath: /slicing
 mcp:
   openai:
-    url: https://mcp3.helioadditive.com/openai/slicing
+    url: https://mcp.helioadditive.com/openai/slicing
     clientId: openai-plugin
     scopes:
       - slicing
   anthropic:
-    url: https://mcp3.helioadditive.com/anthropic/slicing
+    url: https://mcp.helioadditive.com/anthropic/slicing
     clientId: claude-plugin
     scopes:
       - slicing
   kimi-global:
-    url: https://mcp3.helioadditive.com/kimi/slicing
+    url: https://mcp.helioadditive.com/kimi/slicing
   kimi-china:
     url: https://mcp2.helioam.cn/kimi/slicing
