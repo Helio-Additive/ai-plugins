@@ -46,4 +46,6 @@ Validation returns `{valid, issues:[{code, field, message, action}]}`, not a bar
 
 For requested job creation, follow `create-helio-slice`: normally omit `input.slicingEngine` and let the service use the 3MF probe recommendation or the model file's printer catalog. A 3MF with no recommendation needs explicit compatible presets or an engine. If settings were validated for a specific engine, set `input.slicingEngine` to that engine so discovery, validation, and creation agree. Pass the exact validated string as `input.settings`, and include the selected `input.presetOverrides` alongside the required model inputs. Settings advice alone does not request a new job.
 
+For a project file, pass a changed setting in `settings`; do not write it into the file. A setting written into a project file without being listed in the file's `different_settings_to_system` is replaced by the preset's value when the project loads, as in the desktop apps (see `create-helio-slice`).
+
 Summarize the chosen baseline, changed settings with units, expected tradeoffs, and validation result. If the user only requested configuration, return the proposed overrides for use in a later slice.
