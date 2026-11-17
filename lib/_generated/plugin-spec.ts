@@ -12,7 +12,6 @@ export interface PluginSpec {
    * Stable plugin and MCP server identifier.
    */
   name: string;
-  version: string;
   description: string;
   /**
    * Public company or product website. Mapped to portable/native homepage and OpenAI interface.websiteURL; separate from source and licence links in descriptions.

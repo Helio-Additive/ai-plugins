@@ -1,3 +1,4 @@
+import { releaseVersion } from "./build";
 import { beforeAll, describe, expect, test } from "bun:test";
 import { loadPluginSpecs, renderPlugin } from "./build";
 
@@ -16,7 +17,7 @@ for (const { spec, source } of plugins) {
       expect(codex.has("mcp.json")).toBe(false);
       const manifest = JSON.parse(String(codex.get(".codex-plugin/plugin.json")));
       expect(manifest.name).toBe(spec.name);
-      expect(manifest.version).toBe(spec.version);
+      expect(manifest.version).toBe(releaseVersion);
       expect(manifest.skills).toBe("./skills/");
       if (spec.mcp) {
         expect(manifest.mcpServers).toBe("./.mcp.json");

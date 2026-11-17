@@ -13,7 +13,7 @@ export class CommandError extends Error {
 export function install(host: string, run: Run, root: string) {
   if (host !== "codex" && host !== "claude") throw new Error("Host must be codex or claude.");
   run(["just", "make"], {
-    GENERATE_TEST: "true", MCP_TEST_URL: "https://mcp3.helioadditive.com",
+    GENERATE_TEST: "true", MCP_TEST_URL: process.env.MCP_TEST_URL ?? "https://mcp.helioadditive.com",
     MCP_TEST_VENDOR: host === "codex" ? "openai" : "anthropic",
   });
   // Codex loads every configured marketplace unless this inventory is scoped.

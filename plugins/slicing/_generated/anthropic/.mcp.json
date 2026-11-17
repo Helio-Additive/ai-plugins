@@ -6,7 +6,7 @@
         "scopes": "slicing"
       },
       "type": "http",
-      "url": "https://mcp3.helioadditive.com/anthropic/slicing"
+      "url": "https://mcp.helioadditive.com/anthropic/slicing"
     }
   }
 }

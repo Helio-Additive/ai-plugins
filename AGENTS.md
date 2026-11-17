@@ -47,6 +47,6 @@ After source or generator changes, run `just make`, `bun run typecheck`, and `bu
 Local checks do not establish hosted OAuth or API behavior.
 Preserve registered OAuth contracts and explicit consent for actions that create
 work. Never invent IDs, results, or credentials, or package tokens/client secrets.
-Specs currently target nightly services at `mcp3.helioadditive.com`. Do not publish
+Specs target production services at `mcp.helioadditive.com` (China remains separately configured). Do not publish
 official plugins until production URLs and live authentication/workflows are verified
 and publication is authorized.
