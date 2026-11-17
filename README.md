@@ -1,35 +1,3 @@
-## Production testing
-
-Run `python3 scripts/check-mcp-oauth.py` for an independent production OAuth
-smoke test (Python 3, standard library only). Complete browser sign-in on the
-same computer; use `--no-browser` to print the authorization URL instead.
-The script uses the registered `openai-plugin` client, PKCE, a random state,
-and a temporary loopback callback. It keeps tokens in memory, lists tools,
-checks duplicate names, calls the read-only `slicer_version`, and reports GET
-stream support. A 401 without authentication and a 405 for authenticated GET
-are diagnostic results; successful POST tool calls determine the smoke test.
-It does not install credentials into Codex or fix Codex session loading.
-
-To print the access token locally, add `--print-token` (sensitive: do not share
-or commit the output). To inspect printer presets, use `--list-machines`.
-To upload an STL and create a production slice, pass `--slice block.stl`,
-`--machine-id` and one or more `--filament-id` values returned by the catalog;
-optionally add `--process-id`. STL files contain no printer/material settings.
-The script uploads once, uses the returned storage key and exact MIME type,
-then submits one `create_slice` request without retries. Submission does not
-establish that slicing completed.
-
-
-The committed packages and `just install codex` / `just install claude` default to
-`https://mcp.helioadditive.com`. Restart the host after installation, connect the
-Helio plugins and sign in, then list printers/materials or inspect an existing run.
-Creating a slice or Dragon run still requires explicit consent.
-For nightly local installation use `MCP_TEST_URL=https://mcp3.helioadditive.com just install codex`
-(or `claude`). The nightly discovery fixture and historical observations below
-remain evidence about nightly, not production validation. China is unchanged.
-Production routes and OAuth clients were checked against devops generated
-us-west-2 production gateway routes and auth config; live sign-in remains to test.
-
 # ai-plugins
 
 Helio Additive AI plugins, with native provider marketplaces and one shared build toolchain.
@@ -358,7 +326,7 @@ checking after its installed package is refreshed.
 The generator builds JSON from TypeScript, converts MDX to Markdown while retaining skill
 frontmatter, and copies assets into each provider bundle. Normal builds generate
 `openai`, `anthropic`, `kimi-global`, `kimi-china` and native `codex` packages, using the endpoints and OAuth settings in each spec.
-**Both plugins default to production services at `https://mcp.helioadditive.com`**
+**Both plugins currently target nightly services at `https://mcp3.helioadditive.com`**
 for testing (the `kimi-china` target uses China staging, `https://mcp2.helioam.cn`; China has no nightly). Their provider-specific route paths and registered clients/scopes are
 preserved: `/openai/<plugin>` for OpenAI, `/anthropic/<plugin>` for Anthropic, and
 `/kimi/<plugin>` for both Kimi targets.
@@ -440,7 +408,7 @@ The `kimi-global` and `kimi-china` vendors target [Kimi Code CLI](https://www.ki
 
 | Vendor | Output | Slicing endpoint |
 | --- | --- | --- |
-| `kimi-global` | `_generated/kimi-global/` | `https://mcp.helioadditive.com/kimi/slicing` |
+| `kimi-global` | `_generated/kimi-global/` | `https://mcp3.helioadditive.com/kimi/slicing` |
 | `kimi-china` | `_generated/kimi-china/` | `https://mcp2.helioam.cn/kimi/slicing` |
 
 Dragon uses `/kimi/dragon` on the same hosts. The China host is `mcp2.helioam.cn` (staging) because
