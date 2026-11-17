@@ -1,6 +1,5 @@
 # yaml-language-server: $schema=../../schemas/plugin-spec.schema.json
 name: helioadditive-slicing
-version: "0.1.0"
 description: >-
   Create, monitor, and retrieve Helio Additive slicing jobs. Powered by Helio
   slicer-cli with Bambu Studio, OrcaSlicer and Snapmaker Orca engines.

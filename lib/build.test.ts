@@ -1,3 +1,4 @@
+import { releaseVersion } from "./build";
 import { describe, expect, test } from "bun:test";
 import { access, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -190,7 +191,7 @@ describe.each(kimiRegions)("%s vendor", (vendor, host) => {
       expect(new URL(kimiUrl).pathname).toBe("/kimi" + spec.testPath);
       const manifest = JSON.parse(outputs.get("kimi.plugin.json") as string);
       expect(manifest).toEqual({
-        name: spec.name, version: spec.version, description: spec.description,
+        name: spec.name, version: releaseVersion, description: spec.description,
         author: { name: "Helio-Additive" }, skills: "./skills/",
         interface: {
           displayName: spec.displayName, shortDescription: spec.shortDescription,

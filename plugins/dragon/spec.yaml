@@ -1,6 +1,5 @@
 # yaml-language-server: $schema=../../schemas/plugin-spec.schema.json
 name: helioadditive-dragon
-version: "0.1.0"
 description: >-
   Prepare, run, monitor, and retrieve Helio Dragon thermal workflows. Companion
   slicing and G-code timing use Helio slicer-cli. Slicer source code, licences

@@ -588,3 +588,16 @@ sections for operations, fields, arguments and schema types. Refresh its validat
 Hive snapshot with `REFRESH_API_SCHEMA=true just make`; ordinary builds verify the
 recorded SHA-256 and reject snapshots older than seven days. Rendering and refresh
 logic live in `plugins/scripting/skills/api-schema/SKILL.mdx`. No API mutation is used.
+
+## Releasing
+
+All plugin bundles share the root `package.json` version. The generator reads it
+directly; plugin specs must not declare their own versions. Bump `package.json`,
+run `just make`, and commit the regenerated output. Then create a GitHub release
+with tag `v<version>`. The published-release workflow checks the version, builds
+production bundles and uploads one OpenAI ZIP per plugin. Refresh the production
+API schema with `REFRESH_API_SCHEMA=true just make` before release if it is stale.
+
+For local packaging validation, run `bun scripts/package-release.ts v<version>`
+after `just make`. ZIP contents start at `.codex-plugin/`, `.mcp.json`, `skills/`
+and `assets/` (the skills-only Scripting plugin has no MCP configuration).

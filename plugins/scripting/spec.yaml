@@ -1,6 +1,5 @@
 # yaml-language-server: $schema=../../schemas/plugin-spec.schema.json
 name: scripting
-version: "0.1.0"
 description: Generate typed Helio GraphQL clients from a fresh schema.
 displayName: Helio Scripting
 shortDescription: Build typed GraphQL scripts.

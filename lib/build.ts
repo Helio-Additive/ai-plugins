@@ -7,6 +7,7 @@ import type { AgentPluginsManifest } from "./_generated/plugin";
 import type { AgentPluginsMCPConfiguration, StreamableHTTPMCPServer } from "./_generated/mcp";
 import type { PluginSpec } from "./_generated/plugin-spec";
 
+export const releaseVersion: string = (await import("../package.json")).default.version;
 export const root = resolve(import.meta.dir, "..");
 export type BuildOptions = { testUrl?: string; testVendor?: string };
 export type Outputs = Map<string, string | Buffer>;
@@ -130,7 +131,7 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
   const manifest = {
     $schema: "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
     name: spec.name,
-    version: spec.version,
+    version: releaseVersion,
     description: spec.description,
     ...(spec.homepage === undefined ? {} : { homepage: spec.homepage }),
     author: { name: "Helio-Additive" },
@@ -158,7 +159,7 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
   // the CLI discovers OAuth metadata and registers a public client dynamically, so only
   // the endpoint is projected. Presentation uses Kimi's own `interface` fields.
   const kimiManifest = (url?: string) => json({
-    name: spec.name, version: spec.version, description: spec.description, author: manifest.author,
+    name: spec.name, version: releaseVersion, description: spec.description, author: manifest.author,
     skills: "./skills/",
     interface: {
       displayName: spec.displayName, shortDescription: spec.shortDescription,
