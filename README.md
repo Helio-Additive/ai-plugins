@@ -10,6 +10,15 @@ stream support. A 401 without authentication and a 405 for authenticated GET
 are diagnostic results; successful POST tool calls determine the smoke test.
 It does not install credentials into Codex or fix Codex session loading.
 
+To print the access token locally, add `--print-token` (sensitive: do not share
+or commit the output). To inspect printer presets, use `--list-machines`.
+To upload an STL and create a production slice, pass `--slice block.stl`,
+`--machine-id` and one or more `--filament-id` values returned by the catalog;
+optionally add `--process-id`. STL files contain no printer/material settings.
+The script uploads once, uses the returned storage key and exact MIME type,
+then submits one `create_slice` request without retries. Submission does not
+establish that slicing completed.
+
 
 The committed packages and `just install codex` / `just install claude` default to
 `https://mcp.helioadditive.com`. Restart the host after installation, connect the
