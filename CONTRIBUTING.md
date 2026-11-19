@@ -10,8 +10,8 @@
   with the source change that produced it. `_generated/test/` is local only and
   ignored by Git.
 - `assets/`: shared branding images, copied into every bundle.
-- `.claude-plugin/marketplace.json` and `.agents/plugins/marketplace.json`: the
-  Claude Code and Codex marketplaces, listing the committed bundles.
+- `.claude-plugin/marketplace.json`: the Claude Code marketplace, written by the
+  build. `.agents/plugins/marketplace.json`: the Codex marketplace, kept by hand.
 - `lib/build.ts`: finds the specs, checks them and writes the bundles.
 - `lib/_generated/`: TypeScript types generated from the schemas.
 - `schemas/`: the plugin-spec schema and the pinned Agent Plugins schemas (see
@@ -52,8 +52,10 @@ name, with no registry to update. A spec declares:
 
 Unknown fields are rejected. Never put tokens or client secrets in a spec.
 
-To add a plugin, create `plugins/<name>/spec.yaml` and `skills/`, then add it to
-the two root marketplaces.
+To add a plugin, create `plugins/<name>/spec.yaml` and `skills/`, add its
+`./plugins/<name>/_generated/codex` entry to `.agents/plugins/marketplace.json`,
+and run `just make`. The build writes `.claude-plugin/marketplace.json` from the
+specs; commit it with the other generated output and never edit it by hand.
 
 ## Test a change locally
 
