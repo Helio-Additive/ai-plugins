@@ -51,8 +51,10 @@ Code CLI:
 ```text
 /plugins install /absolute/path/to/ai-plugins/plugins/slicing/_generated/kimi-global
 /reload
-/mcp-config login helioadditive-slicing
+/mcp
 ```
+
+`/mcp` lists the plugin's server; sign in with `/mcp-config login <that name>`.
 
 Use `plugins/dragon/...` for Dragon. Kimi copies the plugin when it installs it,
 so install it again after you pull an update. Skills are called as

@@ -32,8 +32,9 @@ bun run test
 ```
 
 `just make` regenerates the types and every bundle. A plugin's `_generated/` is
-only replaced once all of its output rendered, so a failed build leaves the last
-good output in place.
+only replaced once all of its output rendered, so a rendering error leaves the
+last good output in place. If the build fails after that, rebuild with
+`just make` before you commit.
 
 ## Specs
 
@@ -67,8 +68,10 @@ GENERATE_TEST=true MCP_TEST_URL=https://<test-host> MCP_TEST_VENDOR=anthropic ju
 ```
 
 `MCP_TEST_URL` is a base URL (HTTP or HTTPS, optional port, no path). The build
-appends `/<vendor>/<testPath>`. `MCP_TEST_VENDOR` is `openai`, `anthropic`,
-`kimi-global` or `kimi-china`. A normal `just make` removes the test bundle.
+appends `/<route><testPath>`, where `testPath` already starts with `/`.
+`MCP_TEST_VENDOR` is `openai`, `anthropic`, `kimi-global` or `kimi-china`; the
+route is the vendor name, except `kimi` for both Kimi vendors. A normal
+`just make` removes the test bundle.
 
 To build and install a test bundle in one step:
 
