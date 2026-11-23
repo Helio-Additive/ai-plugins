@@ -35,19 +35,23 @@ export function readBuildOptions(env: Record<string, string | undefined>): Build
 
 const kimiVendors = ["kimi-global", "kimi-china"] as const;
 type KimiVendor = (typeof kimiVendors)[number];
-type Vendor = "openai" | "anthropic" | KimiVendor;
+const sharedEndpointVendors = ["gemini", "qwen", "generic"] as const;
+type SharedEndpointVendor = (typeof sharedEndpointVendors)[number];
+type Vendor = "openai" | "anthropic" | KimiVendor | SharedEndpointVendor;
 
 const isKimiVendor = (value: unknown): value is KimiVendor => kimiVendors.includes(value as KimiVendor);
+const usesSharedEndpoint = (value: unknown): value is SharedEndpointVendor =>
+  sharedEndpointVendors.includes(value as SharedEndpointVendor);
 
 function checkedTestVendor(value: string | undefined): Vendor {
-  if (value !== "openai" && value !== "anthropic" && !isKimiVendor(value)) {
-    throw new Error("MCP_TEST_VENDOR must be openai, anthropic, kimi-global, or kimi-china.");
+  if (value !== "openai" && value !== "anthropic" && !isKimiVendor(value) && !usesSharedEndpoint(value)) {
+    throw new Error("MCP_TEST_VENDOR must be openai, anthropic, kimi-global, kimi-china, gemini, qwen, or generic.");
   }
   return value;
 }
 
-/** Gateway route prefix for a vendor. Both Kimi regions share `/kimi/<plugin>` on their own domains. */
-const routePrefix = (vendor: Vendor) => isKimiVendor(vendor) ? "kimi" : vendor;
+/** Both Kimi regions use /kimi. Standalone clients use the unprefixed service routes. */
+const routePrefix = (vendor: Vendor) => usesSharedEndpoint(vendor) ? "" : isKimiVendor(vendor) ? "/kimi" : `/${vendor}`;
 
 function checkedTestBaseUrl(value: string): string {
   const url = new URL(checkedUrl(value, "MCP_TEST_URL", true));
@@ -89,8 +93,8 @@ export async function loadPluginSpecs(directory = join(root, "plugins")) {
 
 export function providersFor(options: BuildOptions = {}) {
   return options.testUrl === undefined
-    ? ["openai", "anthropic", "kimi-global", "kimi-china", "codex"] as const
-    : ["openai", "anthropic", "kimi-global", "kimi-china", "codex", "test"] as const;
+    ? ["openai", "anthropic", ...kimiVendors, "codex", ...sharedEndpointVendors] as const
+    : ["openai", "anthropic", ...kimiVendors, "codex", ...sharedEndpointVendors, "test"] as const;
 }
 
 async function files(directory: string): Promise<string[]> {
@@ -111,16 +115,17 @@ function json(value: unknown): string {
 
 /** Assemble complete provider bundles in memory before writing any output. */
 export async function renderPlugin(spec: PluginSpec, source: string, options: BuildOptions = {}): Promise<Map<string, Outputs>> {
-  const shared: Outputs = new Map();
+  const skills: Outputs = new Map();
   const skillsDirectory = join(source, "skills");
   for (const path of await files(skillsDirectory)) {
     if (!path.endsWith(".mdx")) continue;
     const contents = await readFile(path, "utf8");
     const frontmatter = contents.match(/^(?:\uFEFF)?---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/)?.[0] ?? "";
     const markdown = await mdxToMd(path);
-    shared.set(join("skills", relative(skillsDirectory, path).slice(0, -1)),
+    skills.set(join("skills", relative(skillsDirectory, path).slice(0, -1)),
       `${frontmatter ? `${frontmatter.trimEnd()}\n\n` : ""}${markdown.trimEnd()}\n`);
   }
+  const shared = new Map(skills);
   const assetsDirectory = join(root, "assets");
   for (const path of await files(assetsDirectory)) {
     shared.set(join("assets", relative(assetsDirectory, path)), await readFile(path));
@@ -169,6 +174,39 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
   });
   const packages = new Map<string, Outputs>();
   for (const provider of providersFor(options)) {
+    const vendor = provider === "test" ? checkedTestVendor(options.testVendor)
+      : provider === "codex" ? "openai" : provider;
+    const endpoint = (declared: string) => provider === "test" && options.testUrl !== undefined
+      ? checkedTestBaseUrl(options.testUrl) + routePrefix(vendor) + spec.testPath : declared;
+    if (usesSharedEndpoint(vendor)) {
+      const outputs = new Map(skills);
+      const connection = spec.mcp?.generic;
+      if (vendor === "generic") {
+        if (connection) {
+          const mcp = {
+            $schema: "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+            mcpServers: { [spec.name]: { type: "streamable-http", url: endpoint(connection.url) } },
+          } satisfies AgentPluginsMCPConfiguration;
+          outputs.set("mcp.json", json(mcp));
+        }
+      } else {
+        outputs.set(`${vendor}-extension.json`, json({
+          name: spec.name,
+          version: releaseVersion,
+          ...(vendor === "qwen" ? { skills: "skills" } : {}),
+          ...(connection ? { mcpServers: { [spec.name]: {
+            httpUrl: endpoint(connection.url),
+            oauth: {
+              enabled: true,
+              clientId: connection.clientId,
+              ...(connection.scopes ? { scopes: connection.scopes } : {}),
+            },
+          } } } : {}),
+        }));
+      }
+      packages.set(provider, outputs);
+      continue;
+    }
     const outputs = new Map(shared);
     const codex = provider === "codex" || (provider === "test" && options.testVendor === "openai");
     const kimi = isKimiVendor(provider) || (provider === "test" && isKimiVendor(options.testVendor));
@@ -188,10 +226,6 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
       packages.set(provider, outputs);
       continue;
     }
-    const vendor = provider === "test" ? checkedTestVendor(options.testVendor)
-      : provider === "codex" ? "openai" : provider;
-    const endpoint = (declared: string) => provider === "test" && options.testUrl !== undefined
-      ? checkedTestBaseUrl(options.testUrl) + "/" + routePrefix(vendor) + spec.testPath : declared;
     if (isKimiVendor(vendor)) {
       outputs.set("kimi.plugin.json", kimiManifest(endpoint(spec.mcp[vendor].url)));
       packages.set(provider, outputs);

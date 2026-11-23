@@ -63,7 +63,8 @@
         "openai",
         "anthropic",
         "kimi-global",
-        "kimi-china"
+        "kimi-china",
+        "generic"
       ],
       "properties": {
         "openai": {
@@ -77,6 +78,10 @@
         },
         "kimi-china": {
           "$ref": "#/definitions/urlConnection"
+        },
+        "generic": {
+          "description": "Shared public service route and OAuth registration for standalone MCP clients and compatible extensions.",
+          "$ref": "#/definitions/connection"
         }
       }
     }

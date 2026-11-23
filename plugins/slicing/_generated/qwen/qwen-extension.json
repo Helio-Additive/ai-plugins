@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "helioadditive-slicing": {
+      "httpUrl": "https://mcp.helioadditive.com/slicing",
+      "oauth": {
+        "clientId": "generic-agent",
+        "enabled": true,
+        "scopes": [
+          "slicing"
+        ]
+      }
+    }
+  },
+  "name": "helioadditive-slicing",
+  "skills": "skills",
+  "version": "0.1.0"
+}

@@ -1,0 +1,51 @@
+---
+name: configure-helio-slice-settings
+description: Configure slice details such as layer height, walls, infill, supports, speed, or temperature using Helio Slicing presets, settings schemas, and validated overrides.
+---
+
+Use this skill to turn print requirements into settings for a BambuStudio (`BAMBU`), OrcaSlicer (`ORCA`), or Snapmaker Orca (`SNAPMAKER`) slice. Use the connected `helioadditive-slicing` tool schemas for current inputs.
+
+## Establish the baseline
+
+* Reuse the user's engine, printer/nozzle, material, profiles, and existing overrides. Ask only for missing details that affect the requested change.
+* Treat the fitted nozzle, bed geometry, printer limits, and machine routines as fixed hardware configuration. Do not offer to change nozzle diameter as a print-quality setting. If hardware was physically changed, confirm it and select the matching machine preset; never emulate that change through generic settings.
+* Clarify the relevant goal: finer detail, strength, shorter print time, support removal, or another specific requirement. Explain meaningful tradeoffs when choosing values.
+* When selecting presets, call `slicer_version` and use its result as `filter.forSlicerVersion`. Find the machine with `slicer_machines`, then compatible materials and processes with `slicer_filaments` and `slicer_processes` using `filter.compatibleMachine`.
+* Map returned IDs into `input.presetOverrides.machineId`, `processId`, and `filamentIds`. Machine `defaultProcessId` and `defaultFilamentIds` can supply a baseline when present; preserve filament order and look up missing defaults. Geometry-only `THREE_MF` inputs require explicit profiles.
+
+## Inspect supported settings
+
+Call `get_slicer_settings` with `{"type":"BAMBU"}`, `{"type":"ORCA"}`, or `{"type":"SNAPMAKER"}` matching the chosen engine. Snapmaker Orca is a separate engine with its own settings schema, not an alias for ordinary Orca. It returns a decoded JSON Schema describing supported options; it does not retrieve a job's settings or the fully resolved preset configuration.
+
+Inspect only the relevant properties and referenced definitions. Use their descriptions, units, types, enums, ranges, and dependencies where supplied. Follow the schema's exact representations, including strings or arrays where required; do not assume a numeric-looking setting takes a number.
+
+Translate the user's goal into a small set of changes:
+
+* Detail and surface finish: layer height and extrusion/line width.
+* Strength and weight: wall/perimeter count, top/bottom layers, infill density and pattern.
+* Overhangs and cleanup: supports, support interface, placement, and spacing.
+* Time and material behavior: speeds, acceleration, temperature, cooling, and retraction.
+
+These are search concepts, not guaranteed field names. Discover the actual keys in the engine's schema. Keep unrelated preset/project values unchanged; do not copy every schema default into the overrides or assume schema defaults are active job values.
+
+Printer-preset keys, custom G-code, file/output paths, and printer host or credential settings are not job overrides. This includes `nozzle_diameter`, `printable_area`, `machine_start_gcode`, `machine_end_gcode`, `filename_format`, `bed_custom_texture`, `bed_custom_model`, `print_host`, and `printhost_*`. Do not suggest these keys, bypass validation, or move a rejected value into another field. Machine routines must come from the selected trusted preset.
+
+## Validate and apply
+
+Build an object containing the requested overrides, then serialize it once as the `settings` string. For example, after confirming the current schema permits this key and value, call `validate_slicer_settings` with:
+
+```json
+{
+  "engine": "BAMBU",
+  "settings": "{\"layer_height\":0.2}"
+}
+
+```
+
+Validation returns `{valid, issues:[{code, field, message, action}]}`, not a bare boolean. If `valid` is false, use the issue's field and action to correct the request, and explain it in the user's language. A blocked `nozzle_diameter` requires a printer preset matching the physically fitted nozzle, not a settings workaround. Revalidate after edits. Do not submit invalid settings or silently discard a requested change. Passing validation establishes schema compatibility only: a value such as `layer_height: 9` may still be refused by the engine. Report that refusal from the plate's `returnCode` and `errorString`.
+
+For requested job creation, follow `create-helio-slice`: normally omit `input.slicingEngine` and let the service use the 3MF probe recommendation or the model file's printer catalog. A 3MF with no recommendation needs explicit compatible presets or an engine. If settings were validated for a specific engine, set `input.slicingEngine` to that engine so discovery, validation, and creation agree. Pass the exact validated string as `input.settings`, and include the selected `input.presetOverrides` alongside the required model inputs. Settings advice alone does not request a new job.
+
+For a project file, pass a changed setting in `settings`; do not write it into the file. A setting written into a project file without being listed in the file's `different_settings_to_system` is replaced by the preset's value when the project loads, as in the desktop apps (see `create-helio-slice`).
+
+Summarize the chosen baseline, changed settings with units, expected tradeoffs, and validation result. If the user only requested configuration, return the proposed overrides for use in a later slice.
