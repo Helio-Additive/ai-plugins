@@ -10,12 +10,12 @@ const plugins = await loadPluginSpecs();
 describe("test bundle build options", () => {
   test("test bundles opt in with a base URL", () => {
     const options = readBuildOptions({ GENERATE_TEST: "true", MCP_TEST_VENDOR: "openai", MCP_TEST_URL: "https://mcp3.helioadditive.com" });
-    expect(providersFor(options)).toEqual(["openai", "anthropic", "kimi-global", "kimi-china", "codex", "test"]);
+    expect(providersFor(options)).toEqual(["openai", "anthropic", "kimi-global", "kimi-china", "codex", "gemini", "qwen", "generic", "test"]);
   });
 
   test("normal builds ignore even invalid test base URLs", () => {
     expect(readBuildOptions({ MCP_TEST_URL: "invalid" })).toEqual({});
-    expect(providersFor()).toEqual(["openai", "anthropic", "kimi-global", "kimi-china", "codex"]);
+    expect(providersFor()).toEqual(["openai", "anthropic", "kimi-global", "kimi-china", "codex", "gemini", "qwen", "generic"]);
   });
 
   test("requires a base URL when test generation is enabled", () => {
@@ -28,6 +28,38 @@ describe("test bundle build options", () => {
     },
   );
 });
+
+describe.each(plugins.map(({ spec, source }) => [spec.name, spec, source] as const))(
+  "%s shared endpoint bundles", (_name, spec, source) => {
+    test.each(["gemini", "qwen", "generic"])("%s packages skills and only its own MCP configuration", async (vendor) => {
+      const bundles = await renderPlugin(spec, source, readBuildOptions({
+        GENERATE_TEST: "true", MCP_TEST_URL: "http://localhost:8080", MCP_TEST_VENDOR: vendor,
+      }));
+      const skills = [...bundles.get("openai")!].filter(([path]) => path.startsWith("skills/"));
+      const manifestFile = vendor === "generic" ? "mcp.json" : `${vendor}-extension.json`;
+      const configFor = (url?: string) => {
+        const mcpServers = url ? { mcpServers: { [spec.name]: vendor === "generic"
+          ? { type: "streamable-http", url }
+          : { httpUrl: url, oauth: { enabled: true, clientId: spec.mcp!.generic.clientId, scopes: spec.mcp!.generic.scopes } },
+        } } : {};
+        return vendor === "generic"
+          ? { $schema: "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json", ...mcpServers }
+          : { name: spec.name, version: releaseVersion, ...(vendor === "qwen" ? { skills: "skills" } : {}), ...mcpServers };
+      };
+      for (const [bundle, url] of [
+        [vendor, spec.mcp?.generic.url],
+        ["test", spec.mcp ? `http://localhost:8080${spec.testPath}` : undefined],
+      ] as const) {
+        const files = new Map(bundles.get(bundle)!);
+        if (vendor !== "generic" || url) {
+          expect(JSON.parse(files.get(manifestFile) as string)).toEqual(configFor(url));
+          files.delete(manifestFile);
+        }
+        expect(files).toEqual(new Map(skills));
+      }
+    });
+  },
+);
 
 test("specs must define a valid neutral test route", async () => {
   const directory = await mkdtemp(join(tmpdir(), "ai-plugins-spec-test-"));

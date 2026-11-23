@@ -35,6 +35,7 @@ export interface PluginSpec {
     anthropic: MCPConnection;
     "kimi-global": MCPURLOnlyConnection;
     "kimi-china": MCPURLOnlyConnection;
+    generic: MCPConnection1;
   };
 }
 /**
@@ -64,4 +65,23 @@ export interface MCPURLOnlyConnection {
    * Absolute HTTPS provider endpoint, without credentials or a fragment.
    */
   url: string;
+}
+/**
+ * Provider MCP endpoint and public OAuth registration. Secrets must never be stored in a plugin spec.
+ */
+export interface MCPConnection1 {
+  /**
+   * Absolute HTTPS provider endpoint, without credentials or a fragment.
+   */
+  url: string;
+  /**
+   * Registered public OAuth client identifier, not a client secret.
+   */
+  clientId: string;
+  /**
+   * Scopes always requested. Omit to preserve provider defaults.
+   *
+   * @minItems 1
+   */
+  scopes?: [string, ...string[]];
 }

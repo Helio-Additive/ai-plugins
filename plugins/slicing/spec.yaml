@@ -33,3 +33,8 @@ mcp:
     url: https://mcp.helioadditive.com/kimi/slicing
   kimi-china:
     url: https://mcp2.helioam.cn/kimi/slicing
+  generic:
+    url: https://mcp.helioadditive.com/slicing
+    clientId: generic-agent
+    scopes:
+      - slicing

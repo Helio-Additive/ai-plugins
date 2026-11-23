@@ -6,10 +6,10 @@
   endpoints, checked against `schemas/plugin-spec.schema.json`.
 - `plugins/<plugin>/skills/**/*.mdx`: the plugin's skills.
 - `plugins/<plugin>/_generated/`: build output, one bundle per host (`anthropic`,
-  `codex`, `openai`, `kimi-global`, `kimi-china`). Never edit it by hand; commit it
-  with the source change that produced it. `_generated/test/` is local only and
-  ignored by Git.
-- `assets/`: shared branding images, copied into every bundle.
+  `codex`, `openai`, `kimi-global`, `kimi-china`, `gemini`, `qwen`, `generic`).
+  Commit generated outputs with their sources. `_generated/test/` is local
+  only and ignored by Git.
+- `assets/`: shared branding for the OpenAI, Claude, Codex and Kimi packages.
 - `.claude-plugin/marketplace.json`: the Claude Code marketplace, written by the
   build. `.agents/plugins/marketplace.json`: the Codex marketplace, kept by hand.
 - `lib/build.ts`: finds the specs, checks them and writes the bundles.
@@ -47,8 +47,11 @@ name, with no registry to update. A spec declares:
   the OpenAI presentation.
 - `mcp.openai` and `mcp.anthropic`: the HTTPS `url`, public OAuth `clientId` and
   optional `scopes`.
-- `mcp.kimi-global` and `mcp.kimi-china`: the HTTPS `url` only. Kimi registers its
-  own OAuth client when the user signs in, so its manifest has no client fields.
+- `mcp.kimi-global` and `mcp.kimi-china`: the HTTPS `url` only. The Kimi manifest
+  delegates client discovery and registration to the CLI's OAuth flow.
+- `mcp.generic`: the shared `url`, public `clientId` and optional `scopes` for
+  Gemini CLI and Qwen Code. The standalone MCP template carries the transport
+  and URL. The Generic install guide supplies the auth details separately.
 - `testPath`: the plugin's route segment for test bundles, such as `/slicing`.
 
 Unknown fields are rejected. Never put tokens or client secrets in a spec.
@@ -69,9 +72,10 @@ GENERATE_TEST=true MCP_TEST_URL=https://<test-host> MCP_TEST_VENDOR=anthropic ju
 
 `MCP_TEST_URL` is a base URL (HTTP or HTTPS, optional port, no path). The build
 appends `/<route><testPath>`, where `testPath` already starts with `/`.
-`MCP_TEST_VENDOR` is `openai`, `anthropic`, `kimi-global` or `kimi-china`; the
-route is the vendor name, except `kimi` for both Kimi vendors. A normal
-`just make` removes the test bundle.
+`MCP_TEST_VENDOR` is `openai`, `anthropic`, `kimi-global`, `kimi-china`,
+`gemini`, `qwen` or `generic`. The first two use their vendor name as the route
+prefix. Both Kimi vendors use `/kimi`. Gemini, Qwen and Generic append only
+`testPath` to the base URL. A normal `just make` removes the test bundle.
 
 To build and install a test bundle in one step:
 
@@ -88,6 +92,11 @@ temporary folder first.
 
 For Kimi Code CLI, install the test bundle from the TUI with
 `/plugins install /absolute/path/to/plugins/<plugin>/_generated/test`.
+For Gemini CLI or Qwen Code, run `gemini extensions install` or
+`qwen extensions install` with that absolute path. For Generic, use the skills
+and connection template in that directory. See
+[provider OAuth follow-ups](docs/provider-auth.md) for the callbacks required
+to exercise sign-in.
 
 Opt-in checks, each using temporary homes and never signing in:
 
@@ -108,6 +117,10 @@ commit the regenerated output. Then publish a GitHub release tagged
 `v<version>`; the release workflow checks the version, builds the bundles and
 uploads one OpenAI ZIP per plugin. Refresh the API schema snapshot first if it is
 stale: `REFRESH_API_SCHEMA=true just make`.
+
+Claude and Codex use the committed marketplaces. Kimi, Gemini CLI, Qwen Code,
+and standalone clients install from the committed bundles in a clone of the
+repo. Grok, Grok Bot and DeepSeek Harness use their host's MCP configuration.
 
 To check the packages locally, run `bun scripts/package-release.ts v<version>`
 after `just make`.

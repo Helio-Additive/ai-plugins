@@ -34,3 +34,8 @@ mcp:
     url: https://mcp.helioadditive.com/kimi/dragon
   kimi-china:
     url: https://mcp2.helioam.cn/kimi/dragon
+  generic:
+    url: https://mcp.helioadditive.com/dragon
+    clientId: generic-agent
+    scopes:
+      - dragon
