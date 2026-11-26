@@ -9,7 +9,7 @@
         "slicing"
       ],
       "type": "http",
-      "url": "https://mcp.helioadditive.com/openai/slicing"
+      "url": "https://slicing.mcp.helioadditive.com/openai"
     }
   }
 }

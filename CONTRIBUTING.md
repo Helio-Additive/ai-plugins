@@ -45,8 +45,8 @@ name, with no registry to update. A spec declares:
 - Optional `homepage`, an HTTPS website.
 - `displayName`, `shortDescription`, `longDescription` and `defaultPrompts` for
   the OpenAI presentation.
-- `mcp.openai` and `mcp.anthropic`: the HTTPS `url`, public OAuth `clientId` and
-  optional `scopes`.
+- `mcp.openai` and `mcp.anthropic` specify the HTTPS URL, public OAuth client ID
+  and optional scopes. Codex uses the declared OpenAI endpoint and registration.
 - `mcp.kimi-global` and `mcp.kimi-china`: the HTTPS `url` only. Kimi registers its
   own OAuth client when the user signs in, so its manifest has no client fields.
 - `testPath`: the plugin's route segment for test bundles, such as `/slicing`.
@@ -70,8 +70,9 @@ GENERATE_TEST=true MCP_TEST_URL=https://<test-host> MCP_TEST_VENDOR=anthropic ju
 `MCP_TEST_URL` is a base URL (HTTP or HTTPS, optional port, no path). The build
 appends `/<route><testPath>`, where `testPath` already starts with `/`.
 `MCP_TEST_VENDOR` is `openai`, `anthropic`, `kimi-global` or `kimi-china`; the
-route is the vendor name, except `kimi` for both Kimi vendors. A normal
-`just make` removes the test bundle.
+route is the vendor name, except `kimi` for both Kimi vendors. For example, a
+shared test host serves `/openai/slicing`, while Slicing’s dedicated production
+URL uses `/openai`. A normal `just make` removes the test bundle.
 
 To build and install a test bundle in one step:
 
@@ -79,8 +80,9 @@ To build and install a test bundle in one step:
 just install claude   # or: just install codex
 ```
 
-It builds the test bundle for that host against `MCP_TEST_URL` (the production
-service when unset), then replaces only the Helio plugins and the
+With `MCP_TEST_URL` set, the installer builds against that test base. Otherwise
+Codex copies each plugin's native production package and Claude uses its shared
+production service. The installer replaces only the Helio plugins and the
 `helioadditive-plugins` marketplace; it stops if that marketplace holds other
 plugins. Restart the host afterwards. To keep your normal setup
 untouched, set `CLAUDE_CONFIG_DIR` (Claude) or `CODEX_HOME` (Codex) to an empty
