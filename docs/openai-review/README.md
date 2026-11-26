@@ -1,6 +1,6 @@
 # OpenAI directory submission, v0.1.1
 
-Slicing and Dragon each ship a public submission ZIP and a native desktop ZIP at version 0.1.1. Scripting ships its existing skills-only desktop package. Helio's OpenAI business identity is already verified.
+Slicing, Dragon and Scripting each ship a public submission ZIP and a native desktop ZIP at version 0.1.1. Helio's OpenAI business identity is already verified.
 
 ## Package and service findings
 
@@ -11,7 +11,7 @@ Slicing and Dragon each ship a public submission ZIP and a native desktop ZIP at
 
 The dedicated routes advertise product-specific OAuth resource metadata. The Slicing hostname also serves MCP at its root and its OpenAI verification challenge matches the configured token. Dragon's challenge returns 404 until its own token is configured. [Deployed routing change](https://github.com/Helio-Additive/devops/pull/5859)
 
-Upload the two **openai-submission** ZIPs separately. Each has root-level `plugin.json` and `mcp.json`. The **codex-desktop** ZIPs use native hidden manifests. The Git marketplaces still use their committed host bundles. Scripting provides two skills and templates for ten languages on all hosts.
+Upload each **openai-submission** ZIP separately. All three include root-level `plugin.json`. Slicing and Dragon also include `mcp.json`. The **codex-desktop** ZIPs use native hidden manifests. The Git marketplaces still use their committed host bundles. Scripting provides two skills and templates for ten languages on all hosts.
 
 Slicing covers print preparation and slicing jobs. Dragon covers Assess and Enhance for supported G-code. Both retain their listing copy, three suggested prompts, attribution and reviewer cases. [Slicing spec and cases](../../plugins/slicing/spec.yaml) · [Dragon spec and cases](../../plugins/dragon/spec.yaml)
 

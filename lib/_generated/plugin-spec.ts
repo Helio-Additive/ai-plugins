@@ -36,15 +36,11 @@ export interface PluginSpec {
     "kimi-global": MCPURLOnlyConnection;
     "kimi-china": MCPURLOnlyConnection;
   };
-  openaiSubmission?: {
-    developerName: string;
-    supportURL: string;
-    privacyPolicyURL: string;
-    termsOfServiceURL: string;
-    releaseNotes: string;
-    cases: ReviewCases;
-    introduction?: string;
-  };
+  openaiSubmission?:
+    | McpSubmission
+    | {
+        releaseNotes: string;
+      };
 }
 /**
  * Provider MCP endpoint and public OAuth registration. Secrets must never be stored in a plugin spec.
@@ -77,6 +73,15 @@ export interface MCPURLOnlyConnection {
    * Absolute HTTPS provider endpoint, without credentials or a fragment.
    */
   url: string;
+}
+export interface McpSubmission {
+  developerName: string;
+  supportURL: string;
+  privacyPolicyURL: string;
+  termsOfServiceURL: string;
+  releaseNotes: string;
+  cases: ReviewCases;
+  introduction?: string;
 }
 export interface ReviewCases {
   /**

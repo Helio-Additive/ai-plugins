@@ -42,9 +42,10 @@ def check(plugin, layout, suffix):
             ext = manifest["extensions"]["com.openai"]
             assert not manifest.get("apps") and not ext.get("apps")
             assert len(interface["shortDescription"]) <= 30
-            for field in ("websiteURL", "supportURL", "privacyPolicyURL", "termsOfServiceURL"):
-                assert interface[field].startswith("https://")
-            if plugin.name in ("slicing", "dragon"):
+            assert ext["publication"]["release_notes"].strip()
+            if plugin.name in OPENAI_ENDPOINTS:
+                for field in ("websiteURL", "supportURL", "privacyPolicyURL", "termsOfServiceURL"):
+                    assert interface[field].startswith("https://")
                 cases = ext["review"]["test_cases"]
                 assert len(cases["positive"]) == 5 and len(cases["negative"]) == 3
         else:

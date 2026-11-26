@@ -63,7 +63,7 @@ so install it again after you pull an update. Skills are called as
 ### OpenAI apps
 
 Download one ZIP per plugin from the [latest release](https://github.com/Helio-Additive/ai-plugins/releases/latest).
-For Dragon and Slicing, choose `<plugin>-openai-submission-<version>.zip` to upload to OpenAI.
+Choose `<plugin>-openai-submission-<version>.zip` to upload to OpenAI.
 Choose `<plugin>-codex-desktop-<version>.zip` for a desktop host using the native Codex layout.
 
 ## First check

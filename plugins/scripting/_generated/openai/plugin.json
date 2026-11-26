@@ -23,6 +23,9 @@
         "logoDark": "./assets/logo-dark.png",
         "longDescription": "Skills and language templates for schema discovery and typed Helio API scripting, without an MCP server.",
         "shortDescription": "Build typed GraphQL scripts."
+      },
+      "publication": {
+        "release_notes": "Initial public release of Helio Scripting. Explore the Helio GraphQL API, look up queries, mutations, and field types, and build typed clients and scripts using templates for ten programming languages."
       }
     }
   },

@@ -81,47 +81,22 @@
       }
     },
     "openaiSubmission": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "developerName": {
-          "type": "string",
-          "minLength": 1
+      "oneOf": [
+        {
+          "$ref": "#/definitions/mcpSubmission"
         },
-        "supportURL": {
-          "type": "string",
-          "pattern": "^https://",
-          "maxLength": 1024
-        },
-        "privacyPolicyURL": {
-          "type": "string",
-          "pattern": "^https://",
-          "maxLength": 1024
-        },
-        "termsOfServiceURL": {
-          "type": "string",
-          "pattern": "^https://",
-          "maxLength": 1024
-        },
-        "releaseNotes": {
-          "type": "string",
-          "minLength": 1
-        },
-        "cases": {
-          "$ref": "#/definitions/reviewCases"
-        },
-        "introduction": {
-          "type": "string",
-          "minLength": 1
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "releaseNotes": {
+              "$ref": "#/definitions/mcpSubmission/properties/releaseNotes"
+            }
+          },
+          "required": [
+            "releaseNotes"
+          ]
         }
-      },
-      "required": [
-        "developerName",
-        "supportURL",
-        "privacyPolicyURL",
-        "termsOfServiceURL",
-        "releaseNotes",
-        "cases"
       ]
     }
   },
@@ -255,12 +230,63 @@
         "positive",
         "negative"
       ]
+    },
+    "mcpSubmission": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "developerName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "supportURL": {
+          "type": "string",
+          "pattern": "^https://",
+          "maxLength": 1024
+        },
+        "privacyPolicyURL": {
+          "type": "string",
+          "pattern": "^https://",
+          "maxLength": 1024
+        },
+        "termsOfServiceURL": {
+          "type": "string",
+          "pattern": "^https://",
+          "maxLength": 1024
+        },
+        "releaseNotes": {
+          "type": "string",
+          "minLength": 1
+        },
+        "cases": {
+          "$ref": "#/definitions/reviewCases"
+        },
+        "introduction": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "developerName",
+        "supportURL",
+        "privacyPolicyURL",
+        "termsOfServiceURL",
+        "releaseNotes",
+        "cases"
+      ]
     }
   },
   "dependencies": {
-    "mcp": [
-      "testPath"
-    ],
+    "mcp": {
+      "required": [
+        "testPath"
+      ],
+      "properties": {
+        "openaiSubmission": {
+          "$ref": "#/definitions/mcpSubmission"
+        }
+      }
+    },
     "testPath": [
       "mcp"
     ]

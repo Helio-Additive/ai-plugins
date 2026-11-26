@@ -41,7 +41,7 @@ openaiSubmission:
   supportURL: https://www.helioadditive.com/contact
   privacyPolicyURL: https://www.helioadditive.com/en-us/policies/privacy
   termsOfServiceURL: https://www.helioadditive.com/en-us/policies/terms
-  releaseNotes: Added a portable OpenAI directory package, centered the icons, and clarified the Assess and Enhance workflows.
+  releaseNotes: Initial public release of Helio Dragon. Assess the thermal behavior of existing G-code or optimize it for a supported printer and material. Review your plan in ChatGPT, start the run when you’re ready, track its progress, and retrieve the assessment results or enhanced G-code.
   cases:
     positive:
       - description: Read the first page of the printer catalog.
