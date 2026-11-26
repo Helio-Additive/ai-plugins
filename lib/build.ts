@@ -74,7 +74,7 @@ export async function loadPluginSpecs(directory = join(root, "plugins")) {
       throw new Error(`Invalid ${relative(root, file)}: ${ajv.errorsText(isPluginSpec.errors, { separator: "; " })}`);
     }
     if (spec.homepage !== undefined) checkedUrl(spec.homepage, `${relative(root, file)} homepage`);
-    if (spec.openaiSubmission) {
+    if (spec.openaiSubmission && "cases" in spec.openaiSubmission) {
       for (const key of ["supportURL", "privacyPolicyURL", "termsOfServiceURL"] as const) {
         checkedUrl(spec.openaiSubmission[key], `${relative(root, file)} ${key}`);
       }
@@ -179,18 +179,25 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
     const kimi = isKimiVendor(provider) || (provider === "test" && isKimiVendor(options.testVendor));
     let portableManifest: AgentPluginsManifest = manifest;
     if (provider === "openai" && spec.openaiSubmission) {
-      const { introduction, developerName, supportURL, privacyPolicyURL, termsOfServiceURL, releaseNotes, cases } = spec.openaiSubmission;
+      const submission = spec.openaiSubmission;
       const extension = manifest.extensions["com.openai"];
+      const listing = "cases" in submission ? {
+        interface: {
+          ...extension.interface,
+          developerName: submission.developerName,
+          supportURL: submission.supportURL,
+          privacyPolicyURL: submission.privacyPolicyURL,
+          termsOfServiceURL: submission.termsOfServiceURL,
+          longDescription: [submission.introduction, spec.longDescription].filter(Boolean).join(" "),
+        },
+        review: { test_cases: submission.cases },
+      } : extension;
       portableManifest = {
         ...manifest,
-        author: { name: developerName },
+        author: "developerName" in submission ? { name: submission.developerName } : manifest.author,
         extensions: { "com.openai": {
-          interface: {
-            ...extension.interface, developerName, supportURL, privacyPolicyURL, termsOfServiceURL,
-            longDescription: [introduction, spec.longDescription].filter(Boolean).join(" "),
-          },
-          review: { test_cases: cases },
-          publication: { release_notes: releaseNotes },
+          ...listing,
+          publication: { release_notes: submission.releaseNotes },
         } },
       } satisfies AgentPluginsManifest;
     }

@@ -42,7 +42,7 @@ openaiSubmission:
   supportURL: https://www.helioadditive.com/contact
   privacyPolicyURL: https://www.helioadditive.com/en-us/policies/privacy
   termsOfServiceURL: https://www.helioadditive.com/en-us/policies/terms
-  releaseNotes: Updated printer hardware and project-settings guidance, centered the icons, and added the portable OpenAI directory package.
+  releaseNotes: Initial public release of Helio Slicing. Prepare 3D models for printing, discover compatible printer and material profiles, configure and validate slicing settings, inspect model files, create and monitor slicing jobs, and retrieve print-ready outputs directly through ChatGPT. Supports Bambu Studio, OrcaSlicer and Snapmaker Orca slicing engines.
   cases:
     positive:
       - description: Identify the compatible machine profile for a specified nozzle.

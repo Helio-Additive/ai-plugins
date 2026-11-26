@@ -3,7 +3,7 @@ import Ajv2020 from "ajv/dist/2020";
 import { join } from "node:path";
 import manifestSchema from "../schemas/agent-plugins/1.0.0/plugin.schema.json";
 import mcpSchema from "../schemas/agent-plugins/1.0.0/mcp.schema.json";
-import { root } from "./build";
+import { loadPluginSpecs, root } from "./build";
 
 const validator = new Ajv2020({ strict: false });
 const validateManifest = validator.compile(manifestSchema);
@@ -35,4 +35,15 @@ test.each([
   });
   delete server.extensions;
   expect(validateCoreMcp(config)).toBe(true);
+});
+
+const plugins = await loadPluginSpecs();
+
+test.each(["slicing", "dragon", "scripting"])("%s publishes its source release notes in the OpenAI manifest", async (plugin) => {
+  const source = join(root, "plugins", plugin);
+  const notes = plugins.find(p => p.source === source)?.spec.openaiSubmission?.releaseNotes;
+  expect(notes).toBeString();
+  const manifest = await Bun.file(join(source, "_generated/openai/plugin.json")).json();
+  expect(validateManifest(manifest)).toBe(true);
+  expect(manifest.extensions["com.openai"].publication.release_notes).toBe(notes);
 });

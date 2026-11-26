@@ -1,6 +1,6 @@
 # OpenAI directory submission, v0.1.1
 
-Slicing and Dragon each ship a public submission ZIP and a native desktop ZIP at version 0.1.1. Scripting ships its existing skills-only desktop package. Helio's OpenAI business identity is already verified.
+Slicing, Dragon and Scripting each ship a public submission ZIP and a native desktop ZIP at version 0.1.1. Helio's OpenAI business identity is already verified.
 
 ## Package and service findings
 
@@ -11,7 +11,7 @@ Slicing and Dragon each ship a public submission ZIP and a native desktop ZIP at
 
 The dedicated routes advertise product-specific OAuth resource metadata. The Slicing hostname also serves MCP at its root and its OpenAI verification challenge matches the configured token. Dragon's challenge returns 404 until its own token is configured. [Deployed routing change](https://github.com/Helio-Additive/devops/pull/5859)
 
-Upload the two **openai-submission** ZIPs separately. Each has root-level `plugin.json` and `mcp.json`. The **codex-desktop** ZIPs use native hidden manifests. The Git marketplaces still use their committed host bundles. Scripting provides two skills and templates for ten languages on all hosts.
+Upload each **openai-submission** ZIP separately. All three include root-level `plugin.json`. Slicing and Dragon also include `mcp.json`. The **codex-desktop** ZIPs use native hidden manifests. The Git marketplaces still use their committed host bundles. Scripting provides two skills and templates for ten languages on all hosts.
 
 Slicing covers print preparation and slicing jobs. Dragon covers Assess and Enhance for supported G-code. Both retain their listing copy, three suggested prompts, attribution and reviewer cases. [Slicing spec and cases](../../plugins/slicing/spec.yaml) · [Dragon spec and cases](../../plugins/dragon/spec.yaml)
 
@@ -51,12 +51,12 @@ These were direct Slicing and Dragon tool invocations on the previous shared hos
 
 ## Dashboard handoff after approval
 
-1. Under the correct OpenAI organization and project, use an owner or a member with Apps Management Write. Select Helio's existing verified developer identity. Upload one ZIP per plugin using **Upload new or existing plugin**. Include the MCP in the initial upload. Check draft version 0.1.1. [Developer dashboard](https://platform.openai.com/plugins) · [Submission guide](https://developers.openai.com/plugins/deploy/submission)
-2. Under **Metadata & Skills**, check the displayed listing, four URLs, the six bundled skills and the icons. Inspect each finding, fix the source, and reupload the complete corrected ZIP if needed. Track the required skill scans.
+1. Under the correct OpenAI organization and project, use an owner or a member with Apps Management Write. Select Helio's existing verified developer identity. Upload one ZIP per plugin using **Upload new or existing plugin**. Choose **With MCP** for Slicing and Dragon and **Skills only** for Scripting. Check draft version 0.1.1. [Developer dashboard](https://platform.openai.com/plugins) · [Submission guide](https://developers.openai.com/plugins/deploy/submission)
+2. Under **Metadata & Skills**, check the listing, icons and bundled skills. Expect six skills for Slicing or Dragon and two for Scripting. For Slicing and Dragon, also check the four listing URLs and complete steps 3–5. For Scripting, continue to step 6. Inspect each finding, fix the source, and reupload the complete corrected ZIP if needed. Track the required skill scans.
 3. Under **MCPs**, choose the product's server and **Connect**. Check the URL, transport, registration, authentication method, callback and advertised scopes for that product. The portal reads advanced settings from mcp.json. Fix mismatches in the package or registered client with the owner. Never enter the reviewer's Helio password as an OAuth client secret.
 4. For each directory entry, open **Domain verification** and copy the challenge from that entry. Have the ingress owner serve the exact plain-text token over public HTTPS at `/.well-known/openai-apps-challenge` on that product's dedicated MCP hostname in the table. Verify the response matches the corresponding portal value, then choose **Verify Domain** in the same entry. Keep each value with its corresponding deployment. The infrastructure owner needs access to DNS, TLS and routing for the new hostnames. OpenAI checks the HTTPS response at the selected origin. [Official challenge instructions](https://developers.openai.com/plugins/deploy/submission#domain-verification)
 5. Authorize the saved server with the reviewer account and wait for the MCP scan. Compare discovered names and annotation flags against the inventory. Inspect **Issues**, resolve service findings, and rescan. Screenshots, timestamps and result counts from this exact draft are the evidence needed to say the public scanner discovered tools.
-6. Under **Review information → Review details** verify the imported cases and release notes. Add the recording, secure reviewer login and private setup instructions. Review country availability and any commerce details. ZIP-managed cases require a corrected ZIP to edit. Run all cases in the saved connection. Resolve blocking validation and security findings. [Submission error reference](https://developers.openai.com/plugins/deploy/submission-errors)
+6. Under **Review information → Review details** verify the release notes, country availability and any commerce details. For Slicing or Dragon, verify the imported cases and add the recording, secure reviewer login and private setup instructions. ZIP-managed cases require a corrected ZIP to edit. Run the MCP cases in the saved connection where applicable. Resolve blocking validation and security findings. [Submission error reference](https://developers.openai.com/plugins/deploy/submission-errors)
 7. Once authorized, the developer selects **Submit for review** and completes the applicable attestations. An approved version is subsequently published through a separate **Publish plugin** action. This preparation authorizes neither action.
 
 ## ChatGPT discovery incident
