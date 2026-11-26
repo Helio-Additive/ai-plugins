@@ -80,6 +80,26 @@
         }
       }
     },
+    "anthropicDirectory": {
+      "description": "Directory listing metadata for the native Claude plugin manifest.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["author", "supportUrl", "privacyPolicyUrl", "termsOfServiceUrl"],
+      "properties": {
+        "author": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "url"],
+          "properties": {
+            "name": { "type": "string", "minLength": 1 },
+            "url": { "$ref": "#/definitions/directoryUrl" }
+          }
+        },
+        "supportUrl": { "$ref": "#/definitions/directoryUrl" },
+        "privacyPolicyUrl": { "$ref": "#/definitions/directoryUrl" },
+        "termsOfServiceUrl": { "$ref": "#/definitions/directoryUrl" }
+      }
+    },
     "openaiSubmission": {
       "oneOf": [
         {
@@ -101,6 +121,11 @@
     }
   },
   "definitions": {
+    "directoryUrl": {
+      "type": "string",
+      "pattern": "^https://",
+      "maxLength": 1024
+    },
     "urlConnection": {
       "title": "MCP URL-only connection",
       "description": "Provider MCP endpoint for hosts whose plugin manifests cannot carry an OAuth client registration or scopes (Kimi Code CLI registers a public client dynamically and runs OAuth itself). Secrets must never be stored in a plugin spec.",

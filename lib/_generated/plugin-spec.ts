@@ -4,6 +4,8 @@
  * Regenerate: bun run generate:types
  */
 
+export type DirectoryUrl = string;
+
 /**
  * Source configuration for one Helio Additive plugin. The build discovers plugins/* /spec.yaml and constructs provider documents from these values.
  */
@@ -35,6 +37,18 @@ export interface PluginSpec {
     anthropic: MCPConnection;
     "kimi-global": MCPURLOnlyConnection;
     "kimi-china": MCPURLOnlyConnection;
+  };
+  /**
+   * Directory listing metadata for the native Claude plugin manifest.
+   */
+  anthropicDirectory?: {
+    author: {
+      name: string;
+      url: DirectoryUrl;
+    };
+    supportUrl: DirectoryUrl;
+    privacyPolicyUrl: DirectoryUrl;
+    termsOfServiceUrl: DirectoryUrl;
   };
   openaiSubmission?:
     | McpSubmission
