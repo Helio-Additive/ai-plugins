@@ -74,6 +74,13 @@ export async function loadPluginSpecs(directory = join(root, "plugins")) {
       throw new Error(`Invalid ${relative(root, file)}: ${ajv.errorsText(isPluginSpec.errors, { separator: "; " })}`);
     }
     if (spec.homepage !== undefined) checkedUrl(spec.homepage, `${relative(root, file)} homepage`);
+    if (spec.anthropicDirectory) {
+      const listing = spec.anthropicDirectory;
+      checkedUrl(listing.author.url, `${relative(root, file)} anthropicDirectory.author.url`);
+      for (const key of ["supportUrl", "privacyPolicyUrl", "termsOfServiceUrl"] as const) {
+        checkedUrl(listing[key], `${relative(root, file)} anthropicDirectory.${key}`);
+      }
+    }
     if (spec.openaiSubmission && "cases" in spec.openaiSubmission) {
       for (const key of ["supportURL", "privacyPolicyURL", "termsOfServiceURL"] as const) {
         checkedUrl(spec.openaiSubmission[key], `${relative(root, file)} ${key}`);
@@ -175,6 +182,13 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
   const packages = new Map<string, Outputs>();
   for (const provider of providersFor(options)) {
     const outputs = new Map(shared);
+    const claude = provider === "anthropic" || (provider === "test" && options.testVendor === "anthropic");
+    if (claude) {
+      outputs.set(".claude-plugin/plugin.json", json({
+        name: manifest.name, version: manifest.version, description: manifest.description,
+        homepage: spec.homepage, author: manifest.author, ...spec.anthropicDirectory,
+      }));
+    }
     const codex = provider === "codex" || (provider === "test" && options.testVendor === "openai");
     const kimi = isKimiVendor(provider) || (provider === "test" && isKimiVendor(options.testVendor));
     let portableManifest: AgentPluginsManifest = manifest;
@@ -208,9 +222,7 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
         continue;
       }
       outputs.set("plugin.json", json(portableManifest));
-      if (provider === "anthropic" || (provider === "test" && options.testVendor === "anthropic")) {
-        outputs.set(".claude-plugin/plugin.json", json({ name: manifest.name, version: manifest.version, description: manifest.description, author: manifest.author, ...(spec.homepage === undefined ? {} : { homepage: spec.homepage }) }));
-      } else if (codex) {
+      if (codex) {
         outputs.delete("plugin.json");
         outputs.set(".codex-plugin/plugin.json", json({ name: manifest.name, version: manifest.version, description: manifest.description, interface: manifest.extensions["com.openai"].interface, skills: "./skills/" }));
       }
@@ -251,14 +263,7 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
       mcpServers: { [spec.name]: server },
     } satisfies AgentPluginsMCPConfiguration;
     outputs.set("plugin.json", json(portableManifest));
-    if (provider === "anthropic" || (provider === "test" && options.testVendor === "anthropic")) {
-      // Claude's native installer still uses these compatibility entrypoints.
-      // Project portable identity and connection data; do not maintain parallel types.
-      outputs.set(".claude-plugin/plugin.json", json({
-        name: manifest.name, version: manifest.version,
-        description: manifest.description, author: manifest.author,
-        ...(spec.homepage === undefined ? {} : { homepage: spec.homepage }),
-      }));
+    if (claude) {
       outputs.set(".mcp.json", json({
         mcpServers: {
           [spec.name]: {

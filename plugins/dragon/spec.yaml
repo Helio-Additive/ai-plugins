@@ -36,6 +36,13 @@ mcp:
     url: https://mcp.helioadditive.com/kimi/dragon
   kimi-china:
     url: https://mcp2.helioam.cn/kimi/dragon
+anthropicDirectory:
+  author:
+    name: Helio Additive
+    url: https://www.helioadditive.com
+  supportUrl: https://www.helioadditive.com/contact
+  privacyPolicyUrl: https://www.helioadditive.com/en-us/policies/privacy
+  termsOfServiceUrl: https://www.helioadditive.com/en-us/policies/terms
 openaiSubmission:
   developerName: Helio Additive
   supportURL: https://www.helioadditive.com/contact

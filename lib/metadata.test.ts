@@ -40,6 +40,32 @@ describe("public plugin metadata", () => {
   });
 
   for (const { spec } of plugins) {
+    test(`${spec.name}: publishes directory links only in the native Claude manifest`, async () => {
+      const options = { testUrl: "http://localhost:8080", testVendor: "anthropic" };
+      const bundles = await renderPlugin(spec, metadataSource, options);
+      const baseline = await renderPlugin({ ...spec, anthropicDirectory: undefined }, metadataSource, options);
+      for (const [provider, outputs] of bundles) {
+        const before = baseline.get(provider)!;
+        expect([...outputs.keys()]).toEqual([...before.keys()]);
+        for (const [path, content] of outputs) {
+          if (path === ".claude-plugin/plugin.json") {
+            expect(JSON.parse(String(content))).toEqual({
+              ...JSON.parse(String(before.get(path))),
+              author: { name: "Helio Additive", url: "https://www.helioadditive.com" },
+              supportUrl: "https://www.helioadditive.com/contact",
+              privacyPolicyUrl: "https://www.helioadditive.com/en-us/policies/privacy",
+              termsOfServiceUrl: "https://www.helioadditive.com/en-us/policies/terms",
+            });
+          } else {
+            expect(content).toEqual(before.get(path)!);
+          }
+        }
+      }
+      for (const provider of ["anthropic", "test"]) {
+        expect(bundles.get(provider)!.has(".claude-plugin/plugin.json")).toBe(true);
+      }
+    });
+
     test(`${spec.name}: projects optional homepage without changing MCP or OAuth`, async () => {
       const homepage = "https://example.com/product";
       for (const testVendor of ["openai", "anthropic"]) {

@@ -36,6 +36,13 @@ mcp:
     url: https://mcp.helioadditive.com/kimi/slicing
   kimi-china:
     url: https://mcp2.helioam.cn/kimi/slicing
+anthropicDirectory:
+  author:
+    name: Helio Additive
+    url: https://www.helioadditive.com
+  supportUrl: https://www.helioadditive.com/contact
+  privacyPolicyUrl: https://www.helioadditive.com/en-us/policies/privacy
+  termsOfServiceUrl: https://www.helioadditive.com/en-us/policies/terms
 openaiSubmission:
   introduction: Bring your 3D printing workflow into ChatGPT with Helio Additive.
   developerName: Helio Additive
