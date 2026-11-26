@@ -6,6 +6,14 @@ if not binary.is_file():
     print('UNAVAILABLE: desktop host binary absent; compatibility NOT verified'); raise SystemExit(77)
 repo = Path(__file__).resolve().parents[1]
 modes = {'portable': 'openai', 'compatible': 'test', 'codex': 'codex'}
+# Read the contract from source so a missing generated file cannot lower the expectations.
+plugins = json.loads(subprocess.check_output(['bun', '-e', """
+import { loadPluginSpecs } from './lib/build.ts';
+const plugins = await loadPluginSpecs();
+console.log(JSON.stringify(plugins.map(({ source, spec }) => ({
+    source, name: spec.name, hasMcp: Boolean(spec.mcp?.openai),
+}))));
+"""], cwd=repo, text=True))
 with tempfile.TemporaryDirectory(prefix='helio-host-') as tmp:
     root = Path(tmp); home = root/'home'; home.mkdir(); (home/'codex').mkdir()
     expected = {}
@@ -14,14 +22,13 @@ with tempfile.TemporaryDirectory(prefix='helio-host-') as tmp:
         market = directory / '.agents/plugins'
         market.mkdir(parents=True)
         entries = []
-        for product in sorted((repo / 'plugins').glob('*/spec.yaml')):
-            source = product.parent / '_generated' / bundle
-            target = './plugins/' + product.parent.name
-            shutil.copytree(source, directory / target)
-            manifest = source / ('.codex-plugin/plugin.json' if mode != 'portable' else 'plugin.json')
-            name = json.loads(manifest.read_text())['name']
+        for plugin in plugins:
+            product = Path(plugin['source'])
+            name = plugin['name']
+            target = './plugins/' + product.name
+            shutil.copytree(product / '_generated' / bundle, directory / target)
             entries.append({'name': name, 'source': {'source': 'local', 'path': target}})
-            expected[mode, name] = (len(list(source.glob('skills/*/SKILL.md'))), (source / '.mcp.json').exists())
+            expected[mode, name] = (len(list(product.glob('skills/*/SKILL.mdx'))), plugin['hasMcp'])
         (market / 'marketplace.json').write_text(json.dumps({'name': 'fixture-' + mode, 'plugins': entries}))
     env = dict(os.environ, HOME=str(home), CODEX_HOME=str(home/'codex'))
     print('host', subprocess.check_output([str(binary), '--version'], env=env, text=True).strip())
