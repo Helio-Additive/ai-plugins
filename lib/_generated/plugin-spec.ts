@@ -30,14 +30,11 @@ export interface PluginSpec {
    * Predefined provider-neutral test route for this plugin, appended to MCP_TEST_URL. A single absolute path segment, without a provider prefix.
    */
   testPath?: string;
-  /**
-   * Only configure providers that expose an MCP server. Codex uses the OpenAI connection.
-   */
   mcp?: {
-    openai: MCPConnection | MCPURLOnlyConnection;
-    anthropic?: MCPConnection;
-    "kimi-global"?: MCPURLOnlyConnection;
-    "kimi-china"?: MCPURLOnlyConnection;
+    openai: MCPConnection;
+    anthropic: MCPConnection;
+    "kimi-global": MCPURLOnlyConnection;
+    "kimi-china": MCPURLOnlyConnection;
   };
   openaiSubmission?: {
     developerName: string;
@@ -45,16 +42,8 @@ export interface PluginSpec {
     privacyPolicyURL: string;
     termsOfServiceURL: string;
     releaseNotes: string;
-    cases?: ReviewCases;
+    cases: ReviewCases;
     introduction?: string;
-    /**
-     * Public company or product website. Mapped to portable/native homepage and OpenAI interface.websiteURL; separate from source and licence links in descriptions.
-     */
-    websiteURL?: string;
-    /**
-     * Optional OpenAI and Codex product description when other hosts ship different capabilities.
-     */
-    longDescription?: string;
   };
 }
 /**
@@ -81,7 +70,7 @@ export interface MCPConnection {
   tokenEndpointAuthMethod?: "none";
 }
 /**
- * Provider MCP endpoint without bundled OAuth registration details. Kimi accepts only its native URL field.
+ * Provider MCP endpoint for hosts whose plugin manifests cannot carry an OAuth client registration or scopes (Kimi Code CLI registers a public client dynamically and runs OAuth itself). Secrets must never be stored in a plugin spec.
  */
 export interface MCPURLOnlyConnection {
   /**
@@ -89,9 +78,6 @@ export interface MCPURLOnlyConnection {
    */
   url: string;
 }
-/**
- * Optional when review cases will be supplied in the OpenAI dashboard.
- */
 export interface ReviewCases {
   /**
    * @minItems 5

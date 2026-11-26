@@ -45,11 +45,8 @@ name, with no registry to update. A spec declares:
 - Optional `homepage`, an HTTPS website.
 - `displayName`, `shortDescription`, `longDescription` and `defaultPrompts` for
   the OpenAI presentation.
-- `mcp.openai` supplies the dedicated HTTPS URL for both OpenAI and Codex. A
-  provided OAuth client adds its public `clientId`, method and optional `scopes`.
-  A URL-only entry leaves registration and scopes unspecified.
-- `mcp.anthropic`, when present, supplies its URL and registered public client.
-  Hosts without a configured server receive the standalone skills.
+- `mcp.openai` and `mcp.anthropic` specify the HTTPS URL, public OAuth client ID
+  and optional scopes. Codex uses the declared OpenAI endpoint and registration.
 - `mcp.kimi-global` and `mcp.kimi-china`: the HTTPS `url` only. Kimi registers its
   own OAuth client when the user signs in, so its manifest has no client fields.
 - `testPath`: the plugin's route segment for test bundles, such as `/slicing`.

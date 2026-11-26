@@ -46,9 +46,8 @@ describe("public plugin metadata", () => {
         const options = { testUrl: "http://localhost:8080", testVendor };
         // Metadata projection does not require recompiling the full scripting
         // schema. A real small skill still checks unchanged non-manifest bytes.
-        const base = { ...spec, openaiSubmission: spec.openaiSubmission && { ...spec.openaiSubmission, websiteURL: undefined } };
-        const baseline = await renderPlugin({ ...base, homepage: undefined }, metadataSource, options);
-        const bundles = await renderPlugin({ ...base, homepage }, metadataSource, options);
+        const baseline = await renderPlugin({ ...spec, homepage: undefined }, metadataSource, options);
+        const bundles = await renderPlugin({ ...spec, homepage }, metadataSource, options);
         for (const [provider, outputs] of bundles) {
           for (const [path, content] of outputs) {
             if (!path.endsWith("plugin.json")) {

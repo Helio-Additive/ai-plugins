@@ -12,7 +12,6 @@ const validateCoreMcp = validator.compile(mcpSchema);
 test.each([
   ["dragon", "https://dragon.mcp.helioadditive.com/openai"],
   ["slicing", "https://slicing.mcp.helioadditive.com/openai"],
-  ["scripting", "https://scripting.mcp.helioadditive.com/openai/scripting"],
 ] as const)("%s public package matches the portable schema and documented OpenAI extensions", async (plugin, endpoint) => {
   const bundle = join(root, "plugins", plugin, "_generated/openai");
   const manifest = await Bun.file(join(bundle, "plugin.json")).json();
@@ -30,7 +29,7 @@ test.each([
   // extension separately, then validate the complete remaining MCP document.
   const server = config.mcpServers[manifest.name];
   expect(server.url).toBe(endpoint);
-  expect(server.extensions["com.openai"].auth).toEqual(plugin === "scripting" ? { type: "oauth" } : {
+  expect(server.extensions["com.openai"].auth).toEqual({
     type: "oauth", client: { mode: "provided", clientId: "openai-plugin", tokenEndpointAuthMethod: "none" },
     baseScopes: [plugin],
   });

@@ -20,14 +20,12 @@ for (const { spec, source } of plugins) {
       expect(manifest.version).toBe(releaseVersion);
       expect(manifest.skills).toBe("./skills/");
       if (spec.mcp) {
-        const connection = spec.mcp.openai;
-        const oauth = "clientId" in connection ? connection : undefined;
         expect(manifest.mcpServers).toBe("./.mcp.json");
         expect(JSON.parse(String(codex.get(".mcp.json"))).mcpServers).toEqual({
           [spec.name]: {
-            type: "http", url: connection.url,
-            ...(oauth ? { oauth: { clientId: oauth.clientId, callbackUrl: "http://127.0.0.1/callback" } } : {}),
-            ...(oauth?.scopes ? { scopes: oauth.scopes } : {}),
+            type: "http", url: spec.mcp.openai.url,
+            oauth: { clientId: spec.mcp.openai.clientId, callbackUrl: "http://127.0.0.1/callback" },
+            ...(spec.mcp.openai.scopes ? { scopes: spec.mcp.openai.scopes } : {}),
           },
         });
       } else {

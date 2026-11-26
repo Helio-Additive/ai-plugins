@@ -15,10 +15,9 @@
     "displayName": "Helio Scripting",
     "logo": "./assets/logo.png",
     "logoDark": "./assets/logo-dark.png",
-    "longDescription": "Generate typed Helio GraphQL scripts using the bundled API reference, schema discovery instructions and templates for ten languages.",
+    "longDescription": "Skills and language templates for schema discovery and typed Helio API scripting, without an MCP server.",
     "shortDescription": "Build typed GraphQL scripts."
   },
-  "mcpServers": "./.mcp.json",
   "name": "scripting",
   "skills": "./skills/",
   "version": "0.1.1"

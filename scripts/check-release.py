@@ -11,8 +11,6 @@ VERSION = json.loads((ROOT / "package.json").read_text())["version"]
 OPENAI_ENDPOINTS = {
     "dragon": "https://dragon.mcp.helioadditive.com/openai",
     "slicing": "https://slicing.mcp.helioadditive.com/openai",
-    # Candidate route until the Scripting backend exists.
-    "scripting": "https://scripting.mcp.helioadditive.com/openai/scripting",
 }
 
 
@@ -59,20 +57,16 @@ def check(plugin, layout, suffix):
             if portable:
                 assert server["type"] == "streamable-http"
                 auth = server["extensions"]["com.openai"]["auth"]
-                if plugin.name == "scripting":
-                    assert auth == {"type": "oauth"}
-                else:
-                    assert auth == {
-                        "type": "oauth", "baseScopes": [plugin.name],
-                        "client": {"mode": "provided", "clientId": "openai-plugin", "tokenEndpointAuthMethod": "none"},
-                    }
+                assert auth == {
+                    "type": "oauth", "baseScopes": [plugin.name],
+                    "client": {"mode": "provided", "clientId": "openai-plugin", "tokenEndpointAuthMethod": "none"},
+                }
             else:
                 assert server["type"] == "http"
-                if plugin.name == "scripting":
-                    assert "oauth" not in server and "scopes" not in server
-                else:
-                    assert server["oauth"]["clientId"] == "openai-plugin"
-                    assert server["scopes"] == [plugin.name]
+                assert server["oauth"]["clientId"] == "openai-plugin"
+                assert server["scopes"] == [plugin.name]
+        elif plugin.name == "scripting":
+            assert mcp_path not in paths and "mcpServers" not in manifest
         print(f"Verified {filename} ({len(paths)} files)")
     return filename
 

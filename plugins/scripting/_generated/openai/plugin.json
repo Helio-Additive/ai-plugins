@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "author": {
-    "name": "Helio Additive"
+    "name": "Helio-Additive"
   },
   "description": "Generate typed Helio GraphQL clients from a fresh schema.",
   "extensions": {
@@ -17,23 +17,15 @@
         "defaultPrompt": [
           "Help me generate a typed Helio GraphQL client"
         ],
-        "developerName": "Helio Additive",
+        "developerName": "Helio-Additive",
         "displayName": "Helio Scripting",
         "logo": "./assets/logo.png",
         "logoDark": "./assets/logo-dark.png",
-        "longDescription": "Generate typed Helio GraphQL scripts using the bundled API reference, schema discovery instructions and templates for ten languages.",
-        "privacyPolicyURL": "https://www.helioadditive.com/en-us/policies/privacy",
-        "shortDescription": "Build typed GraphQL scripts.",
-        "supportURL": "https://www.helioadditive.com/contact",
-        "termsOfServiceURL": "https://www.helioadditive.com/en-us/policies/terms",
-        "websiteURL": "https://www.helioadditive.com"
-      },
-      "publication": {
-        "release_notes": "Includes the Helio API reference and ten language templates for typed GraphQL scripting."
+        "longDescription": "Skills and language templates for schema discovery and typed Helio API scripting, without an MCP server.",
+        "shortDescription": "Build typed GraphQL scripts."
       }
     }
   },
-  "homepage": "https://www.helioadditive.com",
   "name": "scripting",
   "version": "0.1.1"
 }

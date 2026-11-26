@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "scripting": {
-      "type": "http",
-      "url": "https://scripting.mcp.helioadditive.com/openai/scripting"
-    }
-  }
-}
