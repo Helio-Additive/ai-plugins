@@ -74,9 +74,18 @@ plugin is connected and signed in.
 
 ## Source and licences
 
+The plugins and this repository are covered by the
+[Helio AI Plugins License](LICENSE), and every plugin bundle carries a copy. In
+short: you may use, copy, change and share them to work with Helio's services;
+the code templates and snippets are yours to use in any project; and Helio's
+hosted services stay subject to the
+[Terms of Service](https://www.helioadditive.com/en-us/policies/terms). The
+licence text is what applies.
+
 The slicer engines the slicing service runs are open source. Their source,
 licences and acknowledgements are listed in
 [slicer-cli](https://github.com/Helio-Additive/slicer-cli/blob/main/docs/open-source.md).
+Those licences cover the slicer software, not these plugins.
 
 ## Contributing
 

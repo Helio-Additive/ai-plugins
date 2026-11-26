@@ -140,6 +140,8 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
   if (!shared.has("assets/icon.png") && shared.has("assets/logo.png")) {
     shared.set("assets/icon.png", shared.get("assets/logo.png")!);
   }
+  // Hosts install only the bundle folder, so every bundle carries the repository licence.
+  shared.set("LICENSE", await readFile(join(root, "LICENSE"), "utf8"));
   const manifest = {
     $schema: "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
     name: spec.name,

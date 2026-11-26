@@ -1,5 +1,9 @@
 # Contributing
 
+Contributions are welcome. By opening a pull request you agree to section 6 of
+the [Helio AI Plugins License](LICENSE): you keep ownership of your
+contribution and give Helio the right to use and relicense it.
+
 ## Layout
 
 - `plugins/<plugin>/spec.yaml`: the plugin's identity, presentation text and MCP
@@ -10,6 +14,8 @@
   with the source change that produced it. `_generated/test/` is local only and
   ignored by Git.
 - `assets/`: shared branding images, copied into every bundle.
+- `LICENSE`: the plugin licence, copied into every bundle by the build. Change
+  it only at the root.
 - `.claude-plugin/marketplace.json`: the Claude Code marketplace, written by the
   build. `.agents/plugins/marketplace.json`: the Codex marketplace, kept by hand.
 - `lib/build.ts`: finds the specs, checks them and writes the bundles.
