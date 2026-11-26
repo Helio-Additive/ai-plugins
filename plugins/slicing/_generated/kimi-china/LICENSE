@@ -89,9 +89,11 @@ conflict about the Services or their output, the Terms prevail.
 
 8. Third-party and openly licensed material
 
-Third-party open-source components, including the Agent Plugins schema copies in
-the repository, remain subject to their own licenses. Nothing in this License
-limits or overrides rights granted under those licenses.
+Third-party open-source components remain subject to their own licenses. Nothing
+in this License limits or overrides rights granted under those licenses. The
+Agent Plugins schemas in the repository's schemas/agent-plugins folder are
+licensed under the Apache License 2.0, and a copy of that license is in the
+same folder.
 
 The slicer engines that the Services run are open-source software under their
 own licenses. Their source code, licenses and acknowledgements are published at
@@ -108,8 +110,10 @@ The Materials are licensed, not sold. Helio keeps all rights in the Materials
 and in its proprietary software, algorithms, simulation technologies, backend
 services, infrastructure, patents and trademarks. This License transfers no
 ownership. It grants no rights in Helio's patents beyond the right to use the
-Materials as this License permits, and no rights in Helio's trademarks beyond
-stating accurately that something works with the Services.
+Materials as this License permits. It grants no rights in Helio's trademarks
+beyond reproducing them as they appear in unmodified Materials, the display
+that section 5 permits, and stating accurately that something works with the
+Services.
 
 10. No warranty
 

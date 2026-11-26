@@ -25,6 +25,14 @@ JSON Schemas linked from OpenAI's
 - [`mcp.schema.json`](agent-plugins/1.0.0/mcp.schema.json):
   https://agent-plugins.org/schemas/1.0.0/mcp.schema.json
 
+The Agent Plugins project licenses its schemas under the Apache License 2.0
+([upstream licensing](https://github.com/agentplugins/agent-plugins-spec/blob/v1.0.0/LICENSE.md)).
+[`agent-plugins/LICENSE`](agent-plugins/LICENSE) is a copy of that licence. It
+covers these two schema files and the types generated from them,
+`lib/_generated/plugin.ts` and `lib/_generated/mcp.ts`. The snapshots have the
+same JSON content as the upstream `v1.0.0` files and differ only in whitespace.
+Everything else in this repository is under the root [`LICENSE`](../LICENSE).
+
 `scripts/generate-types.ts` uses `json-schema-to-typescript` to generate committed
 types in `lib/_generated/`. No schema downloads are needed during generation.
 Run `bun run generate:types` on its own, or `just make` to regenerate types and
