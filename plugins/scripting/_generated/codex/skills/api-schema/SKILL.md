@@ -20,11 +20,11 @@ Section organization adapts the active website rewrite's `src/lib/docs-graphql.t
 
 Endpoint: https://api.helioadditive.com/graphql
 
-Retrieved UTC: 2026-11-17T05:23:01.679Z
+Retrieved UTC: 2026-11-26T11:59:26.063Z
 
-SDL SHA-256: 3cecd3170d8f7dc2f4acb98ef71c9deb60b5933a7df31022b73b38b85423e056
+SDL SHA-256: 148cd1051d28447ae7dcddbb66e32ea2a7be71de99a53a697dd33aeb1c93a360
 
-Coverage: 158 definitions; 975 fields/input fields; 116 arguments.
+Coverage: 201 definitions; 1215 fields/input fields; 141 arguments.
 
 Root types: query=Query; mutation=Mutation; subscription=none.
 
@@ -294,7 +294,7 @@ Type: `Boolean!`
 
 ### Query.printPriorityOptions
 
-List available print priority options. Ported from Python \`list\_print\_priority\_options\`. Returns the options for the Print Priority selector dropdown. When a \`material\_id\` is provided, the "Enhance Surface Gloss" option is only available if the material is glossy. "Enhance Transparency" option is only available if the material is transparent.
+List available print priority options. Ported from Python \`list\_print\_priority\_options\`. Returns the options for the Print Priority selector dropdown. When a \`material\_id\` is provided, the "Enhance Surface Gloss" option is only available if the material is glossy. "Enhance Transparency" option is only available if the material is transparent. Multimaterial requests always mark "Enhance Transparency" as unavailable.
 
 Type: `[PrintPriorityOption!]!`
 
@@ -303,6 +303,12 @@ Type: `[PrintPriorityOption!]!`
 Optional material ID to check compatibility.
 
 Type: `ID`
+
+#### Query.printPriorityOptions argument isMultiMaterial
+
+Whether the print uses multiple distinct materials. Defaults to false.
+
+Type: `Boolean`
 
 ### Query.gcodesV2
 
@@ -502,6 +508,20 @@ Type: `Int`
 
 Type: `Int`
 
+### Query.storeExperimentDecision
+
+Start or resume an authenticated Store visit and return its presentation decision.
+
+Type: `StoreExperimentDecision!`
+
+#### Query.storeExperimentDecision argument surface
+
+Type: `StoreExperimentSurface!`
+
+#### Query.storeExperimentDecision argument visitId
+
+Type: `ID!`
+
 ### Query.pricingContext
 
 Return the country context that should be used for localized pricing previews.
@@ -584,6 +604,86 @@ Type: `ID!`
 
 Type: `PrinterSummary!`
 
+### Query.getGcodeTiming
+
+Retrieve a timing request belonging to the authenticated user.
+
+Type: `GcodeTiming!`
+
+#### Query.getGcodeTiming argument id
+
+Type: `ID!`
+
+### Query.uploadedFiles
+
+List only the authenticated user's registered files. Pages are 1-based, clamped to 1..50; pageSize defaults to 20 and is clamped to 1..100.
+
+Type: `PaginatedUploadedFiles!`
+
+#### Query.uploadedFiles argument page
+
+Type: `Int`
+
+#### Query.uploadedFiles argument pageSize
+
+Type: `Int`
+
+#### Query.uploadedFiles argument filter
+
+Type: `UploadedFileFilter`
+
+#### Query.uploadedFiles argument sortBy
+
+Type: `SlicingSortField`
+
+#### Query.uploadedFiles argument sortDirection
+
+Type: `SlicingSortDirection`
+
+### Query.slices
+
+List only the authenticated user's slices. Pages are 1-based, clamped to 1..50; pageSize defaults to 20 and is clamped to 1..100.
+
+Type: `PaginatedSlices!`
+
+#### Query.slices argument page
+
+Type: `Int`
+
+#### Query.slices argument pageSize
+
+Type: `Int`
+
+#### Query.slices argument filter
+
+Type: `SliceFilter`
+
+#### Query.slices argument sortBy
+
+Type: `SlicingSortField`
+
+#### Query.slices argument sortDirection
+
+Type: `SlicingSortDirection`
+
+### Query.getUploadedFile
+
+Type: `UploadedFile!`
+
+#### Query.getUploadedFile argument id
+
+Type: `ID!`
+
+### Query.getInputProbe
+
+Retrieve an input probe belonging to the authenticated user.
+
+Type: `InputProbe!`
+
+#### Query.getInputProbe argument id
+
+Type: `ID!`
+
 ### Query.getSlice
 
 Retrieve a slice belonging to the authenticated user.
@@ -593,6 +693,74 @@ Type: `Slice!`
 #### Query.getSlice argument id
 
 Type: `ID!`
+
+### Query.slicerVersion
+
+Return the slicer runner version supported by this service.
+
+Type: `String!`
+
+### Query.validateSlicerSettings
+
+Schema-only validation; hardware-dependent constraints are checked when slicing.
+
+Type: `SettingsValidation!`
+
+#### Query.validateSlicerSettings argument engine
+
+Type: `SlicerEngine!`
+
+#### Query.validateSlicerSettings argument settings
+
+Type: `String!`
+
+### Query.bambuSettingsBase64JsonSchema
+
+Return the compact BambuStudio settings JSON Schema encoded as base64.
+
+Type: `String!`
+
+### Query.orcaSettingsBase64JsonSchema
+
+Return the compact OrcaSlicer settings JSON Schema encoded as base64.
+
+Type: `String!`
+
+### Query.snapmakerSettingsBase64JsonSchema
+
+Return the compact Snapmaker Orca settings JSON Schema encoded as base64.
+
+Type: `String!`
+
+### Query.slicerMachines
+
+List packaged slicer machine profiles.
+
+Type: `[SlicerMachine!]!`
+
+#### Query.slicerMachines argument filter
+
+Type: `SlicerMachineFilter`
+
+### Query.slicerFilaments
+
+List packaged slicer filament profiles.
+
+Type: `[SlicerFilament!]!`
+
+#### Query.slicerFilaments argument filter
+
+Type: `SlicerFilamentFilter`
+
+### Query.slicerProcesses
+
+List packaged slicer process profiles.
+
+Type: `[SlicerProcess!]!`
+
+#### Query.slicerProcesses argument filter
+
+Type: `SlicerProcessFilter`
 
 ### Query.user
 
@@ -798,25 +966,15 @@ Type: `ID!`
 
 Type: `NewsArticleFeedbackInput!`
 
-### Mutation.decrementOptimizationQuota
+### Mutation.recordStoreExperimentEvent
 
-Decrement one optimization add-on when the user currently has add-ons. Monthly quota is intentionally ignored here. When no add-ons are available, this is a no-op that still returns \`true\`.
+Record a deduplicated Store interaction for the authenticated user's verified experiment assignment.
 
-Type: `Boolean!`
+Type: `RecordStoreExperimentEventPayload!`
 
-#### Mutation.decrementOptimizationQuota argument userId
+#### Mutation.recordStoreExperimentEvent argument input
 
-Type: `ID!`
-
-### Mutation.refundOptimizationQuota
-
-Refund one optimization add-on for users who have add-on history. Monthly quota is intentionally never refunded here.
-
-Type: `Boolean!`
-
-#### Mutation.refundOptimizationQuota argument userId
-
-Type: `ID!`
+Type: `RecordStoreExperimentEventInput!`
 
 ### Mutation.claimFreeTrial
 
@@ -833,20 +991,6 @@ Type: `ClaimFreeTrialInput`
 Create a Paddle billing portal session. Returns a short-lived URL that redirects the user to the Paddle customer portal where they can manage their subscription, payment method, and billing history.
 
 Type: `PaddlePortalSessionResponse!`
-
-### Mutation.updatePaddleCustomerEmailInternal
-
-Internal: update a Paddle customer's email address. This is served through \`/graphql/internal\`; public requests inject a non-empty authenticated user id and are rejected here.
-
-Type: `UpdatePaddleCustomerEmailResponse!`
-
-#### Mutation.updatePaddleCustomerEmailInternal argument customerId
-
-Type: `String!`
-
-#### Mutation.updatePaddleCustomerEmailInternal argument email
-
-Type: `String!`
 
 ### Mutation.redeemFreeTrialCode
 
@@ -868,9 +1012,67 @@ Type: `SubscriptionCode!`
 
 Type: `RedeemSubscriptionCodeInput!`
 
+### Mutation.createGcodeTiming
+
+Compare two existing G-code files without slicing or rewriting either input.
+
+Type: `GcodeTiming!`
+
+#### Mutation.createGcodeTiming argument input
+
+Type: `CreateGcodeTimingInput!`
+
+### Mutation.renameUploadedFile
+
+Rename display metadata only; never moves the stored object.
+
+Type: `UploadedFile!`
+
+#### Mutation.renameUploadedFile argument id
+
+Type: `ID!`
+
+#### Mutation.renameUploadedFile argument name
+
+Type: `String!`
+
+### Mutation.renameSlice
+
+Rename a slice without dispatching work or modifying its file or jobs.
+
+Type: `Slice!`
+
+#### Mutation.renameSlice argument id
+
+Type: `ID!`
+
+#### Mutation.renameSlice argument name
+
+Type: `String!`
+
+### Mutation.createUploadedFile
+
+Register a reusable upload. A file has one engine-independent probe.
+
+Type: `UploadedFile!`
+
+#### Mutation.createUploadedFile argument input
+
+Type: `CreateUploadedFileInput!`
+
+### Mutation.createInputProbe
+
+Inspect an uploaded model while retaining it for subsequent slicing.
+
+Type: `InputProbe!`
+
+#### Mutation.createInputProbe argument input
+
+Type: `CreateInputProbeInput!`
+
 ### Mutation.createSlice
 
-Create a slice for the authenticated user.
+Create and enqueue a slice for the authenticated user.
 
 Type: `Slice!`
 
@@ -1028,6 +1230,128 @@ None in this schema.
 
 ## Objects
 
+### MaterialBrand
+
+#### MaterialBrand.id
+
+Type: `ID!`
+
+#### MaterialBrand.name
+
+Type: `String!`
+
+#### MaterialBrand.logoUrl
+
+Type: `String`
+
+#### MaterialBrand.description
+
+Type: `String`
+
+#### MaterialBrand.insertedAt
+
+Type: `DateTime!`
+
+#### MaterialBrand.updatedAt
+
+Type: `DateTime!`
+
+### OptimizationFeedback
+
+#### OptimizationFeedback.id
+
+Type: `ID!`
+
+#### OptimizationFeedback.optimizationId
+
+Type: `ID!`
+
+#### OptimizationFeedback.rating
+
+Type: `Float!`
+
+#### OptimizationFeedback.comment
+
+Type: `String`
+
+### PrintInfo
+
+#### PrintInfo.printOutcome
+
+Type: `PrintOutcome!`
+
+#### PrintInfo.printOutcomeDescription
+
+Type: `String!`
+
+#### PrintInfo.temperatureDirection
+
+Type: `TemperatureDirection!`
+
+#### PrintInfo.temperatureDirectionDescription
+
+Type: `String!`
+
+#### PrintInfo.caveats
+
+Type: `[Caveat!]!`
+
+### GcodeCustomFloat
+
+#### GcodeCustomFloat.floatType
+
+Type: `FloatType!`
+
+#### GcodeCustomFloat.isOverriden
+
+\`true\` when a client-supplied override constant is in effect.
+
+Type: `Boolean!`
+
+#### GcodeCustomFloat.value
+
+Type: `Float`
+
+### UploadedFile
+
+#### UploadedFile.id
+
+Type: `ID!`
+
+#### UploadedFile.name
+
+User-editable display name; independent of the stored object key.
+
+Type: `String`
+
+#### UploadedFile.inputType
+
+Type: `SliceInputType!`
+
+#### UploadedFile.inputKey
+
+Type: `String!`
+
+#### UploadedFile.inputVersionId
+
+Type: `String`
+
+#### UploadedFile.sha256
+
+Type: `String!`
+
+#### UploadedFile.probeId
+
+Type: `ID!`
+
+#### UploadedFile.insertedAt
+
+Type: `DateTime!`
+
+#### UploadedFile.probe
+
+Type: `InputProbe!`
+
 ### CreatePatTokenResponse
 
 Response returned after creating a new personal access token. The \`token\` field contains the full plaintext token and is only ever returned once — subsequent fetches will only expose the prefix.
@@ -1048,25 +1372,141 @@ Type: `DateTime!`
 
 Type: `PersonalAccessToken!`
 
-### SendOtpResponse
+### Gcode
 
-Response returned after requesting an OTP be sent.
+Legacy G-code type. Deprecated in favour of \`GcodeV2\`.
 
-#### SendOtpResponse.success
+#### Gcode.id
 
-Type: `Boolean!`
+Type: `ID!`
 
-#### SendOtpResponse.message
+#### Gcode.name
 
 Type: `String!`
 
-#### SendOtpResponse.messageId
+#### Gcode.sizeKb
+
+Type: `Float!`
+
+#### Gcode.height
+
+Type: `Float!`
+
+#### Gcode.width
+
+Type: `Float!`
+
+#### Gcode.depth
+
+Type: `Float!`
+
+#### Gcode.platformTemperature
+
+Type: `GcodeCustomFloat`
+
+#### Gcode.nozzleTemperatureMin
+
+Type: `GcodeCustomFloat!`
+
+#### Gcode.nozzleTemperatureMax
+
+Type: `GcodeCustomFloat!`
+
+#### Gcode.gcodeKey
 
 Type: `String`
 
-#### SendOtpResponse.error
+#### Gcode.roadWidthMin
 
-Type: `String`
+Type: `GcodeCustomFloat!`
+
+#### Gcode.roadWidthMax
+
+Type: `GcodeCustomFloat!`
+
+#### Gcode.layerHeightMin
+
+Type: `GcodeCustomFloat!`
+
+#### Gcode.layerHeightMax
+
+Type: `GcodeCustomFloat!`
+
+#### Gcode.speedMin
+
+Type: `GcodeCustomFloat!`
+
+#### Gcode.speedMax
+
+Type: `GcodeCustomFloat!`
+
+#### Gcode.fanSpeedMin
+
+Type: `GcodeCustomFloat!`
+
+#### Gcode.fanSpeedMax
+
+Type: `GcodeCustomFloat!`
+
+#### Gcode.numberOfLayers
+
+Type: `Int!`
+
+#### Gcode.slicer
+
+Type: `Slicer!`
+
+#### Gcode.flowRatio
+
+Type: `Float`
+
+#### Gcode.overrideGcodeParams
+
+Type: `OverrideGcodeParams`
+
+#### Gcode.isSingleShell
+
+Type: `Boolean!`
+
+#### Gcode.maxFlowRate
+
+Type: `Float`
+
+#### Gcode.layerHeightMode
+
+Type: `Float`
+
+#### Gcode.lineWidthMode
+
+Type: `Float`
+
+#### Gcode.restrictions
+
+Type: `[GcodeRestriction!]`
+
+#### Gcode.errors
+
+Type: `[GcodeError!]`
+
+#### Gcode.printerId
+
+Type: `ID!`
+
+#### Gcode.materialId
+
+Type: `ID!`
+
+#### Gcode.insertedAt
+
+Type: `DateTime!`
+
+#### Gcode.updatedAt
+
+Type: `DateTime!`
+
+#### Gcode.gcodeUrl
+
+Type: `String!`
 
 ### FreeTrialCode
 
@@ -1104,87 +1544,181 @@ Type: `DateTime!`
 
 Type: `DateTime!`
 
-### Slice
+### ThermalIndexStatistics
 
-#### Slice.id
-
-Type: `ID!`
-
-#### Slice.inputType
-
-Type: `SliceInputType!`
-
-#### Slice.inputKey
-
-Type: `String!`
-
-#### Slice.progress
-
-Type: `Float!`
-
-#### Slice.userId
-
-Type: `ID!`
-
-#### Slice.sliceConfigKey
-
-Type: `String!`
-
-#### Slice.insertedAt
-
-Type: `DateTime!`
-
-#### Slice.updatedAt
-
-Type: `DateTime!`
-
-### PersonalAccessToken
-
-A personal access token belonging to a user. Note: the raw token value is never exposed here — only the prefix.
-
-#### PersonalAccessToken.id
-
-Type: `ID!`
-
-#### PersonalAccessToken.name
-
-Type: `String!`
-
-#### PersonalAccessToken.prefix
-
-Type: `String!`
-
-#### PersonalAccessToken.expiresOn
-
-Type: `DateTime!`
-
-#### PersonalAccessToken.insertedAt
-
-Type: `DateTime!`
-
-### GcodeErrorV2
-
-#### GcodeErrorV2.type
-
-Type: `GcodeError!`
-
-Directive: `@deprecated(reason: "Use errorCode instead.")`
-
-#### GcodeErrorV2.errorCode
-
-Type: `GcodeErrorCode!`
-
-#### GcodeErrorV2.line
+#### ThermalIndexStatistics.thermalIndexCount
 
 Type: `Int`
 
-#### GcodeErrorV2.received
+#### ThermalIndexStatistics.thermalIndexMean
 
-Type: `String`
+Type: `Float`
 
-#### GcodeErrorV2.expected
+#### ThermalIndexStatistics.thermalIndexStd
 
-Type: `String`
+Type: `Float`
+
+#### ThermalIndexStatistics.thermalIndexMin
+
+Type: `Float`
+
+#### ThermalIndexStatistics.thermalIndex25
+
+Type: `Float`
+
+#### ThermalIndexStatistics.thermalIndex50
+
+Type: `Float`
+
+#### ThermalIndexStatistics.thermalIndex75
+
+Type: `Float`
+
+#### ThermalIndexStatistics.thermalIndexMax
+
+Type: `Float`
+
+### OverrideGcodeParams
+
+Overrides applied to the G-code. Temperatures are in Celsius; lengths are in millimetres.
+
+#### OverrideGcodeParams.overrideConstantNozzleTemperature
+
+Type: `Float`
+
+#### OverrideGcodeParams.overrideConstantLayerHeight
+
+Type: `Float`
+
+#### OverrideGcodeParams.overrideConstantRoadWidth
+
+Type: `Float`
+
+#### OverrideGcodeParams.overrideConstantPlatformTemperature
+
+Type: `Float`
+
+### LayerRange
+
+#### LayerRange.fromLayer
+
+Type: `Int!`
+
+#### LayerRange.toLayer
+
+Type: `Int!`
+
+### Summary
+
+#### Summary.simulationCount
+
+Type: `Int!`
+
+#### Summary.materialCount
+
+Type: `Int!`
+
+#### Summary.printerCount
+
+Type: `Int!`
+
+### SubscriptionCode
+
+A redeemed subscription code.
+
+#### SubscriptionCode.id
+
+Type: `ID!`
+
+#### SubscriptionCode.code
+
+Type: `String!`
+
+#### SubscriptionCode.isUsed
+
+Type: `Boolean!`
+
+#### SubscriptionCode.subscription
+
+Type: `HelioSubscription!`
+
+#### SubscriptionCode.user
+
+Type: `User`
+
+#### SubscriptionCode.redeemedAt
+
+Type: `DateTime`
+
+#### SubscriptionCode.insertedAt
+
+Type: `DateTime!`
+
+#### SubscriptionCode.updatedAt
+
+Type: `DateTime!`
+
+### OptimizationResidualStrategySettings
+
+Flat representation of residual strategy settings as stored on an Optimization record.
+
+#### OptimizationResidualStrategySettings.optimizationResidualStrategy
+
+Type: `OptimizationResidualStrategy`
+
+#### OptimizationResidualStrategySettings.optimizationResidualExponentialPenaltyLow
+
+Type: `Float`
+
+#### OptimizationResidualStrategySettings.optimizationResidualExponentialPenaltyHigh
+
+Type: `Float`
+
+### SimulationFeatureFlags
+
+#### SimulationFeatureFlags.warpageAnalysisWasEnabled
+
+Type: `Boolean!`
+
+#### SimulationFeatureFlags.bridgeSpeedSmoothingWasEnabled
+
+Type: `Boolean!`
+
+#### SimulationFeatureFlags.aboveBridgeOptimizationWasEnabled
+
+Type: `Boolean!`
+
+#### SimulationFeatureFlags.fanSpeedOptimizationWasEnabled
+
+Type: `Boolean!`
+
+#### SimulationFeatureFlags.gpuWasUsed
+
+Type: `Boolean!`
+
+#### SimulationFeatureFlags.coreAssetsOnlyExportWasEnabled
+
+Type: `Boolean!`
+
+#### SimulationFeatureFlags.optimumNozzleTemperatureCapWasEnabled
+
+Type: `Boolean!`
+
+#### SimulationFeatureFlags.fanSpeedRampUpWasEnabled
+
+Type: `Boolean!`
+
+#### SimulationFeatureFlags.verticalSupportInterfacePreservationWasEnabled
+
+Type: `Boolean!`
+
+#### SimulationFeatureFlags.elementsActiveRangeWasEnabled
+
+Type: `Boolean!`
+
+#### SimulationFeatureFlags.optimizationForLayersUnableToReachTargetWasEnabled
+
+Type: `Boolean!`
 
 ### PresignedUrl
 
@@ -1206,59 +1740,405 @@ S3 object key — pass back when referencing the uploaded file.
 
 Type: `String!`
 
-### OptimizedThermalIndexStatistics
+### SlicingIssue
 
-#### OptimizedThermalIndexStatistics.optimizedThermalIndexCount
+#### SlicingIssue.code
+
+Type: `String!`
+
+#### SlicingIssue.field
+
+Type: `String`
+
+#### SlicingIssue.message
+
+Type: `String!`
+
+#### SlicingIssue.action
+
+Stable action identifier; clients can explain it in the user's language.
+
+Type: `String!`
+
+### ReductionStrategySettings
+
+#### ReductionStrategySettings.strategy
+
+Type: `OptimizationReductionStrategy!`
+
+#### ReductionStrategySettings.linearNodesLimit
+
+Type: `Int!`
+
+#### ReductionStrategySettings.autolinearDoCriticality
+
+Type: `Boolean!`
+
+#### ReductionStrategySettings.autolinearDoFitness
+
+Type: `Boolean!`
+
+#### ReductionStrategySettings.autolinearDoInterpolation
+
+Type: `Boolean!`
+
+#### ReductionStrategySettings.autolinearCriticalityMaxNodesDensity
+
+Type: `Float!`
+
+#### ReductionStrategySettings.autolinearCriticalityThreshold
+
+Type: `Float!`
+
+#### ReductionStrategySettings.autolinearFitnessMaxNodesDensity
+
+Type: `Float!`
+
+#### ReductionStrategySettings.autolinearFitnessThreshold
+
+Type: `Float!`
+
+#### ReductionStrategySettings.autolinearInterpolationLevels
+
+Type: `Int!`
+
+### SimulationFeedback
+
+#### SimulationFeedback.id
+
+Type: `ID!`
+
+#### SimulationFeedback.simulationId
+
+Type: `ID!`
+
+#### SimulationFeedback.rating
+
+Type: `Float!`
+
+#### SimulationFeedback.comment
+
+Type: `String`
+
+### PaginatedMaterials
+
+#### PaginatedMaterials.pages
+
+Type: `Int!`
+
+#### PaginatedMaterials.pageInfo
+
+Type: `PageInfo!`
+
+#### PaginatedMaterials.objects
+
+Type: `[Material!]!`
+
+### SliceArtifact
+
+#### SliceArtifact.id
+
+Type: `ID!`
+
+#### SliceArtifact.kind
+
+Type: `SliceArtifactKind!`
+
+#### SliceArtifact.plateIndex
 
 Type: `Int`
 
-#### OptimizedThermalIndexStatistics.optimizedThermalIndexMean
+#### SliceArtifact.sizeBytes
 
-Type: `Float`
+Object size in bytes, encoded as a decimal 64-bit integer.
 
-#### OptimizedThermalIndexStatistics.optimizedThermalIndexStd
+Type: `String!`
 
-Type: `Float`
+#### SliceArtifact.sha256
 
-#### OptimizedThermalIndexStatistics.optimizedThermalIndexMin
+Type: `String!`
 
-Type: `Float`
+#### SliceArtifact.state
 
-#### OptimizedThermalIndexStatistics.optimizedThermalIndex25
+Type: `SliceArtifactState!`
 
-Type: `Float`
+#### SliceArtifact.insertedAt
 
-#### OptimizedThermalIndexStatistics.optimizedThermalIndex50
+Type: `DateTime!`
 
-Type: `Float`
+#### SliceArtifact.updatedAt
 
-#### OptimizedThermalIndexStatistics.optimizedThermalIndex75
+Type: `DateTime!`
 
-Type: `Float`
+#### SliceArtifact.downloadUrl
 
-#### OptimizedThermalIndexStatistics.optimizedThermalIndexMax
+Short-lived authenticated URL. Null while the object is unavailable.
 
-Type: `Float`
+Type: `String`
 
-### PageInfo
+### Printer
 
-Pagination metadata.
+#### Printer.id
 
-#### PageInfo.hasPreviousPage
+Type: `ID!`
+
+#### Printer.name
+
+Type: `String!`
+
+#### Printer.brand
+
+Type: `PrinterBrand!`
+
+#### Printer.alternativeNames
+
+Type: `AlternativePrinterNames!`
+
+#### Printer.isBambuSupported
 
 Type: `Boolean!`
 
-#### PageInfo.hasNextPage
+#### Printer.insertedAt
+
+Type: `DateTime!`
+
+#### Printer.updatedAt
+
+Type: `DateTime!`
+
+#### Printer.nozzleDiameter
+
+Type: `Float!`
+
+#### Printer.heatedBed
 
 Type: `Boolean!`
 
-### Caveat
+#### Printer.heatedChamber
 
-#### Caveat.caveatType
+Type: `Boolean!`
 
-Type: `CaveatType!`
+#### Printer.maxExtruderFlowRate
 
-#### Caveat.description
+Type: `Float!`
+
+#### Printer.minExtruderFlowRate
+
+Type: `Float!`
+
+#### Printer.minHardwarePrintSpeed
+
+Type: `Float!`
+
+#### Printer.maxHardwarePrintSpeed
+
+Type: `Float!`
+
+#### Printer.chamberType
+
+Type: `ChamberType!`
+
+#### Printer.numberOfNozzles
+
+Type: `Int!`
+
+#### Printer.nNodes
+
+Type: `Int!`
+
+#### Printer.maxHardwareExtrusionTemp
+
+Maximum hardware extrusion temperature (in Kelvin)
+
+Type: `Float!`
+
+#### Printer.minHardwareExtrusionTemp
+
+Minimum hardware extrusion temperature (in Kelvin)
+
+Type: `Float!`
+
+### GcodeV3
+
+A multi-material G-code.
+
+#### GcodeV3.id
+
+Type: `ID!`
+
+#### GcodeV3.name
+
+Type: `String!`
+
+#### GcodeV3.status
+
+Type: `GcodeStatus!`
+
+#### GcodeV3.progress
+
+Type: `Float!`
+
+#### GcodeV3.sizeKb
+
+Type: `Float`
+
+#### GcodeV3.height
+
+Type: `Float`
+
+#### GcodeV3.width
+
+Type: `Float`
+
+#### GcodeV3.depth
+
+Type: `Float`
+
+#### GcodeV3.weight
+
+Type: `Float`
+
+#### GcodeV3.platformTemperature
+
+Type: `GcodeCustomFloat`
+
+#### GcodeV3.nozzleTemperatureMin
+
+Type: `GcodeCustomFloat`
+
+#### GcodeV3.nozzleTemperatureMax
+
+Type: `GcodeCustomFloat`
+
+#### GcodeV3.gcodeKey
+
+Uploaded G-code object key. Use \`gcodeUrl\` for a download URL.
+
+Type: `String`
+
+#### GcodeV3.roadWidthMin
+
+Type: `GcodeCustomFloat`
+
+#### GcodeV3.roadWidthMax
+
+Type: `GcodeCustomFloat`
+
+#### GcodeV3.layerHeightMin
+
+Type: `GcodeCustomFloat`
+
+#### GcodeV3.layerHeightMax
+
+Type: `GcodeCustomFloat`
+
+#### GcodeV3.speedMin
+
+Type: `GcodeCustomFloat`
+
+#### GcodeV3.speedMax
+
+Type: `GcodeCustomFloat`
+
+#### GcodeV3.fanSpeedMin
+
+Type: `GcodeCustomFloat`
+
+#### GcodeV3.fanSpeedMax
+
+Type: `GcodeCustomFloat`
+
+#### GcodeV3.numberOfLayers
+
+Type: `Int`
+
+#### GcodeV3.slicer
+
+Type: `Slicer`
+
+#### GcodeV3.flowRatio
+
+Type: `Float`
+
+#### GcodeV3.overrideGcodeParams
+
+Type: `OverrideGcodeParams`
+
+#### GcodeV3.isSingleShell
+
+Type: `Boolean!`
+
+#### GcodeV3.maxFlowRate
+
+Type: `Float`
+
+#### GcodeV3.layerHeightMode
+
+Type: `Float`
+
+#### GcodeV3.lineWidthMode
+
+Type: `Float`
+
+#### GcodeV3.restrictions
+
+Type: `[GcodeRestriction!]`
+
+#### GcodeV3.restrictionsV2
+
+Type: `[GcodeRestrictionInfo!]!`
+
+#### GcodeV3.errors
+
+Type: `[GcodeError!]`
+
+Directive: `@deprecated(reason: "Use errorsV2 instead.")`
+
+#### GcodeV3.errorsV2
+
+Type: `[GcodeErrorV2!]`
+
+#### GcodeV3.materialId
+
+Type: `ID!`
+
+#### GcodeV3.printerId
+
+Type: `ID!`
+
+#### GcodeV3.materials
+
+Materials associated with this G-code.
+
+Type: `[GcodeMaterialInfo!]!`
+
+#### GcodeV3.insertedAt
+
+Type: `DateTime!`
+
+#### GcodeV3.updatedAt
+
+Type: `DateTime!`
+
+#### GcodeV3.gcodeUrl
+
+One-hour download URL for the G-code file.
+
+Type: `String!`
+
+#### GcodeV3.material
+
+The primary material for this G-code (resolved from materialId). For multi-material G-codes this is the first material in the materials list.
+
+Type: `Material!`
+
+### OptimizationImprovementResult
+
+#### OptimizationImprovementResult.improvement
+
+Type: `OptimizationImprovement!`
+
+#### OptimizationImprovementResult.description
 
 Type: `String!`
 
@@ -1360,291 +2240,561 @@ Type: `Material!`
 
 Type: `Printer!`
 
-### PaginatedFaqs
+### GcodeV2
 
-Paginated list of FAQs.
+A single-material G-code.
 
-#### PaginatedFaqs.pages
-
-Total number of pages available.
-
-Type: `Int!`
-
-#### PaginatedFaqs.pageInfo
-
-Type: `PageInfo!`
-
-#### PaginatedFaqs.faqs
-
-Type: `[Faq!]!`
-
-### Suggestion
-
-A user-submitted suggestion for the L-FAM platform (legacy type).
-
-#### Suggestion.id
+#### GcodeV2.id
 
 Type: `ID!`
 
-#### Suggestion.user
-
-Type: `User`
-
-#### Suggestion.content
+#### GcodeV2.name
 
 Type: `String!`
 
-#### Suggestion.insertedAt
+#### GcodeV2.status
 
-Type: `DateTime!`
+Type: `GcodeStatus!`
 
-#### Suggestion.updatedAt
+#### GcodeV2.progress
 
-Type: `DateTime!`
+Type: `Float!`
 
-### OptimizationResidualStrategySettings
-
-Flat representation of residual strategy settings as stored on an Optimization record.
-
-#### OptimizationResidualStrategySettings.optimizationResidualStrategy
-
-Type: `OptimizationResidualStrategy`
-
-#### OptimizationResidualStrategySettings.optimizationResidualExponentialPenaltyLow
+#### GcodeV2.sizeKb
 
 Type: `Float`
 
-#### OptimizationResidualStrategySettings.optimizationResidualExponentialPenaltyHigh
+#### GcodeV2.height
 
 Type: `Float`
 
-### OptimizationFeedback
+#### GcodeV2.width
 
-#### OptimizationFeedback.id
+Type: `Float`
 
-Type: `ID!`
+#### GcodeV2.depth
 
-#### OptimizationFeedback.optimizationId
+Type: `Float`
 
-Type: `ID!`
+#### GcodeV2.weight
 
-#### OptimizationFeedback.rating
+Type: `Float`
 
-Type: `Float!`
+#### GcodeV2.platformTemperature
 
-#### OptimizationFeedback.comment
+Type: `GcodeCustomFloat`
 
-Type: `String`
+#### GcodeV2.nozzleTemperatureMin
 
-### OptimizationImprovementResult
+Type: `GcodeCustomFloat`
 
-#### OptimizationImprovementResult.improvement
+#### GcodeV2.nozzleTemperatureMax
 
-Type: `OptimizationImprovement!`
+Type: `GcodeCustomFloat`
 
-#### OptimizationImprovementResult.description
+#### GcodeV2.gcodeKey
 
-Type: `String!`
-
-### PricingContext
-
-Country context used for localized pricing previews.
-
-#### PricingContext.countryCode
-
-Type: `String!`
-
-#### PricingContext.source
-
-Type: `String!`
-
-### MaterialBrand
-
-#### MaterialBrand.id
-
-Type: `ID!`
-
-#### MaterialBrand.name
-
-Type: `String!`
-
-#### MaterialBrand.logoUrl
+Uploaded G-code object key. Use \`gcodeUrl\` for a download URL.
 
 Type: `String`
 
-#### MaterialBrand.description
+#### GcodeV2.roadWidthMin
 
-Type: `String`
+Type: `GcodeCustomFloat`
 
-#### MaterialBrand.insertedAt
+#### GcodeV2.roadWidthMax
 
-Type: `DateTime!`
+Type: `GcodeCustomFloat`
 
-#### MaterialBrand.updatedAt
+#### GcodeV2.layerHeightMin
 
-Type: `DateTime!`
+Type: `GcodeCustomFloat`
 
-### OptimizationSettings
+#### GcodeV2.layerHeightMax
 
-#### OptimizationSettings.minVelocity
+Type: `GcodeCustomFloat`
 
-Type: `Float!`
+#### GcodeV2.speedMin
 
-#### OptimizationSettings.maxVelocity
+Type: `GcodeCustomFloat`
 
-Type: `Float!`
+#### GcodeV2.speedMax
 
-#### OptimizationSettings.minVelocityIncrement
+Type: `GcodeCustomFloat`
 
-Type: `Float!`
+#### GcodeV2.fanSpeedMin
 
-#### OptimizationSettings.minExtruderFlowRate
+Type: `GcodeCustomFloat`
 
-Type: `Float!`
+#### GcodeV2.fanSpeedMax
 
-#### OptimizationSettings.maxExtruderFlowRate
+Type: `GcodeCustomFloat`
 
-Type: `Float!`
+#### GcodeV2.numberOfLayers
 
-#### OptimizationSettings.tolerance
+Type: `Int`
 
-Type: `Float!`
+#### GcodeV2.slicer
 
-#### OptimizationSettings.maxIterations
+Type: `Slicer`
 
-Type: `Int!`
+#### GcodeV2.flowRatio
 
-#### OptimizationSettings.nNodes
+Type: `Float`
 
-Type: `Int!`
+#### GcodeV2.overrideGcodeParams
 
-#### OptimizationSettings.optimizeOuterwall
+Type: `OverrideGcodeParams`
+
+#### GcodeV2.isSingleShell
 
 Type: `Boolean!`
 
-#### OptimizationSettings.optimizer
+#### GcodeV2.maxFlowRate
 
-Type: `Optimizer!`
+Type: `Float`
 
-#### OptimizationSettings.reductionStrategySettings
+#### GcodeV2.layerHeightMode
 
-Type: `ReductionStrategySettings!`
+Type: `Float`
 
-#### OptimizationSettings.residualStrategySettings
+#### GcodeV2.lineWidthMode
 
-Type: `ResidualStrategySettings!`
+Type: `Float`
 
-#### OptimizationSettings.layersToOptimize
+#### GcodeV2.restrictions
 
-Type: `[LayerRange!]!`
+Type: `[GcodeRestriction!]`
 
-### SimulationAsset
+#### GcodeV2.restrictionsV2
 
-#### SimulationAsset.assetType
+Type: `[GcodeRestrictionInfo!]!`
 
-Type: `SimulationAssetType!`
+#### GcodeV2.errors
 
-#### SimulationAsset.url
+Type: `[GcodeError!]`
 
-Type: `String!`
+Directive: `@deprecated(reason: "Use errorsV2 instead.")`
 
-### PaginatedSubscriptionAddOns
+#### GcodeV2.errorsV2
 
-A paginated list of subscription add-ons.
+Type: `[GcodeErrorV2!]`
 
-#### PaginatedSubscriptionAddOns.pages
-
-Total number of pages available.
-
-Type: `Int!`
-
-#### PaginatedSubscriptionAddOns.pageInfo
-
-Type: `PageInfo!`
-
-#### PaginatedSubscriptionAddOns.objects
-
-Type: `[SubscriptionAddOn!]!`
-
-### SubscriptionCode
-
-A redeemed subscription code.
-
-#### SubscriptionCode.id
+#### GcodeV2.materialId
 
 Type: `ID!`
 
-#### SubscriptionCode.code
+#### GcodeV2.printerId
+
+Type: `ID!`
+
+#### GcodeV2.insertedAt
+
+Type: `DateTime!`
+
+#### GcodeV2.updatedAt
+
+Type: `DateTime!`
+
+#### GcodeV2.gcodeUrl
+
+One-hour download URL for the G-code file.
 
 Type: `String!`
 
-#### SubscriptionCode.isUsed
+#### GcodeV2.material
 
-Type: `Boolean!`
+Type: `Material!`
 
-#### SubscriptionCode.subscription
+Directive: `@deprecated(reason: "Use GcodeV3 with the materials field for multi-material support.")`
 
-Type: `HelioSubscription!`
+#### GcodeV2.printer
 
-#### SubscriptionCode.user
+Type: `Printer!`
 
-Type: `User`
+### Faq
 
-#### SubscriptionCode.redeemedAt
+A single FAQ entry.
+
+#### Faq.id
+
+Type: `ID!`
+
+#### Faq.category
+
+Type: `FaqCategory!`
+
+#### Faq.insertedAt
+
+Type: `DateTime!`
+
+#### Faq.updatedAt
+
+Type: `DateTime!`
+
+#### Faq.question
+
+Type: `String`
+
+#### Faq.answer
+
+Type: `String`
+
+#### Faq.questionEnUs
+
+Type: `String`
+
+Directive: `@deprecated(reason: "Use question with Accept-Language: en instead.")`
+
+#### Faq.questionZhCn
+
+Type: `String`
+
+Directive: `@deprecated(reason: "Use question with Accept-Language: zh-CN instead.")`
+
+#### Faq.answerEnUs
+
+Type: `String`
+
+Directive: `@deprecated(reason: "Use answer with Accept-Language: en instead.")`
+
+#### Faq.answerZhCn
+
+Type: `String`
+
+Directive: `@deprecated(reason: "Use answer with Accept-Language: zh-CN instead.")`
+
+### InputProbe
+
+#### InputProbe.id
+
+Type: `ID!`
+
+#### InputProbe.fileId
+
+Reusable file identifier for future slice requests.
+
+Type: `ID!`
+
+#### InputProbe.inputKey
+
+Type: `String!`
+
+#### InputProbe.userId
+
+Type: `ID!`
+
+#### InputProbe.status
+
+Type: `InputProbeStatus!`
+
+#### InputProbe.plates
+
+Positive number of plates discovered by inspection; absent before completion or on failure.
+
+Type: `Int`
+
+#### InputProbe.infoKey
+
+S3 key of native metadata JSON, including native error documents.
+
+Type: `String`
+
+#### InputProbe.durationMs
+
+Worker duration in milliseconds, encoded as a decimal 64-bit integer.
+
+Type: `String`
+
+#### InputProbe.errorCode
+
+Type: `String`
+
+#### InputProbe.errorString
+
+Type: `String`
+
+#### InputProbe.exitCode
+
+Type: `Int`
+
+#### InputProbe.signal
+
+Type: `Int`
+
+#### InputProbe.stderrTail
+
+Type: `String`
+
+#### InputProbe.insertedAt
+
+Type: `DateTime!`
+
+#### InputProbe.updatedAt
+
+Type: `DateTime!`
+
+#### InputProbe.infoDownloadUrl
+
+Short-lived authenticated URL for the native metadata JSON.
+
+Type: `String`
+
+### FreeTrialClaim
+
+A record of a user claiming their free trial.
+
+#### FreeTrialClaim.id
+
+Type: `ID!`
+
+#### FreeTrialClaim.userId
+
+Type: `String!`
+
+#### FreeTrialClaim.claimedEmail
+
+Type: `String`
+
+#### FreeTrialClaim.startsAt
+
+Type: `DateTime!`
+
+#### FreeTrialClaim.claimedAt
+
+Type: `DateTime!`
+
+#### FreeTrialClaim.endsAt
+
+Type: `DateTime!`
+
+#### FreeTrialClaim.cooldownUntil
 
 Type: `DateTime`
 
-#### SubscriptionCode.insertedAt
+#### FreeTrialClaim.source
+
+Type: `String!`
+
+#### FreeTrialClaim.convertedToPaid
+
+Type: `Boolean!`
+
+#### FreeTrialClaim.convertedAt
+
+Type: `DateTime`
+
+#### FreeTrialClaim.isActive
+
+Type: `Boolean!`
+
+#### FreeTrialClaim.insertedAt
 
 Type: `DateTime!`
 
-#### SubscriptionCode.updatedAt
+#### FreeTrialClaim.updatedAt
 
 Type: `DateTime!`
 
-### OptimizationReductionStrategySettings
+### PaginatedUploadedFiles
 
-Flat representation of reduction strategy settings as stored on an Optimization record. The field names use the \`optimizationReduction\*\` prefix to match the old API contract.
+#### PaginatedUploadedFiles.page
 
-#### OptimizationReductionStrategySettings.optimizationReductionStrategy
+Type: `Int!`
 
-Type: `OptimizationReductionStrategy`
+#### PaginatedUploadedFiles.pageSize
 
-#### OptimizationReductionStrategySettings.optimizationReductionAutolinearDoCriticality
+Type: `Int!`
 
-Type: `Boolean`
+#### PaginatedUploadedFiles.pageInfo
 
-#### OptimizationReductionStrategySettings.optimizationReductionAutolinearDoFitness
+Type: `SlicingPageInfo!`
 
-Type: `Boolean`
+#### PaginatedUploadedFiles.objects
 
-#### OptimizationReductionStrategySettings.optimizationReductionAutolinearDoInterpolation
+Type: `[UploadedFile!]!`
 
-Type: `Boolean`
+### SendOtpResponse
 
-#### OptimizationReductionStrategySettings.optimizationReductionAutolinearCriticalityMaxNodesDensity
+Response returned after requesting an OTP be sent.
+
+#### SendOtpResponse.success
+
+Type: `Boolean!`
+
+#### SendOtpResponse.message
+
+Type: `String!`
+
+#### SendOtpResponse.messageId
+
+Type: `String`
+
+#### SendOtpResponse.error
+
+Type: `String`
+
+### PrinterSummary
+
+#### PrinterSummary.count
+
+Type: `Int!`
+
+### Slice
+
+#### Slice.id
+
+Type: `ID!`
+
+#### Slice.name
+
+User-editable display name; absent on older unnamed records.
+
+Type: `String`
+
+#### Slice.fileId
+
+Type: `ID`
+
+#### Slice.progress
+
+Overall completion percentage, from 0 through 100.
+
+Type: `Float!`
+
+#### Slice.status
+
+Terminal worker status. Null while the slice is queued or running.
+
+Type: `SliceJobStatus`
+
+#### Slice.plateProgress
+
+Completion percentage for the plate currently being sliced.
 
 Type: `Float`
 
-#### OptimizationReductionStrategySettings.optimizationReductionAutolinearCriticalityThreshold
-
-Type: `Float`
-
-#### OptimizationReductionStrategySettings.optimizationReductionAutolinearFitnessMaxNodesDensity
-
-Type: `Float`
-
-#### OptimizationReductionStrategySettings.optimizationReductionAutolinearFitnessThreshold
-
-Type: `Float`
-
-#### OptimizationReductionStrategySettings.optimizationReductionAutolinearInterpolationLevels
+#### Slice.currentPlate
 
 Type: `Int`
 
-#### OptimizationReductionStrategySettings.optimizationReductionLinearNodesLimit
+#### Slice.totalPlates
 
 Type: `Int`
+
+#### Slice.progressMessage
+
+Type: `String`
+
+#### Slice.progressStep
+
+Type: `String`
+
+#### Slice.durationMs
+
+End-to-end worker duration in milliseconds, encoded as a decimal 64-bit integer.
+
+Type: `String`
+
+#### Slice.userId
+
+Type: `ID!`
+
+#### Slice.insertedAt
+
+Type: `DateTime!`
+
+#### Slice.updatedAt
+
+Type: `DateTime!`
+
+#### Slice.issues
+
+Structured pre-dispatch issues. No plate jobs are created for these failures.
+
+Type: `[SlicingIssue!]!`
+
+#### Slice.slicingEngine
+
+Type: `SlicerEngine`
+
+#### Slice.inputType
+
+Type: `SliceInputType!`
+
+#### Slice.inputKey
+
+Type: `String!`
+
+#### Slice.plates
+
+Type: `[SlicePlate!]!`
+
+#### Slice.artifacts
+
+Generated files and diagnostic payloads published for this slice.
+
+Type: `[SliceArtifact!]!`
+
+### PaddlePortalSessionResponse
+
+Response returned after creating a Paddle billing portal session.
+
+#### PaddlePortalSessionResponse.url
+
+The URL the user should be redirected to in order to manage their subscription in the Paddle billing portal.
+
+Type: `String!`
+
+#### PaddlePortalSessionResponse.error
+
+Error message if the portal session could not be created.
+
+Type: `String`
+
+### AlternativePrinterNames
+
+#### AlternativePrinterNames.bambustudio
+
+Type: `String`
+
+#### AlternativePrinterNames.prusaslicer
+
+Type: `String`
+
+#### AlternativePrinterNames.curaslicer
+
+Type: `String`
+
+#### AlternativePrinterNames.crealityprint
+
+Type: `String`
+
+### PrinterBrand
+
+#### PrinterBrand.id
+
+Type: `ID!`
+
+#### PrinterBrand.name
+
+Type: `String!`
+
+#### PrinterBrand.logoUrl
+
+Type: `String`
+
+#### PrinterBrand.description
+
+Type: `String`
+
+#### PrinterBrand.insertedAt
+
+Type: `DateTime!`
+
+#### PrinterBrand.updatedAt
+
+Type: `DateTime!`
 
 ### User
 
@@ -1754,10 +2904,6 @@ Type: `Int!`
 
 Type: `Int!`
 
-#### User.avatarUrl
-
-Type: `String`
-
 #### User.handle
 
 Type: `String`
@@ -1826,91 +2972,469 @@ Type: `[TransactionHistory!]!`
 
 Type: `UserType!`
 
+#### User.avatarUrl
+
+Type: `String`
+
 #### User.logins
 
 Type: `[Login!]!`
 
-### SubscriptionAddOn
+### PricingContext
 
-An add-on pack that grants additional optimizations.
+Country context used for localized pricing previews.
 
-#### SubscriptionAddOn.id
+#### PricingContext.countryCode
+
+Type: `String!`
+
+#### PricingContext.source
+
+Type: `String!`
+
+### NewsArticleFeedback
+
+Feedback (reaction) from a user on a news article.
+
+#### NewsArticleFeedback.id
 
 Type: `ID!`
 
-#### SubscriptionAddOn.name
+#### NewsArticleFeedback.userId
 
 Type: `String!`
 
-#### SubscriptionAddOn.description
+#### NewsArticleFeedback.user
 
-Type: `String`
+Type: `User`
 
-#### SubscriptionAddOn.price
-
-Type: `String!`
-
-#### SubscriptionAddOn.currency
-
-Type: `String!`
-
-#### SubscriptionAddOn.optimizations
-
-Type: `Int!`
-
-#### SubscriptionAddOn.isActive
+#### NewsArticleFeedback.isLike
 
 Type: `Boolean!`
 
-#### SubscriptionAddOn.insertedAt
+#### NewsArticleFeedback.isNotImportant
+
+Type: `Boolean!`
+
+#### NewsArticleFeedback.isNiceToHave
+
+Type: `Boolean!`
+
+#### NewsArticleFeedback.isImportant
+
+Type: `Boolean!`
+
+#### NewsArticleFeedback.isCritical
+
+Type: `Boolean!`
+
+#### NewsArticleFeedback.insertedAt
 
 Type: `DateTime!`
 
-#### SubscriptionAddOn.updatedAt
+#### NewsArticleFeedback.updatedAt
 
 Type: `DateTime!`
 
-#### SubscriptionAddOn.addOnOptimizationsCount
+### SimulationAsset
 
-Number of bonus optimizations granted by this add-on.
+#### SimulationAsset.assetType
 
-Type: `Int!`
+Type: `SimulationAssetType!`
 
-#### SubscriptionAddOn.addOnPriceId
-
-Paddle price ID for this add-on.
+#### SimulationAsset.url
 
 Type: `String!`
 
-#### SubscriptionAddOn.button
+### MaterialSummary
 
-Button text for the add-on.
+#### MaterialSummary.count
 
-Type: `String`
+Type: `Int!`
 
-#### SubscriptionAddOn.category
+#### MaterialSummary.brands
 
-Category of the add-on.
+Type: `Int!`
 
-Type: `String`
+#### MaterialSummary.desktopMaterials
 
-#### SubscriptionAddOn.disclaimers
+Type: `Int!`
 
-Disclaimers associated with this add-on.
+#### MaterialSummary.lfamMaterials
+
+Type: `Int!`
+
+#### MaterialSummary.experimentalMaterials
+
+Type: `Int!`
+
+### SettingsValidation
+
+#### SettingsValidation.valid
+
+Type: `Boolean!`
+
+#### SettingsValidation.issues
+
+Type: `[SlicingIssue!]!`
+
+### PaginatedGcodesV3
+
+#### PaginatedGcodesV3.pages
+
+Total number of pages for the current page size.
+
+Type: `Int!`
+
+#### PaginatedGcodesV3.pageInfo
+
+Type: `PageInfo!`
+
+#### PaginatedGcodesV3.objects
+
+Type: `[GcodeV3!]!`
+
+### PaginatedGcodes
+
+#### PaginatedGcodes.pages
+
+Total number of pages for the current page size.
+
+Type: `Int!`
+
+#### PaginatedGcodes.pageInfo
+
+Type: `PageInfo!`
+
+#### PaginatedGcodes.objects
+
+Type: `[GcodeV2!]!`
+
+### PageInfo
+
+Pagination metadata.
+
+#### PageInfo.hasPreviousPage
+
+Type: `Boolean!`
+
+#### PageInfo.hasNextPage
+
+Type: `Boolean!`
+
+### AnonymousPatTokenResponse
+
+Returned by \`createAnonymousPatToken\`. The \`pat\` value is the plaintext token — show it once and do not store it.
+
+#### AnonymousPatTokenResponse.pat
+
+Type: `String!`
+
+### PaginatedFaqs
+
+Paginated list of FAQs.
+
+#### PaginatedFaqs.pages
+
+Total number of pages available.
+
+Type: `Int!`
+
+#### PaginatedFaqs.pageInfo
+
+Type: `PageInfo!`
+
+#### PaginatedFaqs.faqs
+
+Type: `[Faq!]!`
+
+### SuggestedFix
+
+#### SuggestedFix.orderIndex
+
+Type: `Int`
+
+#### SuggestedFix.category
+
+Type: `SuggestedFixCategory!`
+
+#### SuggestedFix.fix
+
+Type: `String!`
+
+#### SuggestedFix.extraDetails
 
 Type: `[String!]!`
 
-#### SubscriptionAddOn.features
+### PersonalAccessToken
 
-Features included in this add-on.
+A personal access token belonging to a user. Note: the raw token value is never exposed here — only the prefix.
+
+#### PersonalAccessToken.id
+
+Type: `ID!`
+
+#### PersonalAccessToken.name
+
+Type: `String!`
+
+#### PersonalAccessToken.prefix
+
+Type: `String!`
+
+#### PersonalAccessToken.expiresOn
+
+Type: `DateTime!`
+
+#### PersonalAccessToken.insertedAt
+
+Type: `DateTime!`
+
+### SlicerProcess
+
+#### SlicerProcess.id
+
+Type: `ID!`
+
+#### SlicerProcess.engine
+
+Type: `SlicerEngine!`
+
+#### SlicerProcess.name
+
+Type: `String!`
+
+#### SlicerProcess.path
+
+Type: `String!`
+
+#### SlicerProcess.vendor
+
+Type: `String!`
+
+#### SlicerProcess.settingId
+
+Type: `String`
+
+#### SlicerProcess.inherits
+
+Type: `String`
+
+#### SlicerProcess.description
+
+Type: `String`
+
+#### SlicerProcess.compatibleMachines
 
 Type: `[String!]!`
 
-#### SubscriptionAddOn.subscriptions
+#### SlicerProcess.forSlicerVersion
 
-Associated subscriptions.
+Type: `String!`
 
-Type: `[HelioSubscription!]!`
+### OptimizedThermalIndexStatistics
+
+#### OptimizedThermalIndexStatistics.optimizedThermalIndexCount
+
+Type: `Int`
+
+#### OptimizedThermalIndexStatistics.optimizedThermalIndexMean
+
+Type: `Float`
+
+#### OptimizedThermalIndexStatistics.optimizedThermalIndexStd
+
+Type: `Float`
+
+#### OptimizedThermalIndexStatistics.optimizedThermalIndexMin
+
+Type: `Float`
+
+#### OptimizedThermalIndexStatistics.optimizedThermalIndex25
+
+Type: `Float`
+
+#### OptimizedThermalIndexStatistics.optimizedThermalIndex50
+
+Type: `Float`
+
+#### OptimizedThermalIndexStatistics.optimizedThermalIndex75
+
+Type: `Float`
+
+#### OptimizedThermalIndexStatistics.optimizedThermalIndexMax
+
+Type: `Float`
+
+### GcodeTiming
+
+#### GcodeTiming.id
+
+Type: `ID!`
+
+#### GcodeTiming.identity
+
+Type: `String!`
+
+#### GcodeTiming.slicingEngine
+
+Type: `SlicerEngine!`
+
+#### GcodeTiming.printerVendorBbl
+
+Type: `Boolean`
+
+#### GcodeTiming.status
+
+Type: `GcodeTimingStatus!`
+
+#### GcodeTiming.originalSha256
+
+Type: `String!`
+
+#### GcodeTiming.optimizedSha256
+
+Type: `String!`
+
+#### GcodeTiming.engineRevision
+
+Type: `String`
+
+#### GcodeTiming.originalSeconds
+
+Type: `Float`
+
+#### GcodeTiming.optimizedSeconds
+
+Type: `Float`
+
+#### GcodeTiming.deltaSeconds
+
+Optimized minus original seconds. Positive means longer; negative means shorter.
+
+Type: `Float`
+
+#### GcodeTiming.durationMs
+
+Worker elapsed milliseconds as a decimal 64-bit integer, not print time.
+
+Type: `String`
+
+#### GcodeTiming.errorCode
+
+Type: `String`
+
+#### GcodeTiming.errorString
+
+Type: `String`
+
+#### GcodeTiming.insertedAt
+
+Type: `DateTime!`
+
+#### GcodeTiming.updatedAt
+
+Type: `DateTime!`
+
+### OptimizationSettings
+
+#### OptimizationSettings.minVelocity
+
+Type: `Float!`
+
+#### OptimizationSettings.maxVelocity
+
+Type: `Float!`
+
+#### OptimizationSettings.minVelocityIncrement
+
+Type: `Float!`
+
+#### OptimizationSettings.minExtruderFlowRate
+
+Type: `Float!`
+
+#### OptimizationSettings.maxExtruderFlowRate
+
+Type: `Float!`
+
+#### OptimizationSettings.tolerance
+
+Type: `Float!`
+
+#### OptimizationSettings.maxIterations
+
+Type: `Int!`
+
+#### OptimizationSettings.nNodes
+
+Type: `Int!`
+
+#### OptimizationSettings.optimizeOuterwall
+
+Type: `Boolean!`
+
+#### OptimizationSettings.optimizer
+
+Type: `Optimizer!`
+
+#### OptimizationSettings.reductionStrategySettings
+
+Type: `ReductionStrategySettings!`
+
+#### OptimizationSettings.residualStrategySettings
+
+Type: `ResidualStrategySettings!`
+
+#### OptimizationSettings.layersToOptimize
+
+Type: `[LayerRange!]!`
+
+### OptimizationFeatureFlags
+
+#### OptimizationFeatureFlags.warpageAnalysisWasEnabled
+
+Type: `Boolean!`
+
+#### OptimizationFeatureFlags.bridgeSpeedSmoothingWasEnabled
+
+Type: `Boolean!`
+
+#### OptimizationFeatureFlags.aboveBridgeOptimizationWasEnabled
+
+Type: `Boolean!`
+
+#### OptimizationFeatureFlags.fanSpeedOptimizationWasEnabled
+
+Type: `Boolean!`
+
+#### OptimizationFeatureFlags.gpuWasUsed
+
+Type: `Boolean!`
+
+#### OptimizationFeatureFlags.coreAssetsOnlyExportWasEnabled
+
+Type: `Boolean!`
+
+#### OptimizationFeatureFlags.optimumNozzleTemperatureCapWasEnabled
+
+Type: `Boolean!`
+
+#### OptimizationFeatureFlags.fanSpeedRampUpWasEnabled
+
+Type: `Boolean!`
+
+#### OptimizationFeatureFlags.verticalSupportInterfacePreservationWasEnabled
+
+Type: `Boolean!`
+
+#### OptimizationFeatureFlags.elementsActiveRangeWasEnabled
+
+Type: `Boolean!`
+
+#### OptimizationFeatureFlags.optimizationForLayersUnableToReachTargetWasEnabled
+
+Type: `Boolean!`
 
 ### ResidualStrategySettings
 
@@ -1926,49 +3450,51 @@ Type: `Float!`
 
 Type: `Float!`
 
-### UpdatePaddleCustomerEmailResponse
+### Author
 
-Response returned after updating a Paddle customer's email address.
+A news article author.
 
-#### UpdatePaddleCustomerEmailResponse.success
+#### Author.id
 
-Type: `Boolean!`
+Type: `ID!`
 
-#### UpdatePaddleCustomerEmailResponse.message
+#### Author.name
+
+Type: `String!`
+
+#### Author.position
+
+Type: `String!`
+
+#### Author.avatarUrl
 
 Type: `String`
 
-#### UpdatePaddleCustomerEmailResponse.customerId
+#### Author.insertedAt
+
+Type: `DateTime!`
+
+#### Author.updatedAt
+
+Type: `DateTime!`
+
+### PrintPriorityOption
+
+#### PrintPriorityOption.value
+
+Type: `PrintPriority!`
+
+#### PrintPriorityOption.label
 
 Type: `String!`
 
-#### UpdatePaddleCustomerEmailResponse.email
+#### PrintPriorityOption.description
 
 Type: `String!`
 
-### PaginatedPrinters
+#### PrintPriorityOption.isAvailable
 
-#### PaginatedPrinters.pages
-
-Type: `Int!`
-
-#### PaginatedPrinters.pageInfo
-
-Type: `PageInfo!`
-
-#### PaginatedPrinters.objects
-
-Type: `[Printer!]!`
-
-### GcodeRestrictionInfo
-
-#### GcodeRestrictionInfo.restriction
-
-Type: `GcodeRestriction!`
-
-#### GcodeRestrictionInfo.description
-
-Type: `String!`
+Type: `Boolean!`
 
 ### Optimization
 
@@ -2200,199 +3726,351 @@ Type: `Material!`
 
 Type: `Printer!`
 
-### GcodeMaterialInfo
+### PaginatedSubscriptions
 
-A material assigned to a multi-material G-code.
+A paginated list of Helio subscription plans.
 
-#### GcodeMaterialInfo.materialId
+#### PaginatedSubscriptions.pages
 
-Material identifier.
-
-Type: `ID!`
-
-#### GcodeMaterialInfo.name
-
-Optional display name provided at upload time.
-
-Type: `String`
-
-#### GcodeMaterialInfo.slotIndex
-
-Printer slot index for this material.
+Total number of pages available.
 
 Type: `Int!`
 
-#### GcodeMaterialInfo.nozzleIndex
+#### PaginatedSubscriptions.pageInfo
 
-Printer nozzle index for this material.
+Type: `PageInfo!`
 
-Type: `Int!`
+#### PaginatedSubscriptions.objects
 
-#### GcodeMaterialInfo.material
+Type: `[HelioSubscription!]!`
 
-The full material resolved from materialId.
+### RecordStoreExperimentEventPayload
 
-Type: `Material!`
-
-### Login
-
-A historical login record for a user.
-
-#### Login.id
+#### RecordStoreExperimentEventPayload.eventId
 
 Type: `ID!`
 
-#### Login.loginType
+#### RecordStoreExperimentEventPayload.recorded
 
-Type: `LoginType!`
+Type: `Boolean!`
 
-#### Login.upUsername
+### SlicerFilament
 
-Type: `String`
-
-#### Login.upPassword
-
-Type: `String`
-
-#### Login.auth0UserId
-
-Type: `String`
-
-#### Login.auth0Email
-
-Type: `String`
-
-#### Login.auth0EmailVerified
-
-Type: `Boolean`
-
-#### Login.ipAddress
-
-Type: `String`
-
-#### Login.userAgent
-
-Type: `String`
-
-#### Login.insertedAt
-
-Type: `DateTime!`
-
-### HelioSubscription
-
-A Helio subscription plan.
-
-#### HelioSubscription.id
+#### SlicerFilament.id
 
 Type: `ID!`
 
-#### HelioSubscription.name
+#### SlicerFilament.engine
+
+Type: `SlicerEngine!`
+
+#### SlicerFilament.name
 
 Type: `String!`
 
-#### HelioSubscription.description
+#### SlicerFilament.path
+
+Type: `String!`
+
+#### SlicerFilament.vendor
+
+Type: `String!`
+
+#### SlicerFilament.settingId
 
 Type: `String`
 
-#### HelioSubscription.optsPerMonth
+#### SlicerFilament.inherits
+
+Type: `String`
+
+#### SlicerFilament.compatibleMachines
+
+Type: `[String!]!`
+
+#### SlicerFilament.forSlicerVersion
+
+Type: `String!`
+
+### SlicingPageInfo
+
+#### SlicingPageInfo.hasPreviousPage
+
+Type: `Boolean!`
+
+#### SlicingPageInfo.hasNextPage
+
+Type: `Boolean!`
+
+### PaginatedEvents
+
+A paginated list of events.
+
+#### PaginatedEvents.pages
+
+Total number of pages available.
 
 Type: `Int!`
 
-#### HelioSubscription.membershipDuration
+#### PaginatedEvents.pageInfo
+
+Type: `PageInfo!`
+
+#### PaginatedEvents.objects
+
+Type: `[Event!]!`
+
+### FeatureFlagDefaults
+
+System-wide default values for all user feature flags.
+
+#### FeatureFlagDefaults.enableFanSpeedRampUp
+
+Type: `Boolean!`
+
+#### FeatureFlagDefaults.enableSupportInterfaceOptimization
+
+Type: `Boolean!`
+
+#### FeatureFlagDefaults.enableKeepVerticalSupportInterface
+
+Type: `Boolean!`
+
+#### FeatureFlagDefaults.enableFanSpeedOptimization
+
+Type: `Boolean!`
+
+#### FeatureFlagDefaults.enableAlwaysUseDragonGpu
+
+Type: `Boolean!`
+
+#### FeatureFlagDefaults.enableExcludeCoreAssets
+
+Type: `Boolean!`
+
+#### FeatureFlagDefaults.enableApplyOptimumNozzleTemp
+
+Type: `Boolean!`
+
+#### FeatureFlagDefaults.enableBridgeSpeedSmoothing
+
+Type: `Boolean!`
+
+#### FeatureFlagDefaults.enableOptimizeAboveBridge
+
+Type: `Boolean!`
+
+#### FeatureFlagDefaults.enableOptimizationForLayersUnableToReachTarget
+
+Type: `Boolean!`
+
+#### FeatureFlagDefaults.enableElementsActiveRange
+
+Type: `Boolean!`
+
+#### FeatureFlagDefaults.enableWarpageAnalysis
+
+Type: `Boolean!`
+
+### TransactionHistory
+
+A billing transaction record for a user.
+
+#### TransactionHistory.id
+
+Type: `ID!`
+
+#### TransactionHistory.user
+
+Type: `User!`
+
+#### TransactionHistory.amount
+
+Type: `Float!`
+
+#### TransactionHistory.currency
+
+Type: `String!`
+
+#### TransactionHistory.description
+
+Type: `String`
+
+#### TransactionHistory.name
+
+Type: `String!`
+
+#### TransactionHistory.type
+
+Type: `TransactionType!`
+
+#### TransactionHistory.optsPerMonth
 
 Type: `Int`
 
-#### HelioSubscription.paddlePriceId
+#### TransactionHistory.addOnOptimizations
+
+Type: `Int`
+
+#### TransactionHistory.addOn
+
+Type: `SubscriptionAddOn`
+
+#### TransactionHistory.paddleBillingStatus
 
 Type: `String`
 
-#### HelioSubscription.price
+#### TransactionHistory.paddleTransactionId
 
 Type: `String`
 
-#### HelioSubscription.features
-
-Type: `[String!]!`
-
-#### HelioSubscription.disclaimers
-
-Type: `[String!]!`
-
-#### HelioSubscription.button
+#### TransactionHistory.paddleSubscriptionId
 
 Type: `String`
 
-#### HelioSubscription.category
+#### TransactionHistory.subtotalAmount
 
 Type: `String`
 
-#### HelioSubscription.insertedAt
+#### TransactionHistory.taxAmount
+
+Type: `String`
+
+#### TransactionHistory.discountAmount
+
+Type: `String`
+
+#### TransactionHistory.totalAmount
+
+Type: `String`
+
+#### TransactionHistory.paddleFeeAmount
+
+Type: `String`
+
+#### TransactionHistory.payoutAmount
+
+Type: `String`
+
+#### TransactionHistory.payoutCurrency
+
+Type: `String`
+
+#### TransactionHistory.subscriptionStartDate
+
+Type: `DateTime`
+
+#### TransactionHistory.subscriptionEndDate
+
+Type: `DateTime`
+
+#### TransactionHistory.subscription
+
+Type: `HelioSubscription`
+
+#### TransactionHistory.insertedAt
 
 Type: `DateTime!`
 
-#### HelioSubscription.updatedAt
+#### TransactionHistory.updatedAt
 
 Type: `DateTime!`
 
-### PrintPriorityOption
+### SlicerMachine
 
-#### PrintPriorityOption.value
+#### SlicerMachine.id
 
-Type: `PrintPriority!`
+Type: `ID!`
 
-#### PrintPriorityOption.label
+#### SlicerMachine.engine
+
+Type: `SlicerEngine!`
+
+#### SlicerMachine.name
 
 Type: `String!`
 
-#### PrintPriorityOption.description
+#### SlicerMachine.path
 
 Type: `String!`
 
-#### PrintPriorityOption.isAvailable
+#### SlicerMachine.vendor
 
-Type: `Boolean!`
+Type: `String!`
 
-### ReductionStrategySettings
+#### SlicerMachine.settingId
 
-#### ReductionStrategySettings.strategy
+Type: `String`
 
-Type: `OptimizationReductionStrategy!`
+#### SlicerMachine.inherits
 
-#### ReductionStrategySettings.linearNodesLimit
+Type: `String`
+
+#### SlicerMachine.printerModel
+
+Type: `String`
+
+#### SlicerMachine.printerVariant
+
+Type: `String`
+
+#### SlicerMachine.nozzleDiameterMm
+
+Type: `Float`
+
+#### SlicerMachine.defaultFilaments
+
+Type: `[String!]!`
+
+#### SlicerMachine.defaultProcess
+
+Type: `String`
+
+#### SlicerMachine.defaultFilamentIds
+
+IDs of same-engine selectable filament defaults, in native order.
+
+Type: `[ID!]!`
+
+#### SlicerMachine.defaultProcessId
+
+ID of the same-engine selectable process default, when available.
+
+Type: `ID`
+
+#### SlicerMachine.forSlicerVersion
+
+Type: `String!`
+
+### PaginatedPrinters
+
+#### PaginatedPrinters.pages
 
 Type: `Int!`
 
-#### ReductionStrategySettings.autolinearDoCriticality
+#### PaginatedPrinters.pageInfo
+
+Type: `PageInfo!`
+
+#### PaginatedPrinters.objects
+
+Type: `[Printer!]!`
+
+### VerifyUserEmailUpdateOtpResponse
+
+Response returned after verifying an email update OTP.
+
+#### VerifyUserEmailUpdateOtpResponse.success
 
 Type: `Boolean!`
 
-#### ReductionStrategySettings.autolinearDoFitness
+#### VerifyUserEmailUpdateOtpResponse.error
 
-Type: `Boolean!`
+Type: `String`
 
-#### ReductionStrategySettings.autolinearDoInterpolation
+#### VerifyUserEmailUpdateOtpResponse.user
 
-Type: `Boolean!`
-
-#### ReductionStrategySettings.autolinearCriticalityMaxNodesDensity
-
-Type: `Float!`
-
-#### ReductionStrategySettings.autolinearCriticalityThreshold
-
-Type: `Float!`
-
-#### ReductionStrategySettings.autolinearFitnessMaxNodesDensity
-
-Type: `Float!`
-
-#### ReductionStrategySettings.autolinearFitnessThreshold
-
-Type: `Float!`
-
-#### ReductionStrategySettings.autolinearInterpolationLevels
-
-Type: `Int!`
+Type: `User`
 
 ### Event
 
@@ -2434,143 +4112,185 @@ Type: `DateTime!`
 
 Type: `DateTime!`
 
-### ThermalIndexStatistics
+### PaginatedSubscriptionAddOns
 
-#### ThermalIndexStatistics.thermalIndexCount
+A paginated list of subscription add-ons.
 
-Type: `Int`
+#### PaginatedSubscriptionAddOns.pages
 
-#### ThermalIndexStatistics.thermalIndexMean
-
-Type: `Float`
-
-#### ThermalIndexStatistics.thermalIndexStd
-
-Type: `Float`
-
-#### ThermalIndexStatistics.thermalIndexMin
-
-Type: `Float`
-
-#### ThermalIndexStatistics.thermalIndex25
-
-Type: `Float`
-
-#### ThermalIndexStatistics.thermalIndex50
-
-Type: `Float`
-
-#### ThermalIndexStatistics.thermalIndex75
-
-Type: `Float`
-
-#### ThermalIndexStatistics.thermalIndexMax
-
-Type: `Float`
-
-### VerifyOtpResponse
-
-Response returned after verifying an OTP.
-
-#### VerifyOtpResponse.success
-
-Type: `Boolean!`
-
-#### VerifyOtpResponse.token
-
-Type: `String`
-
-#### VerifyOtpResponse.error
-
-Type: `String`
-
-#### VerifyOtpResponse.linkingEvent
-
-Type: `LinkingEventType`
-
-### FreeTrialCodeGroup
-
-A group of free trial codes associated with a subscription.
-
-#### FreeTrialCodeGroup.id
-
-Type: `ID!`
-
-#### FreeTrialCodeGroup.subscription
-
-Type: `HelioSubscription!`
-
-#### FreeTrialCodeGroup.company
-
-Type: `String!`
-
-#### FreeTrialCodeGroup.name
-
-Type: `String!`
-
-#### FreeTrialCodeGroup.expirationDate
-
-Type: `DateTime!`
-
-#### FreeTrialCodeGroup.quantityOfCodes
+Total number of pages available.
 
 Type: `Int!`
 
-#### FreeTrialCodeGroup.isExpired
-
-Type: `Boolean!`
-
-#### FreeTrialCodeGroup.insertedAt
-
-Type: `DateTime!`
-
-#### FreeTrialCodeGroup.updatedAt
-
-Type: `DateTime!`
-
-### Author
-
-A news article author.
-
-#### Author.id
-
-Type: `ID!`
-
-#### Author.name
-
-Type: `String!`
-
-#### Author.position
-
-Type: `String!`
-
-#### Author.avatarUrl
-
-Type: `String`
-
-#### Author.insertedAt
-
-Type: `DateTime!`
-
-#### Author.updatedAt
-
-Type: `DateTime!`
-
-### PaginatedGcodes
-
-#### PaginatedGcodes.pages
-
-Total number of pages for the current page size.
-
-Type: `Int!`
-
-#### PaginatedGcodes.pageInfo
+#### PaginatedSubscriptionAddOns.pageInfo
 
 Type: `PageInfo!`
 
-#### PaginatedGcodes.objects
+#### PaginatedSubscriptionAddOns.objects
 
-Type: `[GcodeV2!]!`
+Type: `[SubscriptionAddOn!]!`
+
+### AlternativeMaterialNames
+
+#### AlternativeMaterialNames.bambustudio
+
+Type: `String`
+
+#### AlternativeMaterialNames.prusaslicer
+
+Type: `String`
+
+#### AlternativeMaterialNames.curaslicer
+
+Type: `String`
+
+#### AlternativeMaterialNames.crealityprint
+
+Type: `String`
+
+### Caveat
+
+#### Caveat.caveatType
+
+Type: `CaveatType!`
+
+#### Caveat.description
+
+Type: `String!`
+
+### SubscriptionAddOn
+
+An add-on pack that grants additional optimizations.
+
+#### SubscriptionAddOn.id
+
+Type: `ID!`
+
+#### SubscriptionAddOn.name
+
+Type: `String!`
+
+#### SubscriptionAddOn.description
+
+Type: `String`
+
+#### SubscriptionAddOn.price
+
+Type: `String!`
+
+#### SubscriptionAddOn.currency
+
+Type: `String!`
+
+#### SubscriptionAddOn.optimizations
+
+Type: `Int!`
+
+#### SubscriptionAddOn.isActive
+
+Type: `Boolean!`
+
+#### SubscriptionAddOn.insertedAt
+
+Type: `DateTime!`
+
+#### SubscriptionAddOn.updatedAt
+
+Type: `DateTime!`
+
+#### SubscriptionAddOn.addOnOptimizationsCount
+
+Number of bonus optimizations granted by this add-on.
+
+Type: `Int!`
+
+#### SubscriptionAddOn.addOnPriceId
+
+Paddle price ID for this add-on.
+
+Type: `String!`
+
+#### SubscriptionAddOn.button
+
+Button text for the add-on.
+
+Type: `String`
+
+#### SubscriptionAddOn.category
+
+Category of the add-on.
+
+Type: `String`
+
+#### SubscriptionAddOn.disclaimers
+
+Disclaimers associated with this add-on.
+
+Type: `[String!]!`
+
+#### SubscriptionAddOn.features
+
+Features included in this add-on.
+
+Type: `[String!]!`
+
+#### SubscriptionAddOn.subscriptions
+
+Associated subscriptions.
+
+Type: `[HelioSubscription!]!`
+
+### SimulationSettings
+
+#### SimulationSettings.airTemperatureAboveBuildPlate
+
+Type: `Float!`
+
+#### SimulationSettings.temperatureStabilizationHeight
+
+Type: `Float!`
+
+#### SimulationSettings.stabilizedAirTemperature
+
+Type: `Float!`
+
+#### SimulationSettings.constantFanSpeed
+
+Type: `Float`
+
+#### SimulationSettings.constantPlatformTemperature
+
+Type: `Float`
+
+#### SimulationSettings.constantNozzleTemperature
+
+Type: `Float`
+
+#### SimulationSettings.temperatureHistoryDatapointsPerElement
+
+Type: `Int`
+
+#### SimulationSettings.temperatureHistoryLengthMultiplier
+
+Type: `Int`
+
+### PaginatedNewsArticles
+
+A paginated list of news articles.
+
+#### PaginatedNewsArticles.pages
+
+Total number of pages available.
+
+Type: `Int!`
+
+#### PaginatedNewsArticles.pageInfo
+
+Type: `PageInfo!`
+
+#### PaginatedNewsArticles.objects
+
+Type: `[NewsArticle!]!`
 
 ### Material
 
@@ -2682,537 +4402,159 @@ Maximum bed temperature (in Kelvin)
 
 Type: `Float`
 
-### PaginatedOptimizations
+### Login
 
-#### PaginatedOptimizations.pages
+A historical login record for a user.
 
-Type: `Int!`
-
-#### PaginatedOptimizations.pageInfo
-
-Type: `PageInfo!`
-
-#### PaginatedOptimizations.objects
-
-Type: `[Optimization!]!`
-
-### FreeTrialClaim
-
-A record of a user claiming their free trial.
-
-#### FreeTrialClaim.id
+#### Login.id
 
 Type: `ID!`
 
-#### FreeTrialClaim.userId
+#### Login.loginType
 
-Type: `String!`
+Type: `LoginType!`
 
-#### FreeTrialClaim.claimedEmail
-
-Type: `String`
-
-#### FreeTrialClaim.startsAt
-
-Type: `DateTime!`
-
-#### FreeTrialClaim.claimedAt
-
-Type: `DateTime!`
-
-#### FreeTrialClaim.endsAt
-
-Type: `DateTime!`
-
-#### FreeTrialClaim.cooldownUntil
-
-Type: `DateTime`
-
-#### FreeTrialClaim.source
-
-Type: `String!`
-
-#### FreeTrialClaim.convertedToPaid
-
-Type: `Boolean!`
-
-#### FreeTrialClaim.convertedAt
-
-Type: `DateTime`
-
-#### FreeTrialClaim.isActive
-
-Type: `Boolean!`
-
-#### FreeTrialClaim.insertedAt
-
-Type: `DateTime!`
-
-#### FreeTrialClaim.updatedAt
-
-Type: `DateTime!`
-
-### Summary
-
-#### Summary.simulationCount
-
-Type: `Int!`
-
-#### Summary.materialCount
-
-Type: `Int!`
-
-#### Summary.printerCount
-
-Type: `Int!`
-
-### TransactionHistory
-
-A billing transaction record for a user.
-
-#### TransactionHistory.id
-
-Type: `ID!`
-
-#### TransactionHistory.user
-
-Type: `User!`
-
-#### TransactionHistory.amount
-
-Type: `Float!`
-
-#### TransactionHistory.currency
-
-Type: `String!`
-
-#### TransactionHistory.description
+#### Login.upUsername
 
 Type: `String`
 
-#### TransactionHistory.name
+#### Login.upPassword
 
-Type: `String!`
+Type: `String`
 
-#### TransactionHistory.type
+#### Login.auth0UserId
 
-Type: `TransactionType!`
+Type: `String`
 
-#### TransactionHistory.optsPerMonth
+#### Login.auth0Email
+
+Type: `String`
+
+#### Login.auth0EmailVerified
+
+Type: `Boolean`
+
+#### Login.ipAddress
+
+Type: `String`
+
+#### Login.userAgent
+
+Type: `String`
+
+#### Login.insertedAt
+
+Type: `DateTime!`
+
+### GcodeErrorV2
+
+#### GcodeErrorV2.type
+
+Type: `GcodeError!`
+
+Directive: `@deprecated(reason: "Use errorCode instead.")`
+
+#### GcodeErrorV2.errorCode
+
+Type: `GcodeErrorCode!`
+
+#### GcodeErrorV2.line
 
 Type: `Int`
 
-#### TransactionHistory.addOnOptimizations
-
-Type: `Int`
-
-#### TransactionHistory.addOn
-
-Type: `SubscriptionAddOn`
-
-#### TransactionHistory.paddleBillingStatus
+#### GcodeErrorV2.received
 
 Type: `String`
 
-#### TransactionHistory.paddleTransactionId
+#### GcodeErrorV2.expected
 
 Type: `String`
 
-#### TransactionHistory.paddleSubscriptionId
+### Suggestion
 
-Type: `String`
+A user-submitted suggestion for the L-FAM platform (legacy type).
 
-#### TransactionHistory.subtotalAmount
-
-Type: `String`
-
-#### TransactionHistory.taxAmount
-
-Type: `String`
-
-#### TransactionHistory.discountAmount
-
-Type: `String`
-
-#### TransactionHistory.totalAmount
-
-Type: `String`
-
-#### TransactionHistory.paddleFeeAmount
-
-Type: `String`
-
-#### TransactionHistory.payoutAmount
-
-Type: `String`
-
-#### TransactionHistory.payoutCurrency
-
-Type: `String`
-
-#### TransactionHistory.subscriptionStartDate
-
-Type: `DateTime`
-
-#### TransactionHistory.subscriptionEndDate
-
-Type: `DateTime`
-
-#### TransactionHistory.subscription
-
-Type: `HelioSubscription`
-
-#### TransactionHistory.insertedAt
-
-Type: `DateTime!`
-
-#### TransactionHistory.updatedAt
-
-Type: `DateTime!`
-
-### OptimizationFeatureFlags
-
-#### OptimizationFeatureFlags.warpageAnalysisWasEnabled
-
-Type: `Boolean!`
-
-#### OptimizationFeatureFlags.bridgeSpeedSmoothingWasEnabled
-
-Type: `Boolean!`
-
-#### OptimizationFeatureFlags.aboveBridgeOptimizationWasEnabled
-
-Type: `Boolean!`
-
-#### OptimizationFeatureFlags.fanSpeedOptimizationWasEnabled
-
-Type: `Boolean!`
-
-#### OptimizationFeatureFlags.gpuWasUsed
-
-Type: `Boolean!`
-
-#### OptimizationFeatureFlags.coreAssetsOnlyExportWasEnabled
-
-Type: `Boolean!`
-
-#### OptimizationFeatureFlags.optimumNozzleTemperatureCapWasEnabled
-
-Type: `Boolean!`
-
-#### OptimizationFeatureFlags.fanSpeedRampUpWasEnabled
-
-Type: `Boolean!`
-
-#### OptimizationFeatureFlags.verticalSupportInterfacePreservationWasEnabled
-
-Type: `Boolean!`
-
-#### OptimizationFeatureFlags.elementsActiveRangeWasEnabled
-
-Type: `Boolean!`
-
-#### OptimizationFeatureFlags.optimizationForLayersUnableToReachTargetWasEnabled
-
-Type: `Boolean!`
-
-### GcodeV2
-
-A single-material G-code.
-
-#### GcodeV2.id
+#### Suggestion.id
 
 Type: `ID!`
 
-#### GcodeV2.name
+#### Suggestion.user
+
+Type: `User`
+
+#### Suggestion.content
 
 Type: `String!`
 
-#### GcodeV2.status
-
-Type: `GcodeStatus!`
-
-#### GcodeV2.progress
-
-Type: `Float!`
-
-#### GcodeV2.sizeKb
-
-Type: `Float`
-
-#### GcodeV2.height
-
-Type: `Float`
-
-#### GcodeV2.width
-
-Type: `Float`
-
-#### GcodeV2.depth
-
-Type: `Float`
-
-#### GcodeV2.weight
-
-Type: `Float`
-
-#### GcodeV2.platformTemperature
-
-Type: `GcodeCustomFloat`
-
-#### GcodeV2.nozzleTemperatureMin
-
-Type: `GcodeCustomFloat`
-
-#### GcodeV2.nozzleTemperatureMax
-
-Type: `GcodeCustomFloat`
-
-#### GcodeV2.gcodeKey
-
-Uploaded G-code object key. Use \`gcodeUrl\` for a download URL.
-
-Type: `String`
-
-#### GcodeV2.roadWidthMin
-
-Type: `GcodeCustomFloat`
-
-#### GcodeV2.roadWidthMax
-
-Type: `GcodeCustomFloat`
-
-#### GcodeV2.layerHeightMin
-
-Type: `GcodeCustomFloat`
-
-#### GcodeV2.layerHeightMax
-
-Type: `GcodeCustomFloat`
-
-#### GcodeV2.speedMin
-
-Type: `GcodeCustomFloat`
-
-#### GcodeV2.speedMax
-
-Type: `GcodeCustomFloat`
-
-#### GcodeV2.fanSpeedMin
-
-Type: `GcodeCustomFloat`
-
-#### GcodeV2.fanSpeedMax
-
-Type: `GcodeCustomFloat`
-
-#### GcodeV2.numberOfLayers
-
-Type: `Int`
-
-#### GcodeV2.slicer
-
-Type: `Slicer`
-
-#### GcodeV2.flowRatio
-
-Type: `Float`
-
-#### GcodeV2.overrideGcodeParams
-
-Type: `OverrideGcodeParams`
-
-#### GcodeV2.isSingleShell
-
-Type: `Boolean!`
-
-#### GcodeV2.maxFlowRate
-
-Type: `Float`
-
-#### GcodeV2.layerHeightMode
-
-Type: `Float`
-
-#### GcodeV2.lineWidthMode
-
-Type: `Float`
-
-#### GcodeV2.restrictions
-
-Type: `[GcodeRestriction!]`
-
-#### GcodeV2.restrictionsV2
-
-Type: `[GcodeRestrictionInfo!]!`
-
-#### GcodeV2.errors
-
-Type: `[GcodeError!]`
-
-Directive: `@deprecated(reason: "Use errorsV2 instead.")`
-
-#### GcodeV2.errorsV2
-
-Type: `[GcodeErrorV2!]`
-
-#### GcodeV2.materialId
-
-Type: `ID!`
-
-#### GcodeV2.printerId
-
-Type: `ID!`
-
-#### GcodeV2.insertedAt
+#### Suggestion.insertedAt
 
 Type: `DateTime!`
 
-#### GcodeV2.updatedAt
+#### Suggestion.updatedAt
 
 Type: `DateTime!`
 
-#### GcodeV2.gcodeUrl
+### NewsArticleComment
 
-One-hour download URL for the G-code file.
+A comment on a news article.
+
+#### NewsArticleComment.id
+
+Type: `ID!`
+
+#### NewsArticleComment.commentMarkdown
 
 Type: `String!`
 
-#### GcodeV2.material
+#### NewsArticleComment.userId
+
+Type: `String`
+
+#### NewsArticleComment.user
+
+Type: `User`
+
+#### NewsArticleComment.insertedAt
+
+Type: `DateTime!`
+
+#### NewsArticleComment.updatedAt
+
+Type: `DateTime!`
+
+### GcodeMaterialInfo
+
+A material assigned to a multi-material G-code.
+
+#### GcodeMaterialInfo.materialId
+
+Material identifier.
+
+Type: `ID!`
+
+#### GcodeMaterialInfo.name
+
+Optional display name provided at upload time.
+
+Type: `String`
+
+#### GcodeMaterialInfo.slotIndex
+
+Printer slot index for this material.
+
+Type: `Int!`
+
+#### GcodeMaterialInfo.nozzleIndex
+
+Printer nozzle index for this material.
+
+Type: `Int!`
+
+#### GcodeMaterialInfo.material
+
+The full material resolved from materialId.
 
 Type: `Material!`
-
-Directive: `@deprecated(reason: "Use GcodeV3 with the materials field for multi-material support.")`
-
-#### GcodeV2.printer
-
-Type: `Printer!`
-
-### MaterialSummary
-
-#### MaterialSummary.count
-
-Type: `Int!`
-
-#### MaterialSummary.brands
-
-Type: `Int!`
-
-#### MaterialSummary.desktopMaterials
-
-Type: `Int!`
-
-#### MaterialSummary.lfamMaterials
-
-Type: `Int!`
-
-#### MaterialSummary.experimentalMaterials
-
-Type: `Int!`
-
-### PaginatedTransactionHistories
-
-A paginated list of transaction history records.
-
-#### PaginatedTransactionHistories.pages
-
-Type: `Int!`
-
-#### PaginatedTransactionHistories.pageInfo
-
-Type: `PageInfo!`
-
-#### PaginatedTransactionHistories.objects
-
-Type: `[TransactionHistory!]!`
-
-### SimulationFeatureFlags
-
-#### SimulationFeatureFlags.warpageAnalysisWasEnabled
-
-Type: `Boolean!`
-
-#### SimulationFeatureFlags.bridgeSpeedSmoothingWasEnabled
-
-Type: `Boolean!`
-
-#### SimulationFeatureFlags.aboveBridgeOptimizationWasEnabled
-
-Type: `Boolean!`
-
-#### SimulationFeatureFlags.fanSpeedOptimizationWasEnabled
-
-Type: `Boolean!`
-
-#### SimulationFeatureFlags.gpuWasUsed
-
-Type: `Boolean!`
-
-#### SimulationFeatureFlags.coreAssetsOnlyExportWasEnabled
-
-Type: `Boolean!`
-
-#### SimulationFeatureFlags.optimumNozzleTemperatureCapWasEnabled
-
-Type: `Boolean!`
-
-#### SimulationFeatureFlags.fanSpeedRampUpWasEnabled
-
-Type: `Boolean!`
-
-#### SimulationFeatureFlags.verticalSupportInterfacePreservationWasEnabled
-
-Type: `Boolean!`
-
-#### SimulationFeatureFlags.elementsActiveRangeWasEnabled
-
-Type: `Boolean!`
-
-#### SimulationFeatureFlags.optimizationForLayersUnableToReachTargetWasEnabled
-
-Type: `Boolean!`
-
-### AlternativePrinterNames
-
-#### AlternativePrinterNames.bambustudio
-
-Type: `String`
-
-#### AlternativePrinterNames.prusaslicer
-
-Type: `String`
-
-#### AlternativePrinterNames.curaslicer
-
-Type: `String`
-
-#### AlternativePrinterNames.crealityprint
-
-Type: `String`
-
-### PrinterSummary
-
-#### PrinterSummary.count
-
-Type: `Int!`
-
-### PaginatedSubscriptions
-
-A paginated list of Helio subscription plans.
-
-#### PaginatedSubscriptions.pages
-
-Total number of pages available.
-
-Type: `Int!`
-
-#### PaginatedSubscriptions.pageInfo
-
-Type: `PageInfo!`
-
-#### PaginatedSubscriptions.objects
-
-Type: `[HelioSubscription!]!`
 
 ### NewsArticle
 
@@ -3270,21 +4612,115 @@ Type: `DateTime!`
 
 Type: `DateTime!`
 
-### PaginatedGcodesV3
+### GcodeRestrictionInfo
 
-#### PaginatedGcodesV3.pages
+#### GcodeRestrictionInfo.restriction
 
-Total number of pages for the current page size.
+Type: `GcodeRestriction!`
+
+#### GcodeRestrictionInfo.description
+
+Type: `String!`
+
+### HelioSubscription
+
+A Helio subscription plan.
+
+#### HelioSubscription.id
+
+Type: `ID!`
+
+#### HelioSubscription.name
+
+Type: `String!`
+
+#### HelioSubscription.description
+
+Type: `String`
+
+#### HelioSubscription.optsPerMonth
 
 Type: `Int!`
 
-#### PaginatedGcodesV3.pageInfo
+#### HelioSubscription.membershipDuration
+
+Type: `Int`
+
+#### HelioSubscription.paddlePriceId
+
+Type: `String`
+
+#### HelioSubscription.price
+
+Type: `String`
+
+#### HelioSubscription.features
+
+Type: `[String!]!`
+
+#### HelioSubscription.disclaimers
+
+Type: `[String!]!`
+
+#### HelioSubscription.button
+
+Type: `String`
+
+#### HelioSubscription.category
+
+Type: `String`
+
+#### HelioSubscription.insertedAt
+
+Type: `DateTime!`
+
+#### HelioSubscription.updatedAt
+
+Type: `DateTime!`
+
+### PaginatedTransactionHistories
+
+A paginated list of transaction history records.
+
+#### PaginatedTransactionHistories.pages
+
+Type: `Int!`
+
+#### PaginatedTransactionHistories.pageInfo
 
 Type: `PageInfo!`
 
-#### PaginatedGcodesV3.objects
+#### PaginatedTransactionHistories.objects
 
-Type: `[GcodeV3!]!`
+Type: `[TransactionHistory!]!`
+
+### SlicePlate
+
+#### SlicePlate.plateIndex
+
+Type: `Int!`
+
+#### SlicePlate.status
+
+Type: `PlateJobStatus!`
+
+#### SlicePlate.progress
+
+Type: `Float!`
+
+#### SlicePlate.errorString
+
+Type: `String`
+
+#### SlicePlate.returnCode
+
+Native result code, absent if the worker failed before producing a report.
+
+Type: `Int`
+
+#### SlicePlate.durationMs
+
+Type: `String`
 
 ### PaginatedSimulations
 
@@ -3300,975 +4736,243 @@ Type: `PageInfo!`
 
 Type: `[Simulation!]!`
 
-### SuggestedFix
+### StoreExperimentDecision
 
-#### SuggestedFix.orderIndex
-
-Type: `Int`
-
-#### SuggestedFix.category
-
-Type: `SuggestedFixCategory!`
-
-#### SuggestedFix.fix
-
-Type: `String!`
-
-#### SuggestedFix.extraDetails
-
-Type: `[String!]!`
-
-### Printer
-
-#### Printer.id
+#### StoreExperimentDecision.visitId
 
 Type: `ID!`
 
-#### Printer.name
+#### StoreExperimentDecision.mode
 
-Type: `String!`
+Type: `StoreExperimentDecisionMode!`
 
-#### Printer.brand
+#### StoreExperimentDecision.assignmentId
 
-Type: `PrinterBrand!`
+Type: `ID`
 
-#### Printer.alternativeNames
+#### StoreExperimentDecision.experimentKey
 
-Type: `AlternativePrinterNames!`
+Type: `String`
 
-#### Printer.isBambuSupported
+#### StoreExperimentDecision.variantKey
 
-Type: `Boolean!`
+Type: `String`
 
-#### Printer.insertedAt
+### PaginatedOptimizations
 
-Type: `DateTime!`
-
-#### Printer.updatedAt
-
-Type: `DateTime!`
-
-#### Printer.nozzleDiameter
-
-Type: `Float!`
-
-#### Printer.heatedBed
-
-Type: `Boolean!`
-
-#### Printer.heatedChamber
-
-Type: `Boolean!`
-
-#### Printer.maxExtruderFlowRate
-
-Type: `Float!`
-
-#### Printer.minExtruderFlowRate
-
-Type: `Float!`
-
-#### Printer.minHardwarePrintSpeed
-
-Type: `Float!`
-
-#### Printer.maxHardwarePrintSpeed
-
-Type: `Float!`
-
-#### Printer.chamberType
-
-Type: `ChamberType!`
-
-#### Printer.numberOfNozzles
+#### PaginatedOptimizations.pages
 
 Type: `Int!`
 
-#### Printer.nNodes
-
-Type: `Int!`
-
-#### Printer.maxHardwareExtrusionTemp
-
-Maximum hardware extrusion temperature (in Kelvin)
-
-Type: `Float!`
-
-#### Printer.minHardwareExtrusionTemp
-
-Minimum hardware extrusion temperature (in Kelvin)
-
-Type: `Float!`
-
-### PaddlePortalSessionResponse
-
-Response returned after creating a Paddle billing portal session.
-
-#### PaddlePortalSessionResponse.url
-
-The URL the user should be redirected to in order to manage their subscription in the Paddle billing portal.
-
-Type: `String!`
-
-#### PaddlePortalSessionResponse.error
-
-Error message if the portal session could not be created.
-
-Type: `String`
-
-### AlternativeMaterialNames
-
-#### AlternativeMaterialNames.bambustudio
-
-Type: `String`
-
-#### AlternativeMaterialNames.prusaslicer
-
-Type: `String`
-
-#### AlternativeMaterialNames.curaslicer
-
-Type: `String`
-
-#### AlternativeMaterialNames.crealityprint
-
-Type: `String`
-
-### LayerRange
-
-#### LayerRange.fromLayer
-
-Type: `Int!`
-
-#### LayerRange.toLayer
-
-Type: `Int!`
-
-### SimulationFeedback
-
-#### SimulationFeedback.id
-
-Type: `ID!`
-
-#### SimulationFeedback.simulationId
-
-Type: `ID!`
-
-#### SimulationFeedback.rating
-
-Type: `Float!`
-
-#### SimulationFeedback.comment
-
-Type: `String`
-
-### GcodeCustomFloat
-
-#### GcodeCustomFloat.floatType
-
-Type: `FloatType!`
-
-#### GcodeCustomFloat.isOverriden
-
-\`true\` when a client-supplied override constant is in effect.
-
-Type: `Boolean!`
-
-#### GcodeCustomFloat.value
-
-Type: `Float`
-
-### Faq
-
-A single FAQ entry.
-
-#### Faq.id
-
-Type: `ID!`
-
-#### Faq.category
-
-Type: `FaqCategory!`
-
-#### Faq.insertedAt
-
-Type: `DateTime!`
-
-#### Faq.updatedAt
-
-Type: `DateTime!`
-
-#### Faq.question
-
-Type: `String`
-
-#### Faq.answer
-
-Type: `String`
-
-#### Faq.questionEnUs
-
-Type: `String`
-
-Directive: `@deprecated(reason: "Use question with Accept-Language: en instead.")`
-
-#### Faq.questionZhCn
-
-Type: `String`
-
-Directive: `@deprecated(reason: "Use question with Accept-Language: zh-CN instead.")`
-
-#### Faq.answerEnUs
-
-Type: `String`
-
-Directive: `@deprecated(reason: "Use answer with Accept-Language: en instead.")`
-
-#### Faq.answerZhCn
-
-Type: `String`
-
-Directive: `@deprecated(reason: "Use answer with Accept-Language: zh-CN instead.")`
-
-### PaginatedMaterials
-
-#### PaginatedMaterials.pages
-
-Type: `Int!`
-
-#### PaginatedMaterials.pageInfo
+#### PaginatedOptimizations.pageInfo
 
 Type: `PageInfo!`
 
-#### PaginatedMaterials.objects
+#### PaginatedOptimizations.objects
 
-Type: `[Material!]!`
+Type: `[Optimization!]!`
 
-### Gcode
+### PaginatedSlices
 
-Legacy G-code type. Deprecated in favour of \`GcodeV2\`.
-
-#### Gcode.id
-
-Type: `ID!`
-
-#### Gcode.name
-
-Type: `String!`
-
-#### Gcode.sizeKb
-
-Type: `Float!`
-
-#### Gcode.height
-
-Type: `Float!`
-
-#### Gcode.width
-
-Type: `Float!`
-
-#### Gcode.depth
-
-Type: `Float!`
-
-#### Gcode.platformTemperature
-
-Type: `GcodeCustomFloat`
-
-#### Gcode.nozzleTemperatureMin
-
-Type: `GcodeCustomFloat!`
-
-#### Gcode.nozzleTemperatureMax
-
-Type: `GcodeCustomFloat!`
-
-#### Gcode.gcodeKey
-
-Type: `String`
-
-#### Gcode.roadWidthMin
-
-Type: `GcodeCustomFloat!`
-
-#### Gcode.roadWidthMax
-
-Type: `GcodeCustomFloat!`
-
-#### Gcode.layerHeightMin
-
-Type: `GcodeCustomFloat!`
-
-#### Gcode.layerHeightMax
-
-Type: `GcodeCustomFloat!`
-
-#### Gcode.speedMin
-
-Type: `GcodeCustomFloat!`
-
-#### Gcode.speedMax
-
-Type: `GcodeCustomFloat!`
-
-#### Gcode.fanSpeedMin
-
-Type: `GcodeCustomFloat!`
-
-#### Gcode.fanSpeedMax
-
-Type: `GcodeCustomFloat!`
-
-#### Gcode.numberOfLayers
+#### PaginatedSlices.page
 
 Type: `Int!`
 
-#### Gcode.slicer
-
-Type: `Slicer!`
-
-#### Gcode.flowRatio
-
-Type: `Float`
-
-#### Gcode.overrideGcodeParams
-
-Type: `OverrideGcodeParams`
-
-#### Gcode.isSingleShell
-
-Type: `Boolean!`
-
-#### Gcode.maxFlowRate
-
-Type: `Float`
-
-#### Gcode.layerHeightMode
-
-Type: `Float`
-
-#### Gcode.lineWidthMode
-
-Type: `Float`
-
-#### Gcode.restrictions
-
-Type: `[GcodeRestriction!]`
-
-#### Gcode.errors
-
-Type: `[GcodeError!]`
-
-#### Gcode.printerId
-
-Type: `ID!`
-
-#### Gcode.materialId
-
-Type: `ID!`
-
-#### Gcode.insertedAt
-
-Type: `DateTime!`
-
-#### Gcode.updatedAt
-
-Type: `DateTime!`
-
-#### Gcode.gcodeUrl
-
-Type: `String!`
-
-### VerifyUserEmailUpdateOtpResponse
-
-Response returned after verifying an email update OTP.
-
-#### VerifyUserEmailUpdateOtpResponse.success
-
-Type: `Boolean!`
-
-#### VerifyUserEmailUpdateOtpResponse.error
-
-Type: `String`
-
-#### VerifyUserEmailUpdateOtpResponse.user
-
-Type: `User`
-
-### NewsArticleFeedback
-
-Feedback (reaction) from a user on a news article.
-
-#### NewsArticleFeedback.id
-
-Type: `ID!`
-
-#### NewsArticleFeedback.userId
-
-Type: `String!`
-
-#### NewsArticleFeedback.user
-
-Type: `User`
-
-#### NewsArticleFeedback.isLike
-
-Type: `Boolean!`
-
-#### NewsArticleFeedback.isNotImportant
-
-Type: `Boolean!`
-
-#### NewsArticleFeedback.isNiceToHave
-
-Type: `Boolean!`
-
-#### NewsArticleFeedback.isImportant
-
-Type: `Boolean!`
-
-#### NewsArticleFeedback.isCritical
-
-Type: `Boolean!`
-
-#### NewsArticleFeedback.insertedAt
-
-Type: `DateTime!`
-
-#### NewsArticleFeedback.updatedAt
-
-Type: `DateTime!`
-
-### SimulationSettings
-
-#### SimulationSettings.airTemperatureAboveBuildPlate
-
-Type: `Float!`
-
-#### SimulationSettings.temperatureStabilizationHeight
-
-Type: `Float!`
-
-#### SimulationSettings.stabilizedAirTemperature
-
-Type: `Float!`
-
-#### SimulationSettings.constantFanSpeed
-
-Type: `Float`
-
-#### SimulationSettings.constantPlatformTemperature
-
-Type: `Float`
-
-#### SimulationSettings.constantNozzleTemperature
-
-Type: `Float`
-
-#### SimulationSettings.temperatureHistoryDatapointsPerElement
-
-Type: `Int`
-
-#### SimulationSettings.temperatureHistoryLengthMultiplier
-
-Type: `Int`
-
-### OverrideGcodeParams
-
-Overrides applied to the G-code. Temperatures are in Celsius; lengths are in millimetres.
-
-#### OverrideGcodeParams.overrideConstantNozzleTemperature
-
-Type: `Float`
-
-#### OverrideGcodeParams.overrideConstantLayerHeight
-
-Type: `Float`
-
-#### OverrideGcodeParams.overrideConstantRoadWidth
-
-Type: `Float`
-
-#### OverrideGcodeParams.overrideConstantPlatformTemperature
-
-Type: `Float`
-
-### AnonymousPatTokenResponse
-
-Returned by \`createAnonymousPatToken\`. The \`pat\` value is the plaintext token — show it once and do not store it.
-
-#### AnonymousPatTokenResponse.pat
-
-Type: `String!`
-
-### PrinterBrand
-
-#### PrinterBrand.id
-
-Type: `ID!`
-
-#### PrinterBrand.name
-
-Type: `String!`
-
-#### PrinterBrand.logoUrl
-
-Type: `String`
-
-#### PrinterBrand.description
-
-Type: `String`
-
-#### PrinterBrand.insertedAt
-
-Type: `DateTime!`
-
-#### PrinterBrand.updatedAt
-
-Type: `DateTime!`
-
-### FeatureFlagDefaults
-
-System-wide default values for all user feature flags.
-
-#### FeatureFlagDefaults.enableFanSpeedRampUp
-
-Type: `Boolean!`
-
-#### FeatureFlagDefaults.enableSupportInterfaceOptimization
-
-Type: `Boolean!`
-
-#### FeatureFlagDefaults.enableKeepVerticalSupportInterface
-
-Type: `Boolean!`
-
-#### FeatureFlagDefaults.enableFanSpeedOptimization
-
-Type: `Boolean!`
-
-#### FeatureFlagDefaults.enableAlwaysUseDragonGpu
-
-Type: `Boolean!`
-
-#### FeatureFlagDefaults.enableExcludeCoreAssets
-
-Type: `Boolean!`
-
-#### FeatureFlagDefaults.enableApplyOptimumNozzleTemp
-
-Type: `Boolean!`
-
-#### FeatureFlagDefaults.enableBridgeSpeedSmoothing
-
-Type: `Boolean!`
-
-#### FeatureFlagDefaults.enableOptimizeAboveBridge
-
-Type: `Boolean!`
-
-#### FeatureFlagDefaults.enableOptimizationForLayersUnableToReachTarget
-
-Type: `Boolean!`
-
-#### FeatureFlagDefaults.enableElementsActiveRange
-
-Type: `Boolean!`
-
-#### FeatureFlagDefaults.enableWarpageAnalysis
-
-Type: `Boolean!`
-
-### PaginatedEvents
-
-A paginated list of events.
-
-#### PaginatedEvents.pages
-
-Total number of pages available.
+#### PaginatedSlices.pageSize
 
 Type: `Int!`
 
-#### PaginatedEvents.pageInfo
+#### PaginatedSlices.pageInfo
 
-Type: `PageInfo!`
+Type: `SlicingPageInfo!`
 
-#### PaginatedEvents.objects
+#### PaginatedSlices.objects
 
-Type: `[Event!]!`
+Type: `[Slice!]!`
 
-### PrintInfo
+### VerifyOtpResponse
 
-#### PrintInfo.printOutcome
+Response returned after verifying an OTP.
 
-Type: `PrintOutcome!`
-
-#### PrintInfo.printOutcomeDescription
-
-Type: `String!`
-
-#### PrintInfo.temperatureDirection
-
-Type: `TemperatureDirection!`
-
-#### PrintInfo.temperatureDirectionDescription
-
-Type: `String!`
-
-#### PrintInfo.caveats
-
-Type: `[Caveat!]!`
-
-### GcodeV3
-
-A multi-material G-code.
-
-#### GcodeV3.id
-
-Type: `ID!`
-
-#### GcodeV3.name
-
-Type: `String!`
-
-#### GcodeV3.status
-
-Type: `GcodeStatus!`
-
-#### GcodeV3.progress
-
-Type: `Float!`
-
-#### GcodeV3.sizeKb
-
-Type: `Float`
-
-#### GcodeV3.height
-
-Type: `Float`
-
-#### GcodeV3.width
-
-Type: `Float`
-
-#### GcodeV3.depth
-
-Type: `Float`
-
-#### GcodeV3.weight
-
-Type: `Float`
-
-#### GcodeV3.platformTemperature
-
-Type: `GcodeCustomFloat`
-
-#### GcodeV3.nozzleTemperatureMin
-
-Type: `GcodeCustomFloat`
-
-#### GcodeV3.nozzleTemperatureMax
-
-Type: `GcodeCustomFloat`
-
-#### GcodeV3.gcodeKey
-
-Uploaded G-code object key. Use \`gcodeUrl\` for a download URL.
-
-Type: `String`
-
-#### GcodeV3.roadWidthMin
-
-Type: `GcodeCustomFloat`
-
-#### GcodeV3.roadWidthMax
-
-Type: `GcodeCustomFloat`
-
-#### GcodeV3.layerHeightMin
-
-Type: `GcodeCustomFloat`
-
-#### GcodeV3.layerHeightMax
-
-Type: `GcodeCustomFloat`
-
-#### GcodeV3.speedMin
-
-Type: `GcodeCustomFloat`
-
-#### GcodeV3.speedMax
-
-Type: `GcodeCustomFloat`
-
-#### GcodeV3.fanSpeedMin
-
-Type: `GcodeCustomFloat`
-
-#### GcodeV3.fanSpeedMax
-
-Type: `GcodeCustomFloat`
-
-#### GcodeV3.numberOfLayers
-
-Type: `Int`
-
-#### GcodeV3.slicer
-
-Type: `Slicer`
-
-#### GcodeV3.flowRatio
-
-Type: `Float`
-
-#### GcodeV3.overrideGcodeParams
-
-Type: `OverrideGcodeParams`
-
-#### GcodeV3.isSingleShell
+#### VerifyOtpResponse.success
 
 Type: `Boolean!`
 
-#### GcodeV3.maxFlowRate
-
-Type: `Float`
-
-#### GcodeV3.layerHeightMode
-
-Type: `Float`
-
-#### GcodeV3.lineWidthMode
-
-Type: `Float`
-
-#### GcodeV3.restrictions
-
-Type: `[GcodeRestriction!]`
-
-#### GcodeV3.restrictionsV2
-
-Type: `[GcodeRestrictionInfo!]!`
-
-#### GcodeV3.errors
-
-Type: `[GcodeError!]`
-
-Directive: `@deprecated(reason: "Use errorsV2 instead.")`
-
-#### GcodeV3.errorsV2
-
-Type: `[GcodeErrorV2!]`
-
-#### GcodeV3.materialId
-
-Type: `ID!`
-
-#### GcodeV3.printerId
-
-Type: `ID!`
-
-#### GcodeV3.materials
-
-Materials associated with this G-code.
-
-Type: `[GcodeMaterialInfo!]!`
-
-#### GcodeV3.insertedAt
-
-Type: `DateTime!`
-
-#### GcodeV3.updatedAt
-
-Type: `DateTime!`
-
-#### GcodeV3.gcodeUrl
-
-One-hour download URL for the G-code file.
-
-Type: `String!`
-
-#### GcodeV3.material
-
-The primary material for this G-code (resolved from materialId). For multi-material G-codes this is the first material in the materials list.
-
-Type: `Material!`
-
-### PaginatedNewsArticles
-
-A paginated list of news articles.
-
-#### PaginatedNewsArticles.pages
-
-Total number of pages available.
-
-Type: `Int!`
-
-#### PaginatedNewsArticles.pageInfo
-
-Type: `PageInfo!`
-
-#### PaginatedNewsArticles.objects
-
-Type: `[NewsArticle!]!`
-
-### NewsArticleComment
-
-A comment on a news article.
-
-#### NewsArticleComment.id
-
-Type: `ID!`
-
-#### NewsArticleComment.commentMarkdown
-
-Type: `String!`
-
-#### NewsArticleComment.userId
+#### VerifyOtpResponse.token
 
 Type: `String`
 
-#### NewsArticleComment.user
+#### VerifyOtpResponse.error
 
-Type: `User`
+Type: `String`
 
-#### NewsArticleComment.insertedAt
+#### VerifyOtpResponse.linkingEvent
+
+Type: `LinkingEventType`
+
+### OptimizationReductionStrategySettings
+
+Flat representation of reduction strategy settings as stored on an Optimization record. The field names use the \`optimizationReduction\*\` prefix to match the old API contract.
+
+#### OptimizationReductionStrategySettings.optimizationReductionStrategy
+
+Type: `OptimizationReductionStrategy`
+
+#### OptimizationReductionStrategySettings.optimizationReductionAutolinearDoCriticality
+
+Type: `Boolean`
+
+#### OptimizationReductionStrategySettings.optimizationReductionAutolinearDoFitness
+
+Type: `Boolean`
+
+#### OptimizationReductionStrategySettings.optimizationReductionAutolinearDoInterpolation
+
+Type: `Boolean`
+
+#### OptimizationReductionStrategySettings.optimizationReductionAutolinearCriticalityMaxNodesDensity
+
+Type: `Float`
+
+#### OptimizationReductionStrategySettings.optimizationReductionAutolinearCriticalityThreshold
+
+Type: `Float`
+
+#### OptimizationReductionStrategySettings.optimizationReductionAutolinearFitnessMaxNodesDensity
+
+Type: `Float`
+
+#### OptimizationReductionStrategySettings.optimizationReductionAutolinearFitnessThreshold
+
+Type: `Float`
+
+#### OptimizationReductionStrategySettings.optimizationReductionAutolinearInterpolationLevels
+
+Type: `Int`
+
+#### OptimizationReductionStrategySettings.optimizationReductionLinearNodesLimit
+
+Type: `Int`
+
+### FreeTrialCodeGroup
+
+A group of free trial codes associated with a subscription.
+
+#### FreeTrialCodeGroup.id
+
+Type: `ID!`
+
+#### FreeTrialCodeGroup.subscription
+
+Type: `HelioSubscription!`
+
+#### FreeTrialCodeGroup.company
+
+Type: `String!`
+
+#### FreeTrialCodeGroup.name
+
+Type: `String!`
+
+#### FreeTrialCodeGroup.expirationDate
 
 Type: `DateTime!`
 
-#### NewsArticleComment.updatedAt
+#### FreeTrialCodeGroup.quantityOfCodes
+
+Type: `Int!`
+
+#### FreeTrialCodeGroup.isExpired
+
+Type: `Boolean!`
+
+#### FreeTrialCodeGroup.insertedAt
+
+Type: `DateTime!`
+
+#### FreeTrialCodeGroup.updatedAt
 
 Type: `DateTime!`
 
 ## Inputs
 
-### CreateUserInput
+### UploadedFileFilter
 
-Input for creating a new user account.
+#### UploadedFileFilter.name
 
-#### CreateUserInput.email
+Type: `SlicingNameFilter`
 
-Type: `String`
+#### UploadedFileFilter.inputType
 
-#### CreateUserInput.firstName
+Type: `SliceInputType`
 
-Type: `String`
+### SlicePresetOverridesInput
 
-#### CreateUserInput.lastName
+#### SlicePresetOverridesInput.machineId
 
-Type: `String`
+Type: `ID!`
 
-### UpdateFeatureFlags
+#### SlicePresetOverridesInput.processId
 
-Input for updating the authenticated user's feature flag settings.
+Type: `ID`
 
-#### UpdateFeatureFlags.enableFanSpeedRampUp
+#### SlicePresetOverridesInput.filamentIds
 
-Type: `Boolean`
+Type: `[ID!]`
 
-#### UpdateFeatureFlags.enableSupportInterfaceOptimization
+### RecordStoreExperimentEventInput
 
-Type: `Boolean`
+#### RecordStoreExperimentEventInput.visitId
 
-#### UpdateFeatureFlags.enableAlwaysUseDragonGpu
+Type: `ID!`
 
-Type: `Boolean`
+#### RecordStoreExperimentEventInput.eventType
 
-#### UpdateFeatureFlags.enableApplyOptimumNozzleTemp
+Type: `PublicStoreExperimentEventType!`
 
-Type: `Boolean`
-
-#### UpdateFeatureFlags.enableBridgeSpeedSmoothing
-
-Type: `Boolean`
-
-#### UpdateFeatureFlags.enableFanSpeedOptimization
-
-Type: `Boolean`
-
-#### UpdateFeatureFlags.enableOptimizeAboveBridge
-
-Type: `Boolean`
-
-#### UpdateFeatureFlags.enableWarpageAnalysis
-
-Type: `Boolean`
-
-### CreateSimulationInputV2
-
-#### CreateSimulationInputV2.name
+#### RecordStoreExperimentEventInput.idempotencyKey
 
 Type: `String!`
 
-#### CreateSimulationInputV2.gcodeId
+#### RecordStoreExperimentEventInput.selectedTab
 
-Type: `ID!`
+Type: `StoreExperimentPlanTab`
 
-#### CreateSimulationInputV2.simulationSettings
-
-Settings related to the simulation environment and parameters.
-
-Type: `SimulationSettingsInputV2`
-
-### GcodeMaterialInput
-
-Per-material entry for V3 multi-material G-code creation.
-
-#### GcodeMaterialInput.materialId
-
-Type: `ID!`
-
-#### GcodeMaterialInput.name
+#### RecordStoreExperimentEventInput.planKey
 
 Type: `String`
 
-#### GcodeMaterialInput.slotIndex
-
-Type: `Int!`
-
-#### GcodeMaterialInput.nozzleIndex
-
-Type: `Int!`
-
-### SimulationFilter
-
-#### SimulationFilter.field
-
-Type: `SimulationField!`
-
-#### SimulationFilter.filter
-
-Type: `Filter!`
-
-### CreateSuggestionInput
-
-Input for submitting a new L-FAM platform suggestion.
-
-#### CreateSuggestionInput.content
+#### RecordStoreExperimentEventInput.paddlePriceId
 
 Type: `String`
 
-### CreateOptimizationInputV2
+#### RecordStoreExperimentEventInput.checkoutAttemptId
 
-#### CreateOptimizationInputV2.name
+Type: `String`
 
-Type: `String!`
+#### RecordStoreExperimentEventInput.trialEligible
 
-#### CreateOptimizationInputV2.gcodeId
+Type: `Boolean`
 
-Type: `ID!`
+#### RecordStoreExperimentEventInput.locale
 
-#### CreateOptimizationInputV2.simulationSettings
+Type: `String`
 
-Settings related to the simulation environment and initial conditions.
+#### RecordStoreExperimentEventInput.pricingCountryCode
 
-Type: `SimulationSettingsInputV2`
+Type: `String`
 
-#### CreateOptimizationInputV2.optimizationSettings
+#### RecordStoreExperimentEventInput.pricingCountrySource
 
-Optimization settings. When omitted, sensible defaults are applied.
+Type: `String`
 
-Type: `OptimizationSettingsInput`
+#### RecordStoreExperimentEventInput.currencyCode
+
+Type: `String`
+
+#### RecordStoreExperimentEventInput.storeRelease
+
+Type: `String`
 
 ### StringFilter
 
@@ -4328,15 +5032,287 @@ Type: `String`
 
 Type: `String`
 
-### OptimizationFilter
+### SlicerMachineFilter
 
-#### OptimizationFilter.field
+#### SlicerMachineFilter.engine
 
-Type: `OptimizationField!`
+Type: `SlicerEngine`
 
-#### OptimizationFilter.filter
+#### SlicerMachineFilter.search
+
+Type: `String`
+
+#### SlicerMachineFilter.vendor
+
+Type: `String`
+
+#### SlicerMachineFilter.nozzleDiameterMm
+
+Type: `Float`
+
+#### SlicerMachineFilter.forSlicerVersion
+
+Type: `String`
+
+### CreateUploadedFileInput
+
+#### CreateUploadedFileInput.name
+
+Optional display name; defaults to the uploaded object's filename.
+
+Type: `String`
+
+#### CreateUploadedFileInput.inputType
+
+Type: `SliceInputType!`
+
+#### CreateUploadedFileInput.inputKey
+
+Type: `String!`
+
+#### CreateUploadedFileInput.inputVersionId
+
+Type: `String`
+
+### UpdateFeatureFlags
+
+Input for updating the authenticated user's feature flag settings.
+
+#### UpdateFeatureFlags.enableFanSpeedRampUp
+
+Type: `Boolean`
+
+#### UpdateFeatureFlags.enableSupportInterfaceOptimization
+
+Type: `Boolean`
+
+#### UpdateFeatureFlags.enableAlwaysUseDragonGpu
+
+Type: `Boolean`
+
+#### UpdateFeatureFlags.enableApplyOptimumNozzleTemp
+
+Type: `Boolean`
+
+#### UpdateFeatureFlags.enableBridgeSpeedSmoothing
+
+Type: `Boolean`
+
+#### UpdateFeatureFlags.enableFanSpeedOptimization
+
+Type: `Boolean`
+
+#### UpdateFeatureFlags.enableOptimizeAboveBridge
+
+Type: `Boolean`
+
+#### UpdateFeatureFlags.enableWarpageAnalysis
+
+Type: `Boolean`
+
+### SimulationFeedbackInput
+
+#### SimulationFeedbackInput.simulationId
+
+Type: `ID!`
+
+#### SimulationFeedbackInput.rating
+
+Type: `Float!`
+
+#### SimulationFeedbackInput.comment
+
+Type: `String`
+
+### CreateGcodeTimingInput
+
+#### CreateGcodeTimingInput.identity
+
+Stable UUID for this pair and context. Reuse unchanged after an ambiguous response.
+
+Type: `String!`
+
+#### CreateGcodeTimingInput.slicingEngine
+
+Type: `SlicerEngine!`
+
+#### CreateGcodeTimingInput.printerVendorBbl
+
+Required for Orca and Snapmaker from the original printer context. Omit for Bambu.
+
+Type: `Boolean`
+
+#### CreateGcodeTimingInput.original
+
+Type: `GcodeTimingInputFile!`
+
+#### CreateGcodeTimingInput.optimized
+
+Type: `GcodeTimingInputFile!`
+
+### SlicingNameFilter
+
+Name comparisons use the shared database filtering semantics.
+
+#### SlicingNameFilter.equalTo
+
+Type: `String`
+
+#### SlicingNameFilter.notEqualTo
+
+Type: `String`
+
+#### SlicingNameFilter.contains
+
+Type: `String`
+
+#### SlicingNameFilter.startsWith
+
+Type: `String`
+
+#### SlicingNameFilter.endsWith
+
+Type: `String`
+
+### CreateUserInput
+
+Input for creating a new user account.
+
+#### CreateUserInput.email
+
+Type: `String`
+
+#### CreateUserInput.firstName
+
+Type: `String`
+
+#### CreateUserInput.lastName
+
+Type: `String`
+
+### UpdateFeatureFlagsV3
+
+Input for updating the authenticated user's feature flag settings (V3).
+
+#### UpdateFeatureFlagsV3.enableBridgeSpeedSmoothing
+
+Type: `Boolean`
+
+#### UpdateFeatureFlagsV3.enableOptimizeAboveBridge
+
+Type: `Boolean`
+
+#### UpdateFeatureFlagsV3.enableFanSpeedOptimization
+
+Type: `Boolean`
+
+#### UpdateFeatureFlagsV3.enableAlwaysUseDragonGpu
+
+Type: `Boolean`
+
+#### UpdateFeatureFlagsV3.enableApplyOptimumNozzleTemp
+
+Type: `Boolean`
+
+#### UpdateFeatureFlagsV3.enableFanSpeedRampUp
+
+Type: `Boolean`
+
+#### UpdateFeatureFlagsV3.enableKeepVerticalSupportInterface
+
+Type: `Boolean`
+
+#### UpdateFeatureFlagsV3.enableOptimizationForLayersUnableToReachTarget
+
+Type: `Boolean`
+
+#### UpdateFeatureFlagsV3.enableWarpageAnalysis
+
+Type: `Boolean`
+
+### GcodeTimingInputFile
+
+#### GcodeTimingInputFile.inputKey
+
+Opaque upload key returned by get\_presigned\_url; never an artifact URL.
+
+Type: `String!`
+
+#### GcodeTimingInputFile.inputVersionId
+
+Type: `String`
+
+#### GcodeTimingInputFile.sha256
+
+SHA-256 of the complete original bytes, verified when retaining the upload.
+
+Type: `String!`
+
+### ClaimFreeTrialInput
+
+Input for the \`claimFreeTrial\` mutation. The optional Store visit ID lets the trusted claim workflow attribute a successful Store trial without accepting that outcome from browser events.
+
+#### ClaimFreeTrialInput.source
+
+The source from which the trial is being claimed (STORE or DASHBOARD).
+
+Type: `TrialSource!`
+
+#### ClaimFreeTrialInput.storeVisitId
+
+Store experiment visit to attribute a successful Store trial claim to.
+
+Type: `ID`
+
+### LayerRangeInput
+
+#### LayerRangeInput.fromLayer
+
+Type: `Int!`
+
+#### LayerRangeInput.toLayer
+
+Type: `Int!`
+
+### ResidualStrategySettingsInput
+
+#### ResidualStrategySettingsInput.strategy
+
+Type: `OptimizationResidualStrategy`
+
+#### ResidualStrategySettingsInput.exponentialPenaltyLow
+
+Type: `Float`
+
+#### ResidualStrategySettingsInput.exponentialPenaltyHigh
+
+Type: `Float`
+
+### GcodeFilter
+
+#### GcodeFilter.field
+
+Type: `GcodeField!`
+
+#### GcodeFilter.filter
 
 Type: `Filter!`
+
+### CreateSimulationInput
+
+#### CreateSimulationInput.name
+
+Type: `String!`
+
+#### CreateSimulationInput.gcodeId
+
+Type: `ID!`
+
+#### CreateSimulationInput.simulationSettings
+
+Settings related to the simulation environment and parameters.
+
+Type: `SimulationSettingsInput`
 
 ### NewsArticleFeedbackInput
 
@@ -4362,65 +5338,337 @@ Type: `Boolean`
 
 Type: `Boolean`
 
+### CreateOptimizationInput
+
+#### CreateOptimizationInput.name
+
+Type: `String!`
+
+#### CreateOptimizationInput.gcodeId
+
+Type: `ID!`
+
+#### CreateOptimizationInput.simulationSettings
+
+Settings related to the simulation environment and initial conditions.
+
+Type: `SimulationSettingsInput`
+
+#### CreateOptimizationInput.optimizationSettings
+
+Optimization settings. When omitted, sensible defaults are applied.
+
+Type: `OptimizationSettingsInput`
+
 ### CreateSliceInput
+
+#### CreateSliceInput.name
+
+Optional display name for this slice; defaults to its file's display name.
+
+Type: `String`
+
+#### CreateSliceInput.slicingEngine
+
+Omit to select from the 3MF probe recommendation or the printer catalog.
+
+Type: `SlicerEngine`
+
+#### CreateSliceInput.fileId
+
+Reuse this file without uploading again. Otherwise supply inputType and inputKey.
+
+Type: `ID`
 
 #### CreateSliceInput.inputType
 
-Type: `SliceInputType!`
+Type: `SliceInputType`
 
 #### CreateSliceInput.inputKey
 
-Type: `String!`
+Type: `String`
 
-#### CreateSliceInput.sliceConfigKey
+#### CreateSliceInput.inputVersionId
 
-Type: `String!`
+Type: `String`
 
-### GcodeFilter
+#### CreateSliceInput.presetOverrides
 
-#### GcodeFilter.field
+Omit for embedded 3MF profiles; required for other input types.
 
-Type: `GcodeField!`
+Type: `SlicePresetOverridesInput`
 
-#### GcodeFilter.filter
+#### CreateSliceInput.plate
 
-Type: `Filter!`
+Zero or omission selects every plate discovered by the file probe.
 
-### SimulationSettingsInput
+Type: `Int`
 
-#### SimulationSettingsInput.enableWarpingAnalysis
+#### CreateSliceInput.convertUnit
 
-Override warpage analysis for this run; omission preserves the user feature flag.
+Convert a model saved in meters or inches to millimeters before slicing.
 
 Type: `Boolean`
 
-#### SimulationSettingsInput.roomTemperature
+#### CreateSliceInput.scale
+
+Uniform scale factor applied to every object; must be greater than zero.
 
 Type: `Float`
 
-#### SimulationSettingsInput.airTemperatureAboveBuildPlate
+#### CreateSliceInput.rotate
+
+Rotation of every object around the Z axis, in degrees.
 
 Type: `Float`
 
-#### SimulationSettingsInput.temperatureStabilizationHeight
+#### CreateSliceInput.repetitions
+
+Total copies of the plate's objects to print, 1 to 100, as many as fit the bed.
+
+Type: `Int`
+
+#### CreateSliceInput.currBedType
+
+Plate type for every plate, overriding the project and printer defaults, for example "Textured PEI Plate". The engine refuses a name its printer does not have.
+
+Type: `String`
+
+#### CreateSliceInput.rotateX
+
+Rotation of every object around the X axis, in degrees.
 
 Type: `Float`
 
-#### SimulationSettingsInput.stabilizedAirTemperature
+#### CreateSliceInput.rotateY
+
+Rotation of every object around the Y axis, in degrees.
 
 Type: `Float`
 
-#### SimulationSettingsInput.constantFanSpeed
+#### CreateSliceInput.orient
 
-Type: `Float`
+True turns each object onto its best printing face; false keeps the file's orientation.
 
-#### SimulationSettingsInput.constantPlatformTemperature
+Type: `Boolean`
 
-Type: `Float`
+#### CreateSliceInput.arrange
 
-#### SimulationSettingsInput.constantNozzleTemperature
+True arranges the plate; false keeps every position. Omitted, the engine arranges a model file with more than one object and keeps a project as saved. Arranging can fail to place a part on some printers' beds; that plate then fails with the engine's sentence.
 
-Type: `Float`
+Type: `Boolean`
+
+#### CreateSliceInput.ensureOnBed
+
+Lift an object that is partly below the bed.
+
+Type: `Boolean`
+
+#### CreateSliceInput.allowRotations
+
+Let the arrange turn objects.
+
+Type: `Boolean`
+
+#### CreateSliceInput.allowMulticolorOneplate
+
+Let the arrange put several colours on one plate.
+
+Type: `Boolean`
+
+#### CreateSliceInput.enableTimelapse
+
+Arrange with room for a smooth timelapse.
+
+Type: `Boolean`
+
+#### CreateSliceInput.cloneObjects
+
+Copies of each loaded object, in file order, 1 to 100 each.
+
+Type: `[Int!]`
+
+#### CreateSliceInput.skipObjects
+
+Leave out the objects with these 3MF object ids.
+
+Type: `[Int!]`
+
+#### CreateSliceInput.allowNewerFile
+
+Slice a 3MF saved by a newer app version.
+
+Type: `Boolean`
+
+#### CreateSliceInput.allowSubstitution
+
+Slice a 3MF whose values the engine has to substitute with its own defaults.
+
+Type: `Boolean`
+
+#### CreateSliceInput.allowMixTemp
+
+Allow filaments with very different temperatures on one plate.
+
+Type: `Boolean`
+
+#### CreateSliceInput.skipModifiedGcodes
+
+Keep the system presets' G-code where the project changed it.
+
+Type: `Boolean`
+
+#### CreateSliceInput.simplify
+
+Reduce every part's triangles like the desktop Simplify tool (slicer-cli dev-23 or later).
+
+Type: `SliceSimplifyInput`
+
+#### CreateSliceInput.maxTrianglesPerPlate
+
+Refuse a plate with more triangles than this.
+
+Type: `Int`
+
+#### CreateSliceInput.maxSliceTimePerPlate
+
+Refuse a plate that takes longer than this to slice: seconds on the Bambu engine, milliseconds on the Orca and Snapmaker engines.
+
+Type: `Int`
+
+#### CreateSliceInput.noCheck
+
+Skip some validity checks: a layer height over the printer's limit becomes a warning; the G-code conflict check and the support-needed warning are skipped. Bed refusals stay.
+
+Type: `Boolean`
+
+#### CreateSliceInput.normativeCheck
+
+Refuse a project with post-processing scripts or a mixed filament; on by default.
+
+Type: `Boolean`
+
+#### CreateSliceInput.downwardCheck
+
+List the other printers the plates also fit on, in the report. Needs a project 3MF.
+
+Type: `Boolean`
+
+#### CreateSliceInput.minSave
+
+Write the sliced 3MF without the model geometry.
+
+Type: `Boolean`
+
+#### CreateSliceInput.metadata
+
+Metadata written into the sliced 3MF.
+
+Type: `[SliceMetadataInput!]`
+
+#### CreateSliceInput.makerlabName
+
+MakerLab name written into the sliced 3MF.
+
+Type: `String`
+
+#### CreateSliceInput.makerlabVersion
+
+MakerLab version written into the sliced 3MF.
+
+Type: `String`
+
+#### CreateSliceInput.settings
+
+Engine settings encoded as a JSON object string and validated for \`slicingEngine\`.
+
+Type: `String`
+
+#### CreateSliceInput.wantProject3Mf
+
+Type: `Boolean`
+
+### SliceFilter
+
+#### SliceFilter.name
+
+Type: `SlicingNameFilter`
+
+#### SliceFilter.fileId
+
+Type: `ID`
+
+#### SliceFilter.status
+
+Type: `SliceListStatus`
+
+### GcodeMaterialInput
+
+Per-material entry for V3 multi-material G-code creation.
+
+#### GcodeMaterialInput.materialId
+
+Type: `ID!`
+
+#### GcodeMaterialInput.name
+
+Type: `String`
+
+#### GcodeMaterialInput.slotIndex
+
+Type: `Int!`
+
+#### GcodeMaterialInput.nozzleIndex
+
+Type: `Int!`
+
+### UpdateFeatureFlagsV2
+
+Input for updating the authenticated user's feature flag settings (V2). Extends \`UpdateFeatureFlagsInput\` with support for the vertical support interface optimisation flag.
+
+#### UpdateFeatureFlagsV2.enableFanSpeedRampUp
+
+Type: `Boolean`
+
+#### UpdateFeatureFlagsV2.enableSupportInterfaceOptimization
+
+Type: `Boolean`
+
+#### UpdateFeatureFlagsV2.enableKeepVerticalSupportInterface
+
+Type: `Boolean`
+
+#### UpdateFeatureFlagsV2.enableFanSpeedOptimization
+
+Type: `Boolean`
+
+#### UpdateFeatureFlagsV2.enableAlwaysUseDragonGpu
+
+Type: `Boolean`
+
+#### UpdateFeatureFlagsV2.enableExcludeCoreAssets
+
+Type: `Boolean`
+
+#### UpdateFeatureFlagsV2.enableApplyOptimumNozzleTemp
+
+Type: `Boolean`
+
+#### UpdateFeatureFlagsV2.enableBridgeSpeedSmoothing
+
+Type: `Boolean`
+
+#### UpdateFeatureFlagsV2.enableOptimizeAboveBridge
+
+Type: `Boolean`
+
+#### UpdateFeatureFlagsV2.enableElementsActiveRange
+
+Type: `Boolean`
+
+#### UpdateFeatureFlagsV2.enableWarpageAnalysis
+
+Type: `Boolean`
 
 ### SimulationSettingsInputV2
 
@@ -4478,87 +5726,65 @@ Type: `Int`
 
 Type: `Int`
 
-### SimulationFeedbackInput
+### CreateGcodeInputV2
 
-#### SimulationFeedbackInput.simulationId
+Input for creating a single-material G-code.
 
-Type: `ID!`
-
-#### SimulationFeedbackInput.rating
-
-Type: `Float!`
-
-#### SimulationFeedbackInput.comment
-
-Type: `String`
-
-### OptimizationFeedbackInput
-
-#### OptimizationFeedbackInput.optimizationId
-
-Type: `ID!`
-
-#### OptimizationFeedbackInput.rating
-
-Type: `Float!`
-
-#### OptimizationFeedbackInput.comment
-
-Type: `String`
-
-### RedeemSubscriptionCodeInput
-
-Input for the \`redeemSubscriptionCode\` mutation.
-
-#### RedeemSubscriptionCodeInput.code
-
-Subscription code to redeem.
+#### CreateGcodeInputV2.name
 
 Type: `String!`
 
-### UpdateUserInput
+#### CreateGcodeInputV2.description
 
-Input for updating the authenticated user's feature flags. Deprecated — use \`UpdateFeatureFlagsInput\` instead.
+Type: `String`
 
-#### UpdateUserInput.enableFanSpeedRampUp
+#### CreateGcodeInputV2.materialId
 
-Type: `Boolean`
+Type: `ID!`
 
-#### UpdateUserInput.enableSupportInterfaceOptimization
+#### CreateGcodeInputV2.printerId
 
-Type: `Boolean`
+Type: `ID!`
 
-#### UpdateUserInput.enableAlwaysUseDragonGpu
+#### CreateGcodeInputV2.gcodeKey
 
-Type: `Boolean`
+Object key returned after uploading the G-code file.
 
-#### UpdateUserInput.enableBridgeSpeedSmoothing
+Type: `String!`
 
-Type: `Boolean`
+#### CreateGcodeInputV2.isSingleShell
 
-#### UpdateUserInput.enableFanSpeedOptimization
+Type: `Boolean!`
 
-Type: `Boolean`
-
-#### UpdateUserInput.enableOptimizeAboveBridge
+#### CreateGcodeInputV2.isMultiMaterial
 
 Type: `Boolean`
 
-#### UpdateUserInput.enableWarpageAnalysis
+#### CreateGcodeInputV2.isMultiColor
 
 Type: `Boolean`
 
-### ResidualStrategySettingsInput
+#### CreateGcodeInputV2.overrideConstantNozzleTemperature
 
-#### ResidualStrategySettingsInput.strategy
-
-Type: `OptimizationResidualStrategy`
-
-#### ResidualStrategySettingsInput.exponentialPenaltyLow
+Override nozzle temperature in \*\*Kelvin\*\*.
 
 Type: `Float`
 
-#### ResidualStrategySettingsInput.exponentialPenaltyHigh
+#### CreateGcodeInputV2.overrideConstantLayerHeight
+
+Override layer height in \*\*metres\*\*.
+
+Type: `Float`
+
+#### CreateGcodeInputV2.overrideConstantLineWidth
+
+Override line (road) width in \*\*metres\*\*.
+
+Type: `Float`
+
+#### CreateGcodeInputV2.overrideConstantPlatformTemperature
+
+Override platform temperature in \*\*Kelvin\*\*.
 
 Type: `Float`
 
@@ -4630,27 +5856,477 @@ Deprecated: use \`print\_priority\` instead. \`true\` → \`PrintPriority::Speed
 
 Type: `Boolean`
 
-### CreateOptimizationInput
+### CreateOptimizationInputV2
 
-#### CreateOptimizationInput.name
+#### CreateOptimizationInputV2.name
 
 Type: `String!`
 
-#### CreateOptimizationInput.gcodeId
+#### CreateOptimizationInputV2.gcodeId
 
 Type: `ID!`
 
-#### CreateOptimizationInput.simulationSettings
+#### CreateOptimizationInputV2.simulationSettings
 
 Settings related to the simulation environment and initial conditions.
 
-Type: `SimulationSettingsInput`
+Type: `SimulationSettingsInputV2`
 
-#### CreateOptimizationInput.optimizationSettings
+#### CreateOptimizationInputV2.optimizationSettings
 
 Optimization settings. When omitted, sensible defaults are applied.
 
 Type: `OptimizationSettingsInput`
+
+### SliceMetadataInput
+
+One metadata entry of the sliced 3MF. Names and values may not contain \`;\`.
+
+#### SliceMetadataInput.name
+
+Type: `String!`
+
+#### SliceMetadataInput.value
+
+Type: `String!`
+
+### CreateSuggestionInput
+
+Input for submitting a new L-FAM platform suggestion.
+
+#### CreateSuggestionInput.content
+
+Type: `String`
+
+### SlicerFilamentFilter
+
+#### SlicerFilamentFilter.engine
+
+Type: `SlicerEngine`
+
+#### SlicerFilamentFilter.search
+
+Type: `String`
+
+#### SlicerFilamentFilter.vendor
+
+Type: `String`
+
+#### SlicerFilamentFilter.compatibleMachine
+
+Type: `String`
+
+#### SlicerFilamentFilter.forSlicerVersion
+
+Type: `String`
+
+### SlicerProcessFilter
+
+#### SlicerProcessFilter.engine
+
+Type: `SlicerEngine`
+
+#### SlicerProcessFilter.search
+
+Type: `String`
+
+#### SlicerProcessFilter.vendor
+
+Type: `String`
+
+#### SlicerProcessFilter.compatibleMachine
+
+Type: `String`
+
+#### SlicerProcessFilter.forSlicerVersion
+
+Type: `String`
+
+### SimulationFilter
+
+#### SimulationFilter.field
+
+Type: `SimulationField!`
+
+#### SimulationFilter.filter
+
+Type: `Filter!`
+
+### UpdateUserInput
+
+Input for updating the authenticated user's feature flags. Deprecated — use \`UpdateFeatureFlagsInput\` instead.
+
+#### UpdateUserInput.enableFanSpeedRampUp
+
+Type: `Boolean`
+
+#### UpdateUserInput.enableSupportInterfaceOptimization
+
+Type: `Boolean`
+
+#### UpdateUserInput.enableAlwaysUseDragonGpu
+
+Type: `Boolean`
+
+#### UpdateUserInput.enableBridgeSpeedSmoothing
+
+Type: `Boolean`
+
+#### UpdateUserInput.enableFanSpeedOptimization
+
+Type: `Boolean`
+
+#### UpdateUserInput.enableOptimizeAboveBridge
+
+Type: `Boolean`
+
+#### UpdateUserInput.enableWarpageAnalysis
+
+Type: `Boolean`
+
+### RedeemSubscriptionCodeInput
+
+Input for the \`redeemSubscriptionCode\` mutation.
+
+#### RedeemSubscriptionCodeInput.code
+
+Subscription code to redeem.
+
+Type: `String!`
+
+### IntFilter
+
+#### IntFilter.equalTo
+
+Type: `Int`
+
+#### IntFilter.notEqualTo
+
+Type: `Int`
+
+#### IntFilter.greaterThan
+
+Type: `Int`
+
+#### IntFilter.greaterThanOrEqualTo
+
+Type: `Int`
+
+#### IntFilter.lessThan
+
+Type: `Int`
+
+#### IntFilter.lessThanOrEqualTo
+
+Type: `Int`
+
+#### IntFilter.inList
+
+Type: `[Int!]`
+
+#### IntFilter.notInList
+
+Type: `[Int!]`
+
+### MaterialFilter
+
+#### MaterialFilter.field
+
+Type: `MaterialField!`
+
+#### MaterialFilter.filter
+
+Type: `Filter!`
+
+### UpdateGcodeInputV2
+
+Input for updating a single-material G-code.
+
+#### UpdateGcodeInputV2.name
+
+Type: `String!`
+
+#### UpdateGcodeInputV2.materialId
+
+Type: `ID!`
+
+#### UpdateGcodeInputV2.printerId
+
+Type: `ID!`
+
+#### UpdateGcodeInputV2.isSingleShell
+
+Type: `Boolean!`
+
+#### UpdateGcodeInputV2.overrideConstantLayerHeight
+
+Override layer height in \*\*metres\*\*.
+
+Type: `Float`
+
+#### UpdateGcodeInputV2.overrideConstantLineWidth
+
+Override line (road) width in \*\*metres\*\*.
+
+Type: `Float`
+
+#### UpdateGcodeInputV2.overrideConstantPlatformTemperature
+
+Override platform temperature in \*\*Kelvin\*\*.
+
+Type: `Float`
+
+#### UpdateGcodeInputV2.overrideConstantNozzleTemperature
+
+Override nozzle temperature in \*\*Kelvin\*\*.
+
+Type: `Float`
+
+### PrinterFilter
+
+#### PrinterFilter.field
+
+Type: `PrinterField!`
+
+#### PrinterFilter.filter
+
+Type: `Filter!`
+
+### OptimizationFilter
+
+#### OptimizationFilter.field
+
+Type: `OptimizationField!`
+
+#### OptimizationFilter.filter
+
+Type: `Filter!`
+
+### Filter
+
+#### Filter.stringFilter
+
+Type: `StringFilter`
+
+#### Filter.intFilter
+
+Type: `IntFilter`
+
+#### Filter.floatFilter
+
+Type: `FloatFilter`
+
+#### Filter.booleanFilter
+
+Type: `BooleanFilter`
+
+### ReductionStrategySettingsInput
+
+#### ReductionStrategySettingsInput.strategy
+
+Type: `OptimizationReductionStrategy`
+
+#### ReductionStrategySettingsInput.linearNodesLimit
+
+Type: `Int`
+
+#### ReductionStrategySettingsInput.autolinearDoCriticality
+
+Type: `Boolean`
+
+#### ReductionStrategySettingsInput.autolinearDoFitness
+
+Type: `Boolean`
+
+#### ReductionStrategySettingsInput.autolinearDoInterpolation
+
+Type: `Boolean`
+
+#### ReductionStrategySettingsInput.autolinearCriticalityMaxNodesDensity
+
+Type: `Float`
+
+#### ReductionStrategySettingsInput.autolinearCriticalityThreshold
+
+Type: `Float`
+
+#### ReductionStrategySettingsInput.autolinearFitnessMaxNodesDensity
+
+Type: `Float`
+
+#### ReductionStrategySettingsInput.autolinearFitnessThreshold
+
+Type: `Float`
+
+#### ReductionStrategySettingsInput.autolinearInterpolationLevels
+
+Type: `Int`
+
+### CreateSimulationInputV2
+
+#### CreateSimulationInputV2.name
+
+Type: `String!`
+
+#### CreateSimulationInputV2.gcodeId
+
+Type: `ID!`
+
+#### CreateSimulationInputV2.simulationSettings
+
+Settings related to the simulation environment and parameters.
+
+Type: `SimulationSettingsInputV2`
+
+### SimulationStatusFilter
+
+Filter for simulation status values.
+
+#### SimulationStatusFilter.equalTo
+
+Type: `SimulationStatus`
+
+#### SimulationStatusFilter.notEqualTo
+
+Type: `SimulationStatus`
+
+### BooleanFilter
+
+#### BooleanFilter.equalTo
+
+Type: `Boolean`
+
+#### BooleanFilter.notEqualTo
+
+Type: `Boolean`
+
+### OptimizationFeedbackInput
+
+#### OptimizationFeedbackInput.optimizationId
+
+Type: `ID!`
+
+#### OptimizationFeedbackInput.rating
+
+Type: `Float!`
+
+#### OptimizationFeedbackInput.comment
+
+Type: `String`
+
+### FloatFilter
+
+#### FloatFilter.equalTo
+
+Type: `Float`
+
+#### FloatFilter.notEqualTo
+
+Type: `Float`
+
+#### FloatFilter.greaterThan
+
+Type: `Float`
+
+#### FloatFilter.greaterThanOrEqualTo
+
+Type: `Float`
+
+#### FloatFilter.lessThan
+
+Type: `Float`
+
+#### FloatFilter.lessThanOrEqualTo
+
+Type: `Float`
+
+#### FloatFilter.inList
+
+Type: `[Float!]`
+
+#### FloatFilter.notInList
+
+Type: `[Float!]`
+
+### SimulationSettingsInput
+
+#### SimulationSettingsInput.enableWarpingAnalysis
+
+Override warpage analysis for this run; omission preserves the user feature flag.
+
+Type: `Boolean`
+
+#### SimulationSettingsInput.roomTemperature
+
+Type: `Float`
+
+#### SimulationSettingsInput.airTemperatureAboveBuildPlate
+
+Type: `Float`
+
+#### SimulationSettingsInput.temperatureStabilizationHeight
+
+Type: `Float`
+
+#### SimulationSettingsInput.stabilizedAirTemperature
+
+Type: `Float`
+
+#### SimulationSettingsInput.constantFanSpeed
+
+Type: `Float`
+
+#### SimulationSettingsInput.constantPlatformTemperature
+
+Type: `Float`
+
+#### SimulationSettingsInput.constantNozzleTemperature
+
+Type: `Float`
+
+### RedeemFreeTrialCodeInput
+
+Input for the \`redeemFreeTrialCode\` mutation.
+
+#### RedeemFreeTrialCodeInput.code
+
+Free trial code to redeem.
+
+Type: `String!`
+
+### SliceSimplifyInput
+
+The desktop Simplify tool, headless. Exactly one of \`level\`, \`ratio\` or \`triangles\` chooses how far to reduce.
+
+#### SliceSimplifyInput.level
+
+Detail level of the dialog's slider; MEDIUM is the tool's default.
+
+Type: `SimplifyLevel`
+
+#### SliceSimplifyInput.ratio
+
+Share of each part's triangles to remove, above 0 and below 100.
+
+Type: `Float`
+
+#### SliceSimplifyInput.triangles
+
+Reduce each part to about this many triangles; a part at or under it is left as it is.
+
+Type: `Int`
+
+#### SliceSimplifyInput.objects
+
+Simplify only these 3MF object ids; omitted, every object.
+
+Type: `[Int!]`
+
+#### SliceSimplifyInput.keepPaint
+
+Carry painted colours, supports, seams and fuzzy skin onto the reduced mesh, as the desktop's "preserve painting" does. Off, the paint is cleared. The Snapmaker engine refuses it.
+
+Type: `Boolean`
 
 ### CreateGcodeInputV3
 
@@ -4716,441 +6392,305 @@ Override platform temperature in \*\*Kelvin\*\*.
 
 Type: `Float`
 
-### Filter
+### CreateInputProbeInput
 
-#### Filter.stringFilter
+#### CreateInputProbeInput.name
 
-Type: `StringFilter`
-
-#### Filter.intFilter
-
-Type: `IntFilter`
-
-#### Filter.floatFilter
-
-Type: `FloatFilter`
-
-#### Filter.booleanFilter
-
-Type: `BooleanFilter`
-
-### ReductionStrategySettingsInput
-
-#### ReductionStrategySettingsInput.strategy
-
-Type: `OptimizationReductionStrategy`
-
-#### ReductionStrategySettingsInput.linearNodesLimit
-
-Type: `Int`
-
-#### ReductionStrategySettingsInput.autolinearDoCriticality
-
-Type: `Boolean`
-
-#### ReductionStrategySettingsInput.autolinearDoFitness
-
-Type: `Boolean`
-
-#### ReductionStrategySettingsInput.autolinearDoInterpolation
-
-Type: `Boolean`
-
-#### ReductionStrategySettingsInput.autolinearCriticalityMaxNodesDensity
-
-Type: `Float`
-
-#### ReductionStrategySettingsInput.autolinearCriticalityThreshold
-
-Type: `Float`
-
-#### ReductionStrategySettingsInput.autolinearFitnessMaxNodesDensity
-
-Type: `Float`
-
-#### ReductionStrategySettingsInput.autolinearFitnessThreshold
-
-Type: `Float`
-
-#### ReductionStrategySettingsInput.autolinearInterpolationLevels
-
-Type: `Int`
-
-### UpdateFeatureFlagsV2
-
-Input for updating the authenticated user's feature flag settings (V2). Extends \`UpdateFeatureFlagsInput\` with support for the vertical support interface optimisation flag.
-
-#### UpdateFeatureFlagsV2.enableFanSpeedRampUp
-
-Type: `Boolean`
-
-#### UpdateFeatureFlagsV2.enableSupportInterfaceOptimization
-
-Type: `Boolean`
-
-#### UpdateFeatureFlagsV2.enableKeepVerticalSupportInterface
-
-Type: `Boolean`
-
-#### UpdateFeatureFlagsV2.enableFanSpeedOptimization
-
-Type: `Boolean`
-
-#### UpdateFeatureFlagsV2.enableAlwaysUseDragonGpu
-
-Type: `Boolean`
-
-#### UpdateFeatureFlagsV2.enableExcludeCoreAssets
-
-Type: `Boolean`
-
-#### UpdateFeatureFlagsV2.enableApplyOptimumNozzleTemp
-
-Type: `Boolean`
-
-#### UpdateFeatureFlagsV2.enableBridgeSpeedSmoothing
-
-Type: `Boolean`
-
-#### UpdateFeatureFlagsV2.enableOptimizeAboveBridge
-
-Type: `Boolean`
-
-#### UpdateFeatureFlagsV2.enableElementsActiveRange
-
-Type: `Boolean`
-
-#### UpdateFeatureFlagsV2.enableWarpageAnalysis
-
-Type: `Boolean`
-
-### PrinterFilter
-
-#### PrinterFilter.field
-
-Type: `PrinterField!`
-
-#### PrinterFilter.filter
-
-Type: `Filter!`
-
-### CreateSimulationInput
-
-#### CreateSimulationInput.name
-
-Type: `String!`
-
-#### CreateSimulationInput.gcodeId
-
-Type: `ID!`
-
-#### CreateSimulationInput.simulationSettings
-
-Settings related to the simulation environment and parameters.
-
-Type: `SimulationSettingsInput`
-
-### LayerRangeInput
-
-#### LayerRangeInput.fromLayer
-
-Type: `Int!`
-
-#### LayerRangeInput.toLayer
-
-Type: `Int!`
-
-### SimulationStatusFilter
-
-Filter for simulation status values.
-
-#### SimulationStatusFilter.equalTo
-
-Type: `SimulationStatus`
-
-#### SimulationStatusFilter.notEqualTo
-
-Type: `SimulationStatus`
-
-### CreateGcodeInputV2
-
-Input for creating a single-material G-code.
-
-#### CreateGcodeInputV2.name
-
-Type: `String!`
-
-#### CreateGcodeInputV2.description
+Optional display name when registering a new file; does not rename an existing file.
 
 Type: `String`
 
-#### CreateGcodeInputV2.materialId
+#### CreateInputProbeInput.fileId
 
-Type: `ID!`
+Reuse a registered file, or supply inputType and inputKey to register an upload.
 
-#### CreateGcodeInputV2.printerId
+Type: `ID`
 
-Type: `ID!`
+#### CreateInputProbeInput.inputType
 
-#### CreateGcodeInputV2.gcodeKey
+Type: `SliceInputType`
 
-Object key returned after uploading the G-code file.
+#### CreateInputProbeInput.inputKey
 
-Type: `String!`
+Type: `String`
 
-#### CreateGcodeInputV2.isSingleShell
+#### CreateInputProbeInput.inputVersionId
 
-Type: `Boolean!`
-
-#### CreateGcodeInputV2.isMultiMaterial
-
-Type: `Boolean`
-
-#### CreateGcodeInputV2.isMultiColor
-
-Type: `Boolean`
-
-#### CreateGcodeInputV2.overrideConstantNozzleTemperature
-
-Override nozzle temperature in \*\*Kelvin\*\*.
-
-Type: `Float`
-
-#### CreateGcodeInputV2.overrideConstantLayerHeight
-
-Override layer height in \*\*metres\*\*.
-
-Type: `Float`
-
-#### CreateGcodeInputV2.overrideConstantLineWidth
-
-Override line (road) width in \*\*metres\*\*.
-
-Type: `Float`
-
-#### CreateGcodeInputV2.overrideConstantPlatformTemperature
-
-Override platform temperature in \*\*Kelvin\*\*.
-
-Type: `Float`
-
-### ClaimFreeTrialInput
-
-Input for the \`claimFreeTrial\` mutation. Retained for backward compatibility with existing clients that pass a \`source\` argument. The value is currently ignored by the implementation.
-
-#### ClaimFreeTrialInput.source
-
-The source from which the trial is being claimed (STORE or DASHBOARD).
-
-Type: `TrialSource!`
-
-### BooleanFilter
-
-#### BooleanFilter.equalTo
-
-Type: `Boolean`
-
-#### BooleanFilter.notEqualTo
-
-Type: `Boolean`
-
-### FloatFilter
-
-#### FloatFilter.equalTo
-
-Type: `Float`
-
-#### FloatFilter.notEqualTo
-
-Type: `Float`
-
-#### FloatFilter.greaterThan
-
-Type: `Float`
-
-#### FloatFilter.greaterThanOrEqualTo
-
-Type: `Float`
-
-#### FloatFilter.lessThan
-
-Type: `Float`
-
-#### FloatFilter.lessThanOrEqualTo
-
-Type: `Float`
-
-#### FloatFilter.inList
-
-Type: `[Float!]`
-
-#### FloatFilter.notInList
-
-Type: `[Float!]`
-
-### IntFilter
-
-#### IntFilter.equalTo
-
-Type: `Int`
-
-#### IntFilter.notEqualTo
-
-Type: `Int`
-
-#### IntFilter.greaterThan
-
-Type: `Int`
-
-#### IntFilter.greaterThanOrEqualTo
-
-Type: `Int`
-
-#### IntFilter.lessThan
-
-Type: `Int`
-
-#### IntFilter.lessThanOrEqualTo
-
-Type: `Int`
-
-#### IntFilter.inList
-
-Type: `[Int!]`
-
-#### IntFilter.notInList
-
-Type: `[Int!]`
-
-### UpdateGcodeInputV2
-
-Input for updating a single-material G-code.
-
-#### UpdateGcodeInputV2.name
-
-Type: `String!`
-
-#### UpdateGcodeInputV2.materialId
-
-Type: `ID!`
-
-#### UpdateGcodeInputV2.printerId
-
-Type: `ID!`
-
-#### UpdateGcodeInputV2.isSingleShell
-
-Type: `Boolean!`
-
-#### UpdateGcodeInputV2.overrideConstantLayerHeight
-
-Override layer height in \*\*metres\*\*.
-
-Type: `Float`
-
-#### UpdateGcodeInputV2.overrideConstantLineWidth
-
-Override line (road) width in \*\*metres\*\*.
-
-Type: `Float`
-
-#### UpdateGcodeInputV2.overrideConstantPlatformTemperature
-
-Override platform temperature in \*\*Kelvin\*\*.
-
-Type: `Float`
-
-#### UpdateGcodeInputV2.overrideConstantNozzleTemperature
-
-Override nozzle temperature in \*\*Kelvin\*\*.
-
-Type: `Float`
-
-### RedeemFreeTrialCodeInput
-
-Input for the \`redeemFreeTrialCode\` mutation.
-
-#### RedeemFreeTrialCodeInput.code
-
-Free trial code to redeem.
-
-Type: `String!`
-
-### UpdateFeatureFlagsV3
-
-Input for updating the authenticated user's feature flag settings (V3).
-
-#### UpdateFeatureFlagsV3.enableBridgeSpeedSmoothing
-
-Type: `Boolean`
-
-#### UpdateFeatureFlagsV3.enableOptimizeAboveBridge
-
-Type: `Boolean`
-
-#### UpdateFeatureFlagsV3.enableFanSpeedOptimization
-
-Type: `Boolean`
-
-#### UpdateFeatureFlagsV3.enableAlwaysUseDragonGpu
-
-Type: `Boolean`
-
-#### UpdateFeatureFlagsV3.enableApplyOptimumNozzleTemp
-
-Type: `Boolean`
-
-#### UpdateFeatureFlagsV3.enableFanSpeedRampUp
-
-Type: `Boolean`
-
-#### UpdateFeatureFlagsV3.enableKeepVerticalSupportInterface
-
-Type: `Boolean`
-
-#### UpdateFeatureFlagsV3.enableOptimizationForLayersUnableToReachTarget
-
-Type: `Boolean`
-
-#### UpdateFeatureFlagsV3.enableWarpageAnalysis
-
-Type: `Boolean`
-
-### MaterialFilter
-
-#### MaterialFilter.field
-
-Type: `MaterialField!`
-
-#### MaterialFilter.filter
-
-Type: `Filter!`
+Type: `String`
 
 ## Enums
 
-### SimulationField
+### GcodeStatus
 
-#### SimulationField.NAME
+#### GcodeStatus.INITIALIZING
 
-#### SimulationField.STATUS
+#### GcodeStatus.PARSING
 
-#### SimulationField.PROGRESS
+#### GcodeStatus.READY
 
-### NewsArticleTag
+#### GcodeStatus.ERROR
 
-#### NewsArticleTag.PRINTER
+#### GcodeStatus.RESTRICTED
 
-#### NewsArticleTag.MATERIAL
+### CaveatType
 
-#### NewsArticleTag.GCODE
+#### CaveatType.OVERCOOLING\_WITH\_SEVERE\_OVERHEATED\_LAYERS
 
-#### NewsArticleTag.SIMULATION
+#### CaveatType.OVERCOOLING\_WITH\_OVERHEATED\_LAYERS
 
-#### NewsArticleTag.COMPANY
+#### CaveatType.OVERHEATING\_WITH\_SEVERE\_OVERCOOLED\_LAYERS
 
-#### NewsArticleTag.UPDATES
+#### CaveatType.OVERHEATING\_WITH\_OVERCOOLED\_LAYERS
 
-#### NewsArticleTag.MISC
+#### CaveatType.OVERCOOLING\_WITH\_SEVERE\_OVERCOOLED\_LAYERS
+
+#### CaveatType.OVERCOOLING\_WITH\_OVERCOOLED\_LAYERS
+
+#### CaveatType.OVERHEATING\_WITH\_SEVERE\_OVERHEATED\_LAYERS
+
+#### CaveatType.OVERHEATING\_WITH\_OVERHEATED\_LAYERS
+
+#### CaveatType.OVERCOOLED\_LAYERS
+
+#### CaveatType.SEVERE\_OVERCOOLED\_LAYERS
+
+#### CaveatType.OVERHEATED\_LAYERS
+
+#### CaveatType.SEVERE\_OVERHEATED\_LAYERS
+
+### GcodeRestriction
+
+#### GcodeRestriction.SIZE\_TOO\_LARGE
+
+#### GcodeRestriction.WEIGHT\_TOO\_HEAVY
+
+### InputProbeStatus
+
+#### InputProbeStatus.PENDING
+
+#### InputProbeStatus.SUCCEEDED
+
+#### InputProbeStatus.FAILED
+
+### StoreExperimentPlanTab
+
+#### StoreExperimentPlanTab.PERSONAL
+
+#### StoreExperimentPlanTab.BUSINESS
+
+### GcodeErrorCode
+
+#### GcodeErrorCode.NOZZLE\_TEMPERATURE\_NOT\_FOUND
+
+#### GcodeErrorCode.PLATFORM\_TEMPERATURE\_NOT\_FOUND
+
+#### GcodeErrorCode.LAYER\_HEIGHT\_NOT\_FOUND
+
+#### GcodeErrorCode.LINE\_WIDTH\_NOT\_FOUND
+
+#### GcodeErrorCode.INVALID\_GCODE
+
+#### GcodeErrorCode.INTERNAL\_ERROR
+
+#### GcodeErrorCode.HAS\_NEGATIVE\_Z\_COORDINATES
+
+#### GcodeErrorCode.HAS\_NO\_COMMANDS
+
+#### GcodeErrorCode.HAS\_NO\_LAYERS
+
+#### GcodeErrorCode.HAS\_UNCERTAIN\_ENCODING
+
+#### GcodeErrorCode.HAS\_ZERO\_SPEED
+
+#### GcodeErrorCode.HAS\_MULTI\_MATERIAL\_PRINTING
+
+#### GcodeErrorCode.COMMAND\_FORMAT\_ERROR
+
+#### GcodeErrorCode.COMMENT\_FORMAT\_ERROR
+
+#### GcodeErrorCode.VALUE\_ERROR
+
+#### GcodeErrorCode.MULTI\_MATERIAL\_UNABLE\_TO\_DETECT\_MATERIAL\_SWITCH
+
+#### GcodeErrorCode.NOZZLE\_INDEX\_MISMATCH
+
+#### GcodeErrorCode.SLOT\_INDEX\_MISMATCH
+
+### FaqCategory
+
+Category of a FAQ entry.
+
+#### FaqCategory.PRINTER
+
+Printer-related FAQ.
+
+#### FaqCategory.MATERIAL
+
+Material-related FAQ.
+
+#### FaqCategory.GCODE
+
+G-code-related FAQ.
+
+#### FaqCategory.SIMULATION
+
+Simulation-related FAQ.
+
+### GcodeTimingStatus
+
+#### GcodeTimingStatus.PENDING
+
+#### GcodeTimingStatus.SUCCEEDED
+
+#### GcodeTimingStatus.FAILED
+
+### OptimizationImprovement
+
+#### OptimizationImprovement.LOW
+
+#### OptimizationImprovement.MEDIUM
+
+#### OptimizationImprovement.HIGH
+
+### Slicer
+
+#### Slicer.SIMPLIFY3D
+
+#### Slicer.IDEAMAKER
+
+#### Slicer.CURA
+
+#### Slicer.BAMBU\_LABS
+
+#### Slicer.SUPERSLICER
+
+#### Slicer.SLIC3R
+
+#### Slicer.FUSION360
+
+#### Slicer.BAAM
+
+#### Slicer.MW
+
+#### Slicer.CEAD\_BAAM
+
+#### Slicer.KRAUSS\_MAFFEI
+
+#### Slicer.PIOCREATE
+
+#### Slicer.KUYING
+
+#### Slicer.CEAD
+
+#### Slicer.AI\_BUILD
+
+#### Slicer.AI\_BUILD\_GCODE
+
+#### Slicer.AI\_BUILD\_SRC
+
+#### Slicer.ADAONE
+
+#### Slicer.PRUSA\_SLICER
+
+#### Slicer.SIGNIFY
+
+#### Slicer.ORCA\_SLICER
+
+#### Slicer.CARACOL
+
+#### Slicer.CREALITY\_PRINT
+
+#### Slicer.UNKNOWN
+
+An unrecognized slicer.
+
+### StoreExperimentSurface
+
+#### StoreExperimentSurface.STORE\_PRICING
+
+### PrinterField
+
+#### PrinterField.ID
+
+#### PrinterField.NAME
+
+#### PrinterField.BRAND\_NAME
+
+#### PrinterField.ALTERNATIVE\_NAME\_BAMBUSTUDIO
+
+#### PrinterField.ALTERNATIVE\_NAME\_PRUSASLICER
+
+#### PrinterField.ALTERNATIVE\_NAME\_CURASLICER
+
+#### PrinterField.ALTERNATIVE\_NAME\_CREALITYPRINT
+
+#### PrinterField.BRAND\_ID
+
+#### PrinterField.NOZZLE\_DIAMETER
+
+#### PrinterField.IS\_HEATED\_BED
+
+#### PrinterField.IS\_HEATED\_CHAMBER
+
+#### PrinterField.IS\_UNHEATED\_CHAMBER
+
+#### PrinterField.MAX\_EXTRUDER\_FLOW\_RATE
+
+#### PrinterField.MIN\_EXTRUDER\_FLOW\_RATE
+
+#### PrinterField.MAX\_HARDWARE\_PRINT\_SPEED
+
+#### PrinterField.MIN\_HARDWARE\_PRINT\_SPEED
+
+#### PrinterField.MAX\_HARDWARE\_EXTRUSION\_TEMP
+
+#### PrinterField.MIN\_HARDWARE\_EXTRUSION\_TEMP
+
+#### PrinterField.CHAMBER\_TYPE
+
+#### PrinterField.NUMBER\_OF\_NOZZLES
+
+#### PrinterField.N\_NODES
+
+### TrialSource
+
+Source of the free trial claim.
+
+#### TrialSource.STORE
+
+Trial claimed from the store/pricing page.
+
+#### TrialSource.DASHBOARD
+
+Trial claimed from the user dashboard.
+
+### TemperatureDirection
+
+#### TemperatureDirection.NONE
+
+#### TemperatureDirection.OVERCOOLING
+
+#### TemperatureDirection.OVERHEATING
+
+### HeatedChamberRequirement
+
+#### HeatedChamberRequirement.NOT\_REQUIRED
+
+#### HeatedChamberRequirement.OPTIONAL
+
+#### HeatedChamberRequirement.REQUIRED
+
+### LoginType
+
+The authentication method used for a login record.
+
+#### LoginType.USERNAME\_PASSWORD
+
+User logs in using a username and password combination.
+
+#### LoginType.AUTH\_0
+
+User logs in using Auth0.
 
 ### LinkingEventType
 
@@ -5163,56 +6703,6 @@ User created a new account and linked their PAT token for the first time.
 #### LinkingEventType.DEVICE\_RELINKED
 
 User linked a new PAT token (new device) to their existing account.
-
-### TemperatureDirection
-
-#### TemperatureDirection.NONE
-
-#### TemperatureDirection.OVERCOOLING
-
-#### TemperatureDirection.OVERHEATING
-
-### OptimizationField
-
-#### OptimizationField.NAME
-
-#### OptimizationField.STATUS
-
-#### OptimizationField.PROGRESS
-
-### SuggestedFixCategory
-
-#### SuggestedFixCategory.QUICK
-
-#### SuggestedFixCategory.ADVANCED
-
-#### SuggestedFixCategory.EXPERT
-
-### UserType
-
-The type or role of a user in the system.
-
-#### UserType.HOBBYIST
-
-User is a hobbyist, often engaging in 3D printing for personal projects or fun.
-
-#### UserType.ACADEMIC
-
-User is affiliated with an academic institution.
-
-#### UserType.PROFESSIONAL
-
-User uses 3D printing in a professional context.
-
-#### UserType.INDUSTRIAL
-
-User is part of an industrial setting.
-
-### OptimizationResidualStrategy
-
-#### OptimizationResidualStrategy.LINEAR
-
-#### OptimizationResidualStrategy.EXPONENTIAL
 
 ### SimulationStatus
 
@@ -5229,6 +6719,232 @@ User is part of an industrial setting.
 #### SimulationStatus.FAILED
 
 #### SimulationStatus.STOPPED
+
+### MaterialField
+
+#### MaterialField.ID
+
+#### MaterialField.BRAND\_ID
+
+#### MaterialField.BRAND\_NAME
+
+#### MaterialField.NAME
+
+#### MaterialField.DESCRIPTION
+
+#### MaterialField.DENSITY
+
+#### MaterialField.CAPACITY
+
+#### MaterialField.CONDUCTIVITY\_X
+
+#### MaterialField.CONDUCTIVITY\_Y
+
+#### MaterialField.CONDUCTIVITY\_Z
+
+#### MaterialField.EMISSIVITY
+
+#### MaterialField.MIN\_EXTRUSION\_TEMP
+
+#### MaterialField.MAX\_EXTRUSION\_TEMP
+
+#### MaterialField.DRYING\_TEMP
+
+#### MaterialField.DRYING\_TIME\_HOURS
+
+#### MaterialField.BED\_TEMP\_MIN
+
+#### MaterialField.BED\_TEMP\_MAX
+
+#### MaterialField.HEATED\_CHAMBER\_REQUIREMENT
+
+#### MaterialField.APPLICATION\_AREAS
+
+#### MaterialField.TG
+
+#### MaterialField.FEEDSTOCK
+
+#### MaterialField.EMAIL\_TO\_BUY
+
+#### MaterialField.ALTERNATIVE\_NAME\_BAMBUSTUDIO
+
+#### MaterialField.ALTERNATIVE\_NAME\_PRUSASLICER
+
+#### MaterialField.ALTERNATIVE\_NAME\_CURASLICER
+
+#### MaterialField.ALTERNATIVE\_NAME\_CREALITYPRINT
+
+### StoreExperimentDecisionMode
+
+#### StoreExperimentDecisionMode.BASELINE
+
+#### StoreExperimentDecisionMode.ASSIGNED
+
+#### StoreExperimentDecisionMode.QA\_PREVIEW
+
+### OptimizationField
+
+#### OptimizationField.NAME
+
+#### OptimizationField.STATUS
+
+#### OptimizationField.PROGRESS
+
+### Optimizer
+
+#### Optimizer.FULL
+
+#### Optimizer.HYBRID
+
+### OptimizationReductionStrategy
+
+#### OptimizationReductionStrategy.AUTOLINEAR
+
+#### OptimizationReductionStrategy.LINEAR
+
+#### OptimizationReductionStrategy.NO\_STRATEGY
+
+### NewsArticleStatus
+
+#### NewsArticleStatus.UNDER\_CONSIDERATION
+
+#### NewsArticleStatus.IN\_DEVELOPMENT
+
+#### NewsArticleStatus.RECENTLY\_RELEASED
+
+### SliceJobStatus
+
+Terminal state reported by the slicing worker.
+
+#### SliceJobStatus.SUCCEEDED
+
+#### SliceJobStatus.FAILED
+
+### Feedstock
+
+#### Feedstock.FILAMENT
+
+#### Feedstock.PELLET
+
+### PrintOutcome
+
+#### PrintOutcome.WILL\_PRINT
+
+#### PrintOutcome.MAY\_PRINT
+
+#### PrintOutcome.LIKELY\_FAIL
+
+### OptimizationResidualStrategy
+
+#### OptimizationResidualStrategy.LINEAR
+
+#### OptimizationResidualStrategy.EXPONENTIAL
+
+### SuggestedFixCategory
+
+#### SuggestedFixCategory.QUICK
+
+#### SuggestedFixCategory.ADVANCED
+
+#### SuggestedFixCategory.EXPERT
+
+### SortDirection
+
+#### SortDirection.ASCENDING
+
+#### SortDirection.DESCENDING
+
+### FloatType
+
+#### FloatType.NEG\_INF
+
+#### FloatType.POS\_INF
+
+#### FloatType.NAN
+
+#### FloatType.VALUE
+
+### PrintPriority
+
+#### PrintPriority.SPEED\_AND\_STRENGTH
+
+#### PrintPriority.PRESERVE\_SURFACE\_FINISH
+
+#### PrintPriority.ENHANCE\_SURFACE\_GLOSS
+
+#### PrintPriority.ENHANCE\_TRANSPARENCY
+
+### PublicStoreExperimentEventType
+
+#### PublicStoreExperimentEventType.STORE\_EXPOSED
+
+#### PublicStoreExperimentEventType.PLAN\_TAB\_SELECTED
+
+#### PublicStoreExperimentEventType.SUBSCRIPTION\_CTA\_CLICKED
+
+#### PublicStoreExperimentEventType.TRIAL\_CTA\_CLICKED
+
+#### PublicStoreExperimentEventType.CHECKOUT\_OPENED
+
+#### PublicStoreExperimentEventType.CHECKOUT\_CLOSED
+
+#### PublicStoreExperimentEventType.ADD\_ON\_CTA\_CLICKED
+
+#### PublicStoreExperimentEventType.ENTERPRISE\_CONTACT\_CLICKED
+
+### SimulationAssetType
+
+#### SimulationAssetType.PARQUET
+
+#### SimulationAssetType.JSON
+
+### ChamberType
+
+#### ChamberType.HEATED\_CHAMBER
+
+#### ChamberType.NO\_CHAMBER
+
+#### ChamberType.UNHEATED\_CHAMBER
+
+### AnonymousSlicerType
+
+Identifies which slicer is requesting an anonymous PAT token.
+
+#### AnonymousSlicerType.BAMBU\_STUDIO
+
+#### AnonymousSlicerType.ORCA\_SLICER
+
+### GcodeError
+
+#### GcodeError.NOZZLE\_TEMPERATURE\_NOT\_FOUND
+
+#### GcodeError.PLATFORM\_TEMPERATURE\_NOT\_FOUND
+
+#### GcodeError.LAYER\_HEIGHT\_NOT\_FOUND
+
+#### GcodeError.LINE\_WIDTH\_NOT\_FOUND
+
+#### GcodeError.INVALID\_GCODE
+
+#### GcodeError.HAS\_NEGATIVE\_Z\_COORDINATES
+
+#### GcodeError.HAS\_NO\_COMMANDS
+
+#### GcodeError.HAS\_UNCERTAIN\_ENCODING
+
+#### GcodeError.HAS\_ZERO\_SPEED
+
+#### GcodeError.HAS\_MULTI\_MATERIAL\_PRINTING
+
+#### GcodeError.COMMAND\_FORMAT\_ERROR
+
+#### GcodeError.COMMENT\_FORMAT\_ERROR
+
+#### GcodeError.VALUE\_ERROR
+
+#### GcodeError.INTERNAL\_ERROR
+
+#### GcodeError.MULTI\_MATERIAL\_UNABLE\_TO\_DETECT\_MATERIAL\_SWITCH
 
 ### GcodeField
 
@@ -5287,168 +7003,6 @@ User is part of an industrial setting.
 #### GcodeField.FAN\_SPEED\_MAX
 
 #### GcodeField.NUMBER\_OF\_LAYERS
-
-### CaveatType
-
-#### CaveatType.OVERCOOLING\_WITH\_SEVERE\_OVERHEATED\_LAYERS
-
-#### CaveatType.OVERCOOLING\_WITH\_OVERHEATED\_LAYERS
-
-#### CaveatType.OVERHEATING\_WITH\_SEVERE\_OVERCOOLED\_LAYERS
-
-#### CaveatType.OVERHEATING\_WITH\_OVERCOOLED\_LAYERS
-
-#### CaveatType.OVERCOOLING\_WITH\_SEVERE\_OVERCOOLED\_LAYERS
-
-#### CaveatType.OVERCOOLING\_WITH\_OVERCOOLED\_LAYERS
-
-#### CaveatType.OVERHEATING\_WITH\_SEVERE\_OVERHEATED\_LAYERS
-
-#### CaveatType.OVERHEATING\_WITH\_OVERHEATED\_LAYERS
-
-#### CaveatType.OVERCOOLED\_LAYERS
-
-#### CaveatType.SEVERE\_OVERCOOLED\_LAYERS
-
-#### CaveatType.OVERHEATED\_LAYERS
-
-#### CaveatType.SEVERE\_OVERHEATED\_LAYERS
-
-### TrialSource
-
-Source of the free trial claim.
-
-#### TrialSource.STORE
-
-Trial claimed from the store/pricing page.
-
-#### TrialSource.DASHBOARD
-
-Trial claimed from the user dashboard.
-
-### PrinterField
-
-#### PrinterField.ID
-
-#### PrinterField.NAME
-
-#### PrinterField.BRAND\_NAME
-
-#### PrinterField.ALTERNATIVE\_NAME\_BAMBUSTUDIO
-
-#### PrinterField.ALTERNATIVE\_NAME\_PRUSASLICER
-
-#### PrinterField.ALTERNATIVE\_NAME\_CURASLICER
-
-#### PrinterField.ALTERNATIVE\_NAME\_CREALITYPRINT
-
-#### PrinterField.BRAND\_ID
-
-#### PrinterField.NOZZLE\_DIAMETER
-
-#### PrinterField.IS\_HEATED\_BED
-
-#### PrinterField.IS\_HEATED\_CHAMBER
-
-#### PrinterField.IS\_UNHEATED\_CHAMBER
-
-#### PrinterField.MAX\_EXTRUDER\_FLOW\_RATE
-
-#### PrinterField.MIN\_EXTRUDER\_FLOW\_RATE
-
-#### PrinterField.MAX\_HARDWARE\_PRINT\_SPEED
-
-#### PrinterField.MIN\_HARDWARE\_PRINT\_SPEED
-
-#### PrinterField.MAX\_HARDWARE\_EXTRUSION\_TEMP
-
-#### PrinterField.MIN\_HARDWARE\_EXTRUSION\_TEMP
-
-#### PrinterField.CHAMBER\_TYPE
-
-#### PrinterField.NUMBER\_OF\_NOZZLES
-
-#### PrinterField.N\_NODES
-
-### SortDirection
-
-#### SortDirection.ASCENDING
-
-#### SortDirection.DESCENDING
-
-### NewsArticleStatus
-
-#### NewsArticleStatus.UNDER\_CONSIDERATION
-
-#### NewsArticleStatus.IN\_DEVELOPMENT
-
-#### NewsArticleStatus.RECENTLY\_RELEASED
-
-### Optimizer
-
-#### Optimizer.FULL
-
-#### Optimizer.HYBRID
-
-### FaqCategory
-
-Category of a FAQ entry.
-
-#### FaqCategory.PRINTER
-
-Printer-related FAQ.
-
-#### FaqCategory.MATERIAL
-
-Material-related FAQ.
-
-#### FaqCategory.GCODE
-
-G-code-related FAQ.
-
-#### FaqCategory.SIMULATION
-
-Simulation-related FAQ.
-
-### GcodeError
-
-#### GcodeError.NOZZLE\_TEMPERATURE\_NOT\_FOUND
-
-#### GcodeError.PLATFORM\_TEMPERATURE\_NOT\_FOUND
-
-#### GcodeError.LAYER\_HEIGHT\_NOT\_FOUND
-
-#### GcodeError.LINE\_WIDTH\_NOT\_FOUND
-
-#### GcodeError.INVALID\_GCODE
-
-#### GcodeError.HAS\_NEGATIVE\_Z\_COORDINATES
-
-#### GcodeError.HAS\_NO\_COMMANDS
-
-#### GcodeError.HAS\_UNCERTAIN\_ENCODING
-
-#### GcodeError.HAS\_ZERO\_SPEED
-
-#### GcodeError.HAS\_MULTI\_MATERIAL\_PRINTING
-
-#### GcodeError.COMMAND\_FORMAT\_ERROR
-
-#### GcodeError.COMMENT\_FORMAT\_ERROR
-
-#### GcodeError.VALUE\_ERROR
-
-#### GcodeError.INTERNAL\_ERROR
-
-#### GcodeError.MULTI\_MATERIAL\_UNABLE\_TO\_DETECT\_MATERIAL\_SWITCH
-
-### ChamberType
-
-#### ChamberType.HEATED\_CHAMBER
-
-#### ChamberType.NO\_CHAMBER
-
-#### ChamberType.UNHEATED\_CHAMBER
 
 ### ApplicationArea
 
@@ -5514,31 +7068,109 @@ Simulation-related FAQ.
 
 #### ApplicationArea.WEARABLES
 
-### GcodeStatus
+### SlicingSortDirection
 
-#### GcodeStatus.INITIALIZING
+#### SlicingSortDirection.ASCENDING
 
-#### GcodeStatus.PARSING
+#### SlicingSortDirection.DESCENDING
 
-#### GcodeStatus.READY
+### UserType
 
-#### GcodeStatus.ERROR
+The type or role of a user in the system.
 
-#### GcodeStatus.RESTRICTED
+#### UserType.HOBBYIST
 
-### HeatedChamberRequirement
+User is a hobbyist, often engaging in 3D printing for personal projects or fun.
 
-#### HeatedChamberRequirement.NOT\_REQUIRED
+#### UserType.ACADEMIC
 
-#### HeatedChamberRequirement.OPTIONAL
+User is affiliated with an academic institution.
 
-#### HeatedChamberRequirement.REQUIRED
+#### UserType.PROFESSIONAL
+
+User uses 3D printing in a professional context.
+
+#### UserType.INDUSTRIAL
+
+User is part of an industrial setting.
+
+### PlateJobStatus
+
+#### PlateJobStatus.PENDING
+
+#### PlateJobStatus.RUNNING
+
+#### PlateJobStatus.SUCCEEDED
+
+#### PlateJobStatus.FAILED
+
+### SimplifyLevel
+
+#### SimplifyLevel.EXTRA\_HIGH
+
+#### SimplifyLevel.HIGH
+
+#### SimplifyLevel.MEDIUM
+
+#### SimplifyLevel.LOW
+
+#### SimplifyLevel.EXTRA\_LOW
+
+### SliceListStatus
+
+#### SliceListStatus.IN\_PROGRESS
+
+Includes queued, probing and running plate jobs.
+
+#### SliceListStatus.SUCCEEDED
+
+#### SliceListStatus.FAILED
+
+### SliceArtifactKind
+
+Payload type of a generated slice artifact.
+
+#### SliceArtifactKind.GCODE
+
+#### SliceArtifactKind.RESULT\_JSON
+
+#### SliceArtifactKind.PROJECT\_3MF
+
+#### SliceArtifactKind.DIAGNOSTICS
+
+#### SliceArtifactKind.WARNINGS
+
+#### SliceArtifactKind.NOTES
+
+### SimulationField
+
+#### SimulationField.NAME
+
+#### SimulationField.STATUS
+
+#### SimulationField.PROGRESS
 
 ### SliceInputType
 
-#### SliceInputType.MPF
-
 #### SliceInputType.STL
+
+#### SliceInputType.OBJ
+
+#### SliceInputType.AMF
+
+#### SliceInputType.STEP
+
+#### SliceInputType.THREE\_MF
+
+A 3MF using embedded profiles or explicit preset overrides.
+
+#### SliceInputType.GLTF
+
+#### SliceInputType.GLB
+
+#### SliceInputType.FBX
+
+#### SliceInputType.SVG
 
 ### TransactionType
 
@@ -5550,231 +7182,47 @@ The type of a billing transaction.
 
 #### TransactionType.PAYMENT\_FAILED
 
-### Feedstock
+### SliceArtifactState
 
-#### Feedstock.FILAMENT
+Availability state of a generated slice artifact.
 
-#### Feedstock.PELLET
+#### SliceArtifactState.PENDING
 
-### FloatType
+#### SliceArtifactState.READY
 
-#### FloatType.NEG\_INF
+#### SliceArtifactState.ARCHIVING
 
-#### FloatType.POS\_INF
+#### SliceArtifactState.ARCHIVED
 
-#### FloatType.NAN
+### SlicingSortField
 
-#### FloatType.VALUE
+#### SlicingSortField.NAME
 
-### SimulationAssetType
+#### SlicingSortField.INSERTED\_AT
 
-#### SimulationAssetType.PARQUET
+### NewsArticleTag
 
-#### SimulationAssetType.JSON
+#### NewsArticleTag.PRINTER
 
-### MaterialField
+#### NewsArticleTag.MATERIAL
 
-#### MaterialField.ID
+#### NewsArticleTag.GCODE
 
-#### MaterialField.BRAND\_ID
+#### NewsArticleTag.SIMULATION
 
-#### MaterialField.BRAND\_NAME
+#### NewsArticleTag.COMPANY
 
-#### MaterialField.NAME
+#### NewsArticleTag.UPDATES
 
-#### MaterialField.DESCRIPTION
+#### NewsArticleTag.MISC
 
-#### MaterialField.DENSITY
+### SlicerEngine
 
-#### MaterialField.CAPACITY
+#### SlicerEngine.BAMBU
 
-#### MaterialField.CONDUCTIVITY\_X
+#### SlicerEngine.ORCA
 
-#### MaterialField.CONDUCTIVITY\_Y
-
-#### MaterialField.CONDUCTIVITY\_Z
-
-#### MaterialField.EMISSIVITY
-
-#### MaterialField.MIN\_EXTRUSION\_TEMP
-
-#### MaterialField.MAX\_EXTRUSION\_TEMP
-
-#### MaterialField.DRYING\_TEMP
-
-#### MaterialField.DRYING\_TIME\_HOURS
-
-#### MaterialField.BED\_TEMP\_MIN
-
-#### MaterialField.BED\_TEMP\_MAX
-
-#### MaterialField.HEATED\_CHAMBER\_REQUIREMENT
-
-#### MaterialField.APPLICATION\_AREAS
-
-#### MaterialField.TG
-
-#### MaterialField.FEEDSTOCK
-
-#### MaterialField.EMAIL\_TO\_BUY
-
-#### MaterialField.ALTERNATIVE\_NAME\_BAMBUSTUDIO
-
-#### MaterialField.ALTERNATIVE\_NAME\_PRUSASLICER
-
-#### MaterialField.ALTERNATIVE\_NAME\_CURASLICER
-
-#### MaterialField.ALTERNATIVE\_NAME\_CREALITYPRINT
-
-### Slicer
-
-#### Slicer.SIMPLIFY3D
-
-#### Slicer.IDEAMAKER
-
-#### Slicer.CURA
-
-#### Slicer.BAMBU\_LABS
-
-#### Slicer.SUPERSLICER
-
-#### Slicer.SLIC3R
-
-#### Slicer.FUSION360
-
-#### Slicer.BAAM
-
-#### Slicer.MW
-
-#### Slicer.CEAD\_BAAM
-
-#### Slicer.KRAUSS\_MAFFEI
-
-#### Slicer.PIOCREATE
-
-#### Slicer.KUYING
-
-#### Slicer.CEAD
-
-#### Slicer.AI\_BUILD
-
-#### Slicer.AI\_BUILD\_GCODE
-
-#### Slicer.AI\_BUILD\_SRC
-
-#### Slicer.ADAONE
-
-#### Slicer.PRUSA\_SLICER
-
-#### Slicer.SIGNIFY
-
-#### Slicer.ORCA\_SLICER
-
-#### Slicer.CARACOL
-
-#### Slicer.CREALITY\_PRINT
-
-#### Slicer.UNKNOWN
-
-An unrecognized slicer.
-
-### PrintOutcome
-
-#### PrintOutcome.WILL\_PRINT
-
-#### PrintOutcome.MAY\_PRINT
-
-#### PrintOutcome.LIKELY\_FAIL
-
-### OptimizationImprovement
-
-#### OptimizationImprovement.LOW
-
-#### OptimizationImprovement.MEDIUM
-
-#### OptimizationImprovement.HIGH
-
-### PrintPriority
-
-#### PrintPriority.SPEED\_AND\_STRENGTH
-
-#### PrintPriority.PRESERVE\_SURFACE\_FINISH
-
-#### PrintPriority.ENHANCE\_SURFACE\_GLOSS
-
-#### PrintPriority.ENHANCE\_TRANSPARENCY
-
-### AnonymousSlicerType
-
-Identifies which slicer is requesting an anonymous PAT token.
-
-#### AnonymousSlicerType.BAMBU\_STUDIO
-
-#### AnonymousSlicerType.ORCA\_SLICER
-
-### GcodeRestriction
-
-#### GcodeRestriction.SIZE\_TOO\_LARGE
-
-#### GcodeRestriction.WEIGHT\_TOO\_HEAVY
-
-### OptimizationReductionStrategy
-
-#### OptimizationReductionStrategy.AUTOLINEAR
-
-#### OptimizationReductionStrategy.LINEAR
-
-#### OptimizationReductionStrategy.NO\_STRATEGY
-
-### LoginType
-
-The authentication method used for a login record.
-
-#### LoginType.USERNAME\_PASSWORD
-
-User logs in using a username and password combination.
-
-#### LoginType.AUTH\_0
-
-User logs in using Auth0.
-
-### GcodeErrorCode
-
-#### GcodeErrorCode.NOZZLE\_TEMPERATURE\_NOT\_FOUND
-
-#### GcodeErrorCode.PLATFORM\_TEMPERATURE\_NOT\_FOUND
-
-#### GcodeErrorCode.LAYER\_HEIGHT\_NOT\_FOUND
-
-#### GcodeErrorCode.LINE\_WIDTH\_NOT\_FOUND
-
-#### GcodeErrorCode.INVALID\_GCODE
-
-#### GcodeErrorCode.INTERNAL\_ERROR
-
-#### GcodeErrorCode.HAS\_NEGATIVE\_Z\_COORDINATES
-
-#### GcodeErrorCode.HAS\_NO\_COMMANDS
-
-#### GcodeErrorCode.HAS\_NO\_LAYERS
-
-#### GcodeErrorCode.HAS\_UNCERTAIN\_ENCODING
-
-#### GcodeErrorCode.HAS\_ZERO\_SPEED
-
-#### GcodeErrorCode.HAS\_MULTI\_MATERIAL\_PRINTING
-
-#### GcodeErrorCode.COMMAND\_FORMAT\_ERROR
-
-#### GcodeErrorCode.COMMENT\_FORMAT\_ERROR
-
-#### GcodeErrorCode.VALUE\_ERROR
-
-#### GcodeErrorCode.MULTI\_MATERIAL\_UNABLE\_TO\_DETECT\_MATERIAL\_SWITCH
-
-#### GcodeErrorCode.NOZZLE\_INDEX\_MISMATCH
-
-#### GcodeErrorCode.SLOT\_INDEX\_MISMATCH
+#### SlicerEngine.SNAPMAKER
 
 ## Scalars
 

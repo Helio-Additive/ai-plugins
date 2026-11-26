@@ -9,15 +9,20 @@ if (!tag || tag.replace(/^v/, "") !== releaseVersion) {
 const output = resolve(root, "dist/releases");
 await mkdir(output, { recursive: true });
 for (const { source, spec } of await loadPluginSpecs()) {
-  const bundle = join(source, "_generated/codex");
-  const manifest = JSON.parse(await readFile(join(bundle, ".codex-plugin/plugin.json"), "utf8"));
-  if (manifest.version !== releaseVersion) throw new Error(`Stale bundle: ${spec.name}`);
-  if (spec.mcp) {
-    const mcp = JSON.parse(await readFile(join(bundle, ".mcp.json"), "utf8"));
-    if (mcp.mcpServers[spec.name].url !== spec.mcp.openai.url) throw new Error(`Non-production bundle: ${spec.name}`);
+  for (const format of [
+    { bundle: "codex", suffix: "openai", manifest: ".codex-plugin/plugin.json", mcp: ".mcp.json" },
+    { bundle: "openai", suffix: "openai-upload", manifest: "plugin.json", mcp: "mcp.json" },
+  ]) {
+    const bundle = join(source, "_generated", format.bundle);
+    const manifest = JSON.parse(await readFile(join(bundle, format.manifest), "utf8"));
+    if (manifest.version !== releaseVersion) throw new Error(`Stale bundle: ${spec.name}`);
+    if (spec.mcp) {
+      const mcp = JSON.parse(await readFile(join(bundle, format.mcp), "utf8"));
+      if (mcp.mcpServers[spec.name].url !== spec.mcp.openai.url) throw new Error(`Non-production bundle: ${spec.name}`);
+    }
+    const zip = join(output, `${spec.name}-${format.suffix}-${releaseVersion}.zip`);
+    await Bun.$`rm -f ${zip}`;
+    await Bun.$`zip -qr ${zip} .`.cwd(bundle);
+    console.log(zip);
   }
-  const zip = join(output, `${spec.name}-openai-${releaseVersion}.zip`);
-  await Bun.$`rm -f ${zip}`;
-  await Bun.$`zip -qr ${zip} .`.cwd(bundle);
-  console.log(zip);
 }

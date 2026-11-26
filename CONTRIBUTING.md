@@ -106,7 +106,7 @@ read-only check in the README with a real account for that.
 All bundles share the root `package.json` version. Bump it, run `just make` and
 commit the regenerated output. Then publish a GitHub release tagged
 `v<version>`; the release workflow checks the version, builds the bundles and
-uploads one OpenAI ZIP per plugin. Refresh the API schema snapshot first if it is
+uploads both the portable OpenAI upload ZIP and the native desktop ZIP for each plugin. Refresh the API schema snapshot first if it is
 stale: `REFRESH_API_SCHEMA=true just make`.
 
 To check the packages locally, run `bun scripts/package-release.ts v<version>`

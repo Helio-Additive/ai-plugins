@@ -62,8 +62,9 @@ so install it again after you pull an update. Skills are called as
 
 ### OpenAI apps
 
-Each [release](https://github.com/Helio-Additive/ai-plugins/releases) has one ZIP
-per plugin for OpenAI hosts that install plugins from a package.
+Download one ZIP per plugin from the [latest release](https://github.com/Helio-Additive/ai-plugins/releases/latest).
+Choose `<plugin>-openai-upload-<version>.zip` to upload to OpenAI.
+Choose `<plugin>-openai-<version>.zip` for a desktop host using the native Codex layout.
 
 ## First check
 
