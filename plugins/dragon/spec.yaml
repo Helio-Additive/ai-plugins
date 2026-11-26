@@ -9,8 +9,9 @@ homepage: https://www.helioadditive.com
 displayName: Helio Dragon
 shortDescription: Assess and enhance G-code
 longDescription: >-
-  Connect to Helio Additive to prepare, run, monitor, and retrieve standard Dragon
-  thermal assessments and G-code enhancements. Companion slicing and G-code
+  Assess the thermal behaviour of an existing G-code file or enhance it for a
+  supported printer and material. Review the plan, start a run when ready,
+  track progress, and retrieve available results. Companion slicing and G-code
   timing use Helio slicer-cli with Bambu Studio, OrcaSlicer and Snapmaker Orca
   engines. Slicer source code, licences and acknowledgements:
   https://github.com/Helio-Additive/slicer-cli/blob/main/docs/open-source.md
@@ -23,6 +24,7 @@ mcp:
   openai:
     url: https://mcp.helioadditive.com/openai/dragon
     clientId: openai-plugin
+    tokenEndpointAuthMethod: none
     scopes:
       - dragon
   anthropic:
@@ -34,3 +36,38 @@ mcp:
     url: https://mcp.helioadditive.com/kimi/dragon
   kimi-china:
     url: https://mcp2.helioam.cn/kimi/dragon
+openaiSubmission:
+  developerName: Helio Additive
+  supportURL: https://www.helioadditive.com/contact
+  privacyPolicyURL: https://www.helioadditive.com/en-us/policies/privacy
+  termsOfServiceURL: https://www.helioadditive.com/en-us/policies/terms
+  releaseNotes: Added a portable OpenAI directory package, centered the icons, and clarified the Assess and Enhance workflows.
+  cases:
+    positive:
+      - description: Read the first page of the printer catalog.
+        prompt: Show me the first two printers in the Dragon catalog and their nozzle diameters if known.
+        tools_triggered: dragon_catalog
+        expected_behavior: Request printers with page 1 and page size 2. Report only the returned entries and distinguish missing fields.
+      - description: Use a real Dragon material ID from the materials catalog.
+        prompt: Pick the first material in the Dragon catalog and show which optimization priorities are available to my account for it.
+        tools_triggered: dragon_catalog, dragon_optimization_options
+        expected_behavior: Use the returned material ID. Distinguish available and unavailable options from the response without promising an upgrade.
+      - description: Supply the original G-code from the reviewer cube slice and its verified compatible Dragon printer and material IDs.
+        prompt: Prepare a thermal assessment of this G-code using the printer and material I supplied. Stop at the plan.
+        tools_triggered: get_presigned_url, prepare_dragon_run
+        expected_behavior: Register the original upload, keep the same identity on polls, and show the returned plan or missing fields. Never start a run.
+      - description: Continue the prepared assessment after resolving any requested substitutions and reaching a ready plan.
+        prompt: I confirm the displayed assessment plan. Start that assessment once.
+        tools_triggered: start_dragon_run
+        expected_behavior: Use the existing identity and explicit confirmation. Report the actual run state. Never repeat an ambiguous create.
+      - description: Continue in the same conversation with the started assessment.
+        prompt: Check my assessment and show me its standard result when ready.
+        tools_triggered: get_dragon_run
+        expected_behavior: Poll the same identity. Report terminal status and only the standard results or available artifact references returned by Dragon.
+    negative:
+      - description: Mechanical certification is outside the thermal workflow. Explain and call no tools.
+        prompt: Certify that my printed part meets aerospace fatigue standards.
+      - description: Direct machine control is unsupported. Explain without starting or stopping a Dragon run.
+        prompt: Pause the physical printer in my workshop right now.
+      - description: Billing transactions are outside Dragon. Do not call tools or claim a purchase.
+        prompt: Buy a month of Dragon Enhance for me and charge my card.

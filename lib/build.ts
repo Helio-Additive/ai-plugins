@@ -74,6 +74,11 @@ export async function loadPluginSpecs(directory = join(root, "plugins")) {
       throw new Error(`Invalid ${relative(root, file)}: ${ajv.errorsText(isPluginSpec.errors, { separator: "; " })}`);
     }
     if (spec.homepage !== undefined) checkedUrl(spec.homepage, `${relative(root, file)} homepage`);
+    if (spec.openaiSubmission) {
+      for (const key of ["supportURL", "privacyPolicyURL", "termsOfServiceURL"] as const) {
+        checkedUrl(spec.openaiSubmission[key], `${relative(root, file)} ${key}`);
+      }
+    }
     for (const [provider, connection] of Object.entries(spec.mcp ?? {})) {
       checkedUrl(connection.url, `${relative(root, file)} mcp.${provider}.url`);
     }
@@ -172,13 +177,30 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
     const outputs = new Map(shared);
     const codex = provider === "codex" || (provider === "test" && options.testVendor === "openai");
     const kimi = isKimiVendor(provider) || (provider === "test" && isKimiVendor(options.testVendor));
+    let portableManifest: AgentPluginsManifest = manifest;
+    if (provider === "openai" && spec.openaiSubmission) {
+      const { introduction, developerName, supportURL, privacyPolicyURL, termsOfServiceURL, releaseNotes, cases } = spec.openaiSubmission;
+      const extension = manifest.extensions["com.openai"];
+      portableManifest = {
+        ...manifest,
+        author: { name: developerName },
+        extensions: { "com.openai": {
+          interface: {
+            ...extension.interface, developerName, supportURL, privacyPolicyURL, termsOfServiceURL,
+            longDescription: [introduction, spec.longDescription].filter(Boolean).join(" "),
+          },
+          review: { test_cases: cases },
+          publication: { release_notes: releaseNotes },
+        } },
+      } satisfies AgentPluginsManifest;
+    }
     if (!spec.mcp) {
       if (kimi) {
         outputs.set("kimi.plugin.json", kimiManifest());
         packages.set(provider, outputs);
         continue;
       }
-      outputs.set("plugin.json", json(manifest));
+      outputs.set("plugin.json", json(portableManifest));
       if (provider === "anthropic" || (provider === "test" && options.testVendor === "anthropic")) {
         outputs.set(".claude-plugin/plugin.json", json({ name: manifest.name, version: manifest.version, description: manifest.description, author: manifest.author, ...(spec.homepage === undefined ? {} : { homepage: spec.homepage }) }));
       } else if (codex) {
@@ -207,7 +229,11 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
         "com.openai": {
           auth: {
             type: "oauth",
-            client: { mode: "provided", clientId: connection.clientId },
+            client: {
+              mode: "provided",
+              clientId: connection.clientId,
+              ...(connection.tokenEndpointAuthMethod ? { tokenEndpointAuthMethod: connection.tokenEndpointAuthMethod } : {}),
+            },
             ...(connection.scopes ? { baseScopes: connection.scopes } : {}),
           },
         },
@@ -217,7 +243,7 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
       $schema: "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
       mcpServers: { [spec.name]: server },
     } satisfies AgentPluginsMCPConfiguration;
-    outputs.set("plugin.json", json(manifest));
+    outputs.set("plugin.json", json(portableManifest));
     if (provider === "anthropic" || (provider === "test" && options.testVendor === "anthropic")) {
       // Claude's native installer still uses these compatibility entrypoints.
       // Project portable identity and connection data; do not maintain parallel types.

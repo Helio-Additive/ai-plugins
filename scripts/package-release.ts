@@ -10,9 +10,10 @@ const output = resolve(root, "dist/releases");
 await mkdir(output, { recursive: true });
 for (const { source, spec } of await loadPluginSpecs()) {
   for (const format of [
-    { bundle: "codex", suffix: "openai", manifest: ".codex-plugin/plugin.json", mcp: ".mcp.json" },
-    { bundle: "openai", suffix: "openai-upload", manifest: "plugin.json", mcp: "mcp.json" },
+    { bundle: "codex", suffix: "codex-desktop", manifest: ".codex-plugin/plugin.json", mcp: ".mcp.json" },
+    { bundle: "openai", suffix: "openai-submission", manifest: "plugin.json", mcp: "mcp.json" },
   ]) {
+    if (format.bundle === "openai" && !spec.openaiSubmission) continue;
     const bundle = join(source, "_generated", format.bundle);
     const manifest = JSON.parse(await readFile(join(bundle, format.manifest), "utf8"));
     if (manifest.version !== releaseVersion) throw new Error(`Stale bundle: ${spec.name}`);

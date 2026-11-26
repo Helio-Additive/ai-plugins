@@ -6,7 +6,7 @@
   "interface": {
     "developerName": "Helio-Additive",
     "displayName": "Helio Dragon",
-    "longDescription": "Connect to Helio Additive to prepare, run, monitor, and retrieve standard Dragon thermal assessments and G-code enhancements. Companion slicing and G-code timing use Helio slicer-cli with Bambu Studio, OrcaSlicer and Snapmaker Orca engines. Slicer source code, licences and acknowledgements: https://github.com/Helio-Additive/slicer-cli/blob/main/docs/open-source.md",
+    "longDescription": "Assess the thermal behaviour of an existing G-code file or enhance it for a supported printer and material. Review the plan, start a run when ready, track progress, and retrieve available results. Companion slicing and G-code timing use Helio slicer-cli with Bambu Studio, OrcaSlicer and Snapmaker Orca engines. Slicer source code, licences and acknowledgements: https://github.com/Helio-Additive/slicer-cli/blob/main/docs/open-source.md",
     "shortDescription": "Assess and enhance G-code"
   },
   "mcpServers": {

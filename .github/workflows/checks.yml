@@ -25,6 +25,10 @@ jobs:
         run: devbox run bun run typecheck
       - name: Test endpoint generation
         run: devbox run bun run test
+      - name: Validate release ZIP contents
+        run: |
+          devbox run bun scripts/package-release.ts "v$(node -p "require('./package.json').version")"
+          python3 scripts/check-release.py
       - name: Check generated output is committed
         run: |
           git diff --exit-code -- .claude-plugin/marketplace.json lib/_generated plugins/*/_generated

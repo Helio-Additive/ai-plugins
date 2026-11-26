@@ -79,6 +79,50 @@
           "$ref": "#/definitions/urlConnection"
         }
       }
+    },
+    "openaiSubmission": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "developerName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "supportURL": {
+          "type": "string",
+          "pattern": "^https://",
+          "maxLength": 1024
+        },
+        "privacyPolicyURL": {
+          "type": "string",
+          "pattern": "^https://",
+          "maxLength": 1024
+        },
+        "termsOfServiceURL": {
+          "type": "string",
+          "pattern": "^https://",
+          "maxLength": 1024
+        },
+        "releaseNotes": {
+          "type": "string",
+          "minLength": 1
+        },
+        "cases": {
+          "$ref": "#/definitions/reviewCases"
+        },
+        "introduction": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "developerName",
+        "supportURL",
+        "privacyPolicyURL",
+        "termsOfServiceURL",
+        "releaseNotes",
+        "cases"
+      ]
     }
   },
   "definitions": {
@@ -129,8 +173,88 @@
             "type": "string",
             "pattern": "^\\S+$"
           }
+        },
+        "tokenEndpointAuthMethod": {
+          "type": "string",
+          "enum": [
+            "none"
+          ],
+          "description": "Explicit public-client authentication method when registered without a secret."
         }
       }
+    },
+    "reviewCases": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "positive": {
+          "type": "array",
+          "minItems": 5,
+          "maxItems": 5,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "description": {
+                "type": "string",
+                "minLength": 1
+              },
+              "prompt": {
+                "type": "string",
+                "minLength": 1
+              },
+              "tools_triggered": {
+                "type": "string",
+                "minLength": 1
+              },
+              "expected_behavior": {
+                "type": "string",
+                "minLength": 1
+              },
+              "file_attachment_urls": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^https://"
+                }
+              }
+            },
+            "required": [
+              "description",
+              "prompt",
+              "tools_triggered",
+              "expected_behavior"
+            ]
+          }
+        },
+        "negative": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "description": {
+                "type": "string",
+                "minLength": 1
+              },
+              "prompt": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "description",
+              "prompt"
+            ]
+          }
+        }
+      },
+      "required": [
+        "positive",
+        "negative"
+      ]
     }
   },
   "dependencies": {
