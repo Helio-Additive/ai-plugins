@@ -6,3 +6,15 @@ shortDescription: Build typed GraphQL scripts.
 longDescription: Skills and language templates for schema discovery and typed Helio API scripting, without an MCP server.
 defaultPrompts:
   - Help me generate a typed Helio GraphQL client
+testPath: /scripting
+mcp:
+  openai:
+    url: https://scripting.mcp.helioadditive.com/openai/scripting
+openaiSubmission:
+  developerName: Helio Additive
+  websiteURL: https://www.helioadditive.com
+  supportURL: https://www.helioadditive.com/contact
+  privacyPolicyURL: https://www.helioadditive.com/en-us/policies/privacy
+  termsOfServiceURL: https://www.helioadditive.com/en-us/policies/terms
+  longDescription: Generate typed Helio GraphQL scripts using the bundled API reference, schema discovery instructions and templates for ten languages.
+  releaseNotes: Includes the Helio API reference and ten language templates for typed GraphQL scripting.

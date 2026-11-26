@@ -7,11 +7,12 @@ printing, and run Dragon thermal simulation and optimisation on G-code.
 | --- | --- |
 | `helioadditive-slicing` | Slice a model or a 3MF project with Bambu Studio, OrcaSlicer or Snapmaker Orca, check a job, download its files, and compare print times. |
 | `helioadditive-dragon` | Plan, start and check Helio Dragon Assess and Enhance runs, and download their results. |
-| `scripting` | Skills only: write scripts against the Helio GraphQL API, with templates for ten languages and the full API reference. |
+| `scripting` | Write scripts against the Helio GraphQL API, with templates for ten languages and the full API reference. |
 
 The slicing and Dragon plugins connect to Helio's services and ask you to sign in
-with your Helio account the first time you use them. The scripting plugin has no
-connection and needs no sign-in.
+with your Helio account the first time you use them. Scripting's two skills and ten
+language templates work locally. Its OpenAI and Codex packages also declare a
+dedicated MCP endpoint. Claude and Kimi use the standalone skills.
 
 ## Install
 
@@ -35,7 +36,7 @@ each Helio server.
 codex plugin marketplace add https://github.com/Helio-Additive/ai-plugins.git --ref main
 codex plugin add helioadditive-slicing@helioadditive-plugins
 codex plugin add helioadditive-dragon@helioadditive-plugins
-# Optional, skills only:
+# Optional scripting plugin:
 codex plugin add scripting@helioadditive-plugins
 ```
 
@@ -63,7 +64,7 @@ so install it again after you pull an update. Skills are called as
 ### OpenAI apps
 
 Download one ZIP per plugin from the [latest release](https://github.com/Helio-Additive/ai-plugins/releases/latest).
-For Dragon and Slicing, choose `<plugin>-openai-submission-<version>.zip` to upload to OpenAI.
+The dedicated-host build creates three `<plugin>-openai-submission-<version>.zip` files, one per directory entry. See the [submission checklist](docs/openai-review/README.md) for live verification status.
 Choose `<plugin>-codex-desktop-<version>.zip` for a desktop host using the native Codex layout.
 
 ## First check

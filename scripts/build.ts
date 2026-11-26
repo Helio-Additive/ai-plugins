@@ -48,20 +48,17 @@ if (options.testUrl !== undefined && options.testVendor === "anthropic") {
 // self-contained, ignored local catalog so Git packages never select test URLs.
 const localCodexRoot = join(root, ".cache", "codex-local-marketplace");
 await rm(localCodexRoot, { recursive: true, force: true });
-if (options.testUrl !== undefined && options.testVendor === "openai") {
-  const localPlugins = [];
+const codexBundle = options.testVendor === "openai" ? "test"
+  : !options.testVendor && process.env.LOCAL_CODEX_CATALOG === "true" ? "codex" : undefined;
+if (codexBundle) {
+  const catalog = await Bun.file(join(root, ".agents", "plugins", "marketplace.json")).json();
   for (const { source, spec } of plugins) {
-    const path = `./plugins/${spec.name}`;
-    await cp(join(source, "_generated", "test"), join(localCodexRoot, path), { recursive: true });
-    localPlugins.push({
-      name: spec.name, source: { source: "local", path },
-      policy: { installation: "AVAILABLE", ...(spec.mcp ? { authentication: "ON_INSTALL" } : {}) },
-      category: "Productivity",
-    });
+    await cp(join(source, "_generated", codexBundle), join(localCodexRoot, "plugins", spec.name), { recursive: true });
+  }
+  for (const entry of catalog.plugins) {
+    entry.source.path = `./plugins/${entry.name}`;
   }
   const catalogDirectory = join(localCodexRoot, ".agents", "plugins");
   await mkdir(catalogDirectory, { recursive: true });
-  await writeFile(join(catalogDirectory, "marketplace.json"), JSON.stringify({
-    name: "helioadditive-plugins", interface: { displayName: "Helio-Additive Plugins" }, plugins: localPlugins,
-  }, null, 2) + "\n");
+  await writeFile(join(catalogDirectory, "marketplace.json"), JSON.stringify(catalog, null, 2) + "\n");
 }

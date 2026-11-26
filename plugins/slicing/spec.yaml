@@ -22,7 +22,7 @@ defaultPrompts:
 testPath: /slicing
 mcp:
   openai:
-    url: https://mcp.helioadditive.com/openai/slicing
+    url: https://slicing.mcp.helioadditive.com/openai/slicing
     clientId: openai-plugin
     tokenEndpointAuthMethod: none
     scopes:

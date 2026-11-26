@@ -60,14 +60,18 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "openai",
-        "anthropic",
-        "kimi-global",
-        "kimi-china"
+        "openai"
       ],
       "properties": {
         "openai": {
-          "$ref": "#/definitions/connection"
+          "anyOf": [
+            {
+              "$ref": "#/definitions/connection"
+            },
+            {
+              "$ref": "#/definitions/urlConnection"
+            }
+          ]
         },
         "anthropic": {
           "$ref": "#/definitions/connection"
@@ -78,6 +82,15 @@
         "kimi-china": {
           "$ref": "#/definitions/urlConnection"
         }
+      },
+      "description": "Only configure providers that expose an MCP server. Codex uses the OpenAI connection.",
+      "dependencies": {
+        "kimi-global": [
+          "kimi-china"
+        ],
+        "kimi-china": [
+          "kimi-global"
+        ]
       }
     },
     "openaiSubmission": {
@@ -108,11 +121,20 @@
           "minLength": 1
         },
         "cases": {
-          "$ref": "#/definitions/reviewCases"
+          "$ref": "#/definitions/reviewCases",
+          "description": "Optional when review cases will be supplied in the OpenAI dashboard."
         },
         "introduction": {
           "type": "string",
           "minLength": 1
+        },
+        "websiteURL": {
+          "$ref": "#/properties/homepage"
+        },
+        "longDescription": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional OpenAI and Codex product description when other hosts ship different capabilities."
         }
       },
       "required": [
@@ -120,15 +142,14 @@
         "supportURL",
         "privacyPolicyURL",
         "termsOfServiceURL",
-        "releaseNotes",
-        "cases"
+        "releaseNotes"
       ]
     }
   },
   "definitions": {
     "urlConnection": {
       "title": "MCP URL-only connection",
-      "description": "Provider MCP endpoint for hosts whose plugin manifests cannot carry an OAuth client registration or scopes (Kimi Code CLI registers a public client dynamically and runs OAuth itself). Secrets must never be stored in a plugin spec.",
+      "description": "Provider MCP endpoint without bundled OAuth registration details. Kimi accepts only its native URL field.",
       "type": "object",
       "additionalProperties": false,
       "required": [

@@ -46,7 +46,9 @@ test("specs must define a valid neutral test route", async () => {
 for (const vendor of ["openai", "anthropic"]) {
 for (const { spec, source } of plugins) {
   const connectionSpec = spec.mcp;
-  if (!connectionSpec) continue;
+  const openai = connectionSpec?.openai;
+  const anthropic = connectionSpec?.anthropic;
+  if (!openai || !("clientId" in openai) || !anthropic) continue;
   describe(spec.name, () => {
     test.each(["https://mcp3.helioadditive.com", "https://mcp3.helioadditive.com/", "http://localhost:8080", "http://localhost:8080/"])(
       "appends the predefined neutral route to %s without changing other bundle contents", async (baseUrl) => {
@@ -68,9 +70,9 @@ for (const { spec, source } of plugins) {
         }
         const mcp = JSON.parse(testBundle.get(".mcp.json") as string);
         if (legacy) {
-          expect(mcp.mcpServers[spec.name].oauth.clientId).toBe(connectionSpec.openai.clientId);
+          expect(mcp.mcpServers[spec.name].oauth.clientId).toBe(openai.clientId);
           expect(mcp.mcpServers[spec.name].oauth.callbackUrl).toBe("http://127.0.0.1/callback");
-          expect(mcp.mcpServers[spec.name].scopes).toEqual(connectionSpec.openai.scopes);
+          expect(mcp.mcpServers[spec.name].scopes).toEqual(openai.scopes);
           testBundle.delete(".codex-plugin/plugin.json");
           testBundle.delete(".mcp.json");
           testBundle.set("plugin.json", bundles.get("openai")!.get("plugin.json")!);
@@ -81,18 +83,16 @@ for (const { spec, source } of plugins) {
           expect(JSON.parse(testBundle.get(".claude-plugin/plugin.json") as string).name).toBe(spec.name);
           expect(mcp.mcpServers[spec.name].type).toBe("http");
           expect(mcp.mcpServers[spec.name].oauth).toEqual({
-            clientId: connectionSpec.anthropic.clientId,
-            ...(connectionSpec.anthropic.scopes ? { scopes: connectionSpec.anthropic.scopes.join(" ") } : {}),
+            clientId: anthropic.clientId,
+            ...(anthropic.scopes ? { scopes: anthropic.scopes.join(" ") } : {}),
           });
-          mcp.mcpServers[spec.name].url = connectionSpec.anthropic.url;
+          mcp.mcpServers[spec.name].url = anthropic.url;
           testBundle.set(".mcp.json", JSON.stringify(mcp, null, 2) + "\n");
           expect(testBundle).toEqual(bundles.get("anthropic")!);
         }
         // Skills/assets and production bundles remain byte-identical; test layout differs.
         if (legacy) testBundle.set("mcp.json", bundles.get("openai")!.get("mcp.json")!);
         if (legacy) expect(testBundle).toEqual(bundles.get("openai")!);
-        const openaiMcp = JSON.parse(bundles.get("openai")!.get("mcp.json") as string);
-        mcp.mcpServers[spec.name].url = connectionSpec.openai.url;
 
         expect(bundles.get("openai")).toEqual(normal.get("openai"));
         expect(bundles.get("anthropic")).toEqual(normal.get("anthropic"));
@@ -117,7 +117,6 @@ for (const { spec, source } of plugins) {
         expect(await access(join(directory, "_generated/test/plugin.json")).then(() => true, () => false)).toBe(true);
         await buildPlugin(spec, directory);
         expect(await access(join(directory, "_generated/test")).then(() => true, () => false)).toBe(false);
-        mcp.mcpServers[spec.name].url = connectionSpec.openai.url;
         expect(await access(join(directory, "_generated/openai/.codex-plugin")).then(() => true, () => false)).toBe(false);
         expect(JSON.parse(await readFile(join(directory, "_generated/openai/mcp.json"), "utf8"))).toBeDefined();
       } finally {
@@ -150,16 +149,24 @@ test("Git catalogs resolve committed packages: Codex and Claude", async () => {
 });
 
 for (const vendor of ["openai", "anthropic", "kimi-global", "kimi-china"]) {
-  test(`skills-only bundles omit every MCP/auth entrypoint (${vendor})`, async () => {
+  test(`Scripting exposes its server only on OpenAI hosts (test vendor ${vendor})`, async () => {
     const { spec, source } = plugins.find(p => p.spec.name === "scripting")!;
     const bundles = await renderPlugin(spec, source, { testUrl: "https://example.com", testVendor: vendor });
-    for (const outputs of bundles.values()) {
-      expect(outputs.has("mcp.json")).toBe(false);
-      expect(outputs.has(".mcp.json")).toBe(false);
+    for (const [provider, outputs] of bundles) {
+      const target = provider === "test" ? vendor : provider;
+      const hasMcp = target === "codex" || target === "openai";
+      expect(outputs.has("mcp.json")).toBe(provider === "openai");
+      expect(outputs.has(".mcp.json")).toBe(hasMcp && provider !== "openai");
       expect(outputs.has("skills/graphql-scripting/SKILL.md")).toBe(true);
       expect(outputs.has("skills/graphql-scripting/templates/cpp/README.md")).toBe(true);
-      for (const [path, content] of outputs) {
-        if (path.endsWith("plugin.json")) expect(String(content)).not.toMatch(/mcpServers|oauth|clientId/);
+      if (hasMcp) {
+        const path = provider === "openai" ? "mcp.json" : ".mcp.json";
+        const server = JSON.parse(String(outputs.get(path))).mcpServers.scripting;
+        expect(server.url).toBe(provider === "test" ? "https://example.com/openai/scripting" : spec.mcp!.openai.url);
+      } else {
+        for (const [path, content] of outputs) {
+          if (path.endsWith("plugin.json")) expect(String(content)).not.toMatch(/mcpServers|oauth|clientId/);
+        }
       }
     }
     for (const kimiVendor of ["kimi-global", "kimi-china"]) {
@@ -178,7 +185,7 @@ const kimiRegions = [
 ] as const;
 
 describe.each(kimiRegions)("%s vendor", (vendor, host) => {
-  const withMcp = plugins.filter(({ spec }) => spec.mcp);
+  const withMcp = plugins.filter(({ spec }) => spec.mcp?.[vendor]);
   const base = "https://mcp3.helioadditive.com";
   const other = vendor === "kimi-global" ? "kimi-china" : "kimi-global";
 
@@ -186,7 +193,7 @@ describe.each(kimiRegions)("%s vendor", (vendor, host) => {
     "%s: emits only the native Kimi manifest, with the regional endpoint and no OAuth client data", async (_name, spec, source) => {
       const bundles = await renderPlugin(spec, source);
       const outputs = bundles.get(vendor)!;
-      const kimiUrl = spec.mcp![vendor].url;
+      const kimiUrl = spec.mcp![vendor]!.url;
       expect(new URL(kimiUrl).host).toBe(host);
       expect(new URL(kimiUrl).pathname).toBe("/kimi" + spec.testPath);
       const manifest = JSON.parse(outputs.get("kimi.plugin.json") as string);
@@ -209,7 +216,7 @@ describe.each(kimiRegions)("%s vendor", (vendor, host) => {
       const otherManifest = JSON.parse(bundles.get(other)!.get("kimi.plugin.json") as string);
       otherManifest.mcpServers[spec.name].url = kimiUrl;
       expect(otherManifest).toEqual(manifest);
-      expect(new URL(spec.mcp![other].url).host).not.toBe(host);
+      expect(new URL(spec.mcp![other]!.url).host).not.toBe(host);
       // Skills and assets are the same shared outputs every vendor receives.
       for (const [path, contents] of bundles.get("anthropic")!) {
         if (path.startsWith("skills/") || path.startsWith("assets/")) expect(outputs.get(path)).toEqual(contents);
@@ -226,7 +233,7 @@ describe.each(kimiRegions)("%s vendor", (vendor, host) => {
         const test = new Map(bundles.get("test")!);
         const manifest = JSON.parse(test.get("kimi.plugin.json") as string);
         expect(manifest.mcpServers[spec.name].url).toBe(new URL(baseUrl).origin + "/kimi" + spec.testPath);
-        manifest.mcpServers[spec.name].url = spec.mcp![vendor].url;
+        manifest.mcpServers[spec.name].url = spec.mcp![vendor]!.url;
         test.set("kimi.plugin.json", JSON.stringify(manifest, null, 2) + "\n");
         expect(test).toEqual(bundles.get(vendor)!);
         for (const production of ["openai", "anthropic", "kimi-global", "kimi-china"]) expect(bundles.get(production)).toEqual(normal.get(production));
@@ -246,7 +253,7 @@ describe.each(kimiRegions)("%s vendor", (vendor, host) => {
       expect(await access(join(directory, "_generated/test")).then(() => true, () => false)).toBe(false);
       expect(await access(join(directory, "_generated/kimi")).then(() => true, () => false)).toBe(false);
       const manifest = JSON.parse(await readFile(join(directory, `_generated/${vendor}/kimi.plugin.json`), "utf8"));
-      expect(manifest.mcpServers[spec.name].url).toBe(spec.mcp![vendor].url);
+      expect(manifest.mcpServers[spec.name].url).toBe(spec.mcp![vendor]!.url);
     } finally {
       await rm(directory, { recursive: true, force: true });
     }
@@ -258,7 +265,7 @@ describe.each(kimiRegions)("%s vendor", (vendor, host) => {
       const source = join(directory, "example");
       await mkdir(source);
       const { spec } = withMcp[0]!;
-      const url = spec.mcp![vendor].url;
+      const url = spec.mcp![vendor]!.url;
       const valid = spec.mcp!;
       const { [vendor]: _removed, ...withoutVendor } = valid;
       const { "kimi-global": _g, "kimi-china": _c, ...nonKimi } = valid;

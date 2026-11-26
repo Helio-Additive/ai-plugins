@@ -1,0 +1,16 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "scripting": {
+      "extensions": {
+        "com.openai": {
+          "auth": {
+            "type": "oauth"
+          }
+        }
+      },
+      "type": "streamable-http",
+      "url": "https://scripting.mcp.helioadditive.com/openai/scripting"
+    }
+  }
+}

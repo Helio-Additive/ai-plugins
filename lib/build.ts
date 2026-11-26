@@ -75,8 +75,9 @@ export async function loadPluginSpecs(directory = join(root, "plugins")) {
     }
     if (spec.homepage !== undefined) checkedUrl(spec.homepage, `${relative(root, file)} homepage`);
     if (spec.openaiSubmission) {
-      for (const key of ["supportURL", "privacyPolicyURL", "termsOfServiceURL"] as const) {
-        checkedUrl(spec.openaiSubmission[key], `${relative(root, file)} ${key}`);
+      for (const key of ["websiteURL", "supportURL", "privacyPolicyURL", "termsOfServiceURL"] as const) {
+        const value = spec.openaiSubmission[key];
+        if (value !== undefined) checkedUrl(value, `${relative(root, file)} ${key}`);
       }
     }
     for (const [provider, connection] of Object.entries(spec.mcp ?? {})) {
@@ -172,69 +173,74 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
     },
     ...(url === undefined ? {} : { mcpServers: { [spec.name]: { url } } }),
   });
+  const openaiInterface = {
+    ...manifest.extensions["com.openai"].interface,
+    ...(spec.openaiSubmission?.longDescription ? { longDescription: spec.openaiSubmission.longDescription } : {}),
+  };
   const packages = new Map<string, Outputs>();
   for (const provider of providersFor(options)) {
     const outputs = new Map(shared);
     const codex = provider === "codex" || (provider === "test" && options.testVendor === "openai");
-    const kimi = isKimiVendor(provider) || (provider === "test" && isKimiVendor(options.testVendor));
+    const vendor = provider === "test" ? checkedTestVendor(options.testVendor)
+      : provider === "codex" ? "openai" : provider;
+    const connection = spec.mcp?.[vendor];
     let portableManifest: AgentPluginsManifest = manifest;
     if (provider === "openai" && spec.openaiSubmission) {
       const { introduction, developerName, supportURL, privacyPolicyURL, termsOfServiceURL, releaseNotes, cases } = spec.openaiSubmission;
-      const extension = manifest.extensions["com.openai"];
+      const website = spec.openaiSubmission.websiteURL ?? spec.homepage;
       portableManifest = {
         ...manifest,
         author: { name: developerName },
+        ...(website ? { homepage: website } : {}),
         extensions: { "com.openai": {
           interface: {
-            ...extension.interface, developerName, supportURL, privacyPolicyURL, termsOfServiceURL,
-            longDescription: [introduction, spec.longDescription].filter(Boolean).join(" "),
+            ...openaiInterface, developerName, supportURL, privacyPolicyURL, termsOfServiceURL,
+            ...(website ? { websiteURL: website } : {}),
+            longDescription: [introduction, openaiInterface.longDescription].filter(Boolean).join(" "),
           },
-          review: { test_cases: cases },
+          ...(cases ? { review: { test_cases: cases } } : {}),
           publication: { release_notes: releaseNotes },
         } },
       } satisfies AgentPluginsManifest;
     }
-    if (!spec.mcp) {
-      if (kimi) {
+    if (!connection) {
+      if (isKimiVendor(vendor)) {
         outputs.set("kimi.plugin.json", kimiManifest());
         packages.set(provider, outputs);
         continue;
       }
       outputs.set("plugin.json", json(portableManifest));
-      if (provider === "anthropic" || (provider === "test" && options.testVendor === "anthropic")) {
+      if (vendor === "anthropic") {
         outputs.set(".claude-plugin/plugin.json", json({ name: manifest.name, version: manifest.version, description: manifest.description, author: manifest.author, ...(spec.homepage === undefined ? {} : { homepage: spec.homepage }) }));
       } else if (codex) {
         outputs.delete("plugin.json");
-        outputs.set(".codex-plugin/plugin.json", json({ name: manifest.name, version: manifest.version, description: manifest.description, interface: manifest.extensions["com.openai"].interface, skills: "./skills/" }));
+        outputs.set(".codex-plugin/plugin.json", json({ name: manifest.name, version: manifest.version, description: manifest.description, interface: openaiInterface, skills: "./skills/" }));
       }
       packages.set(provider, outputs);
       continue;
     }
-    const vendor = provider === "test" ? checkedTestVendor(options.testVendor)
-      : provider === "codex" ? "openai" : provider;
-    const endpoint = (declared: string) => provider === "test" && options.testUrl !== undefined
-      ? checkedTestBaseUrl(options.testUrl) + "/" + routePrefix(vendor) + spec.testPath : declared;
+    const url = provider === "test" && options.testUrl !== undefined
+      ? checkedTestBaseUrl(options.testUrl) + "/" + routePrefix(vendor) + spec.testPath
+      : connection.url;
     if (isKimiVendor(vendor)) {
-      outputs.set("kimi.plugin.json", kimiManifest(endpoint(spec.mcp[vendor].url)));
+      outputs.set("kimi.plugin.json", kimiManifest(url));
       packages.set(provider, outputs);
       continue;
     }
-    const connection = spec.mcp[vendor];
-    // OpenAI documents server-level auth extensions omitted by the published MCP
-    // schema. Reuse the generated plugin's namespace shape; do not patch the schema.
+    // A URL-only OpenAI connection leaves registration and scopes to the host.
+    const oauth = "clientId" in connection ? connection : undefined;
     const server = {
       type: "streamable-http",
-      url: endpoint(connection.url),
+      url,
       extensions: {
         "com.openai": {
           auth: {
             type: "oauth",
-            client: {
-              mode: "provided",
-              clientId: connection.clientId,
-              ...(connection.tokenEndpointAuthMethod ? { tokenEndpointAuthMethod: connection.tokenEndpointAuthMethod } : {}),
-            },
-            ...(connection.scopes ? { baseScopes: connection.scopes } : {}),
+            ...(oauth ? { client: {
+              mode: "provided", clientId: oauth.clientId,
+              ...(oauth.tokenEndpointAuthMethod ? { tokenEndpointAuthMethod: oauth.tokenEndpointAuthMethod } : {}),
+            } } : {}),
+            ...(oauth?.scopes ? { baseScopes: oauth.scopes } : {}),
           },
         },
       },
@@ -244,7 +250,7 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
       mcpServers: { [spec.name]: server },
     } satisfies AgentPluginsMCPConfiguration;
     outputs.set("plugin.json", json(portableManifest));
-    if (provider === "anthropic" || (provider === "test" && options.testVendor === "anthropic")) {
+    if (vendor === "anthropic") {
       // Claude's native installer still uses these compatibility entrypoints.
       // Project portable identity and connection data; do not maintain parallel types.
       outputs.set(".claude-plugin/plugin.json", json({
@@ -257,10 +263,10 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
           [spec.name]: {
             type: "http",
             url: server.url,
-            oauth: {
-              clientId: server.extensions["com.openai"].auth.client.clientId,
-              ...(connection.scopes ? { scopes: connection.scopes.join(" ") } : {}),
-            },
+            ...(oauth ? { oauth: {
+              clientId: oauth.clientId,
+              ...(oauth.scopes ? { scopes: oauth.scopes.join(" ") } : {}),
+            } } : {}),
           },
         },
       }));
@@ -269,13 +275,13 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
       outputs.delete("plugin.json");
       outputs.set(".codex-plugin/plugin.json", json({
         name: manifest.name, version: manifest.version, description: manifest.description,
-        interface: manifest.extensions["com.openai"].interface,
+        interface: openaiInterface,
         skills: "./skills/", mcpServers: "./.mcp.json",
       }));
       outputs.set(".mcp.json", json({ mcpServers: { [spec.name]: {
         type: "http", url: server.url,
-        oauth: { clientId: connection.clientId, callbackUrl: "http://127.0.0.1/callback" },
-        ...(connection.scopes ? { scopes: connection.scopes } : {}),
+        ...(oauth ? { oauth: { clientId: oauth.clientId, callbackUrl: "http://127.0.0.1/callback" } } : {}),
+        ...(oauth?.scopes ? { scopes: oauth.scopes } : {}),
       } } }));
     } else {
       outputs.set("mcp.json", json(mcp));

@@ -9,7 +9,7 @@
         "dragon"
       ],
       "type": "http",
-      "url": "https://mcp.helioadditive.com/openai/dragon"
+      "url": "https://dragon.mcp.helioadditive.com/openai/dragon"
     }
   }
 }

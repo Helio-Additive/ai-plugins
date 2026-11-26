@@ -10,12 +10,16 @@ export class CommandError extends Error {
   }
 }
 
-export function install(host: string, run: Run, root: string) {
+export function install(host: string, run: Run, root: string, testUrl = process.env.MCP_TEST_URL) {
   if (host !== "codex" && host !== "claude") throw new Error("Host must be codex or claude.");
-  run(["just", "make"], {
-    GENERATE_TEST: "true", MCP_TEST_URL: process.env.MCP_TEST_URL ?? "https://mcp.helioadditive.com",
-    MCP_TEST_VENDOR: host === "codex" ? "openai" : "anthropic",
-  });
+  if (host === "codex" && testUrl === undefined) {
+    run(["just", "make"], { GENERATE_TEST: "false", LOCAL_CODEX_CATALOG: "true" });
+  } else {
+    run(["just", "make"], {
+      GENERATE_TEST: "true", MCP_TEST_URL: testUrl ?? "https://mcp.helioadditive.com",
+      MCP_TEST_VENDOR: host === "codex" ? "openai" : "anthropic",
+    });
+  }
   // Codex loads every configured marketplace unless this inventory is scoped.
   const listed = JSON.parse(run([host, "plugin", "list", "--json",
     ...(host === "codex" ? ["--marketplace", marketplace] : [])]));
@@ -48,8 +52,7 @@ export function install(host: string, run: Run, root: string) {
   } else {
     // Marketplace list is also global in Codex. Add is idempotent for the same
     // source; replace only our registration on the CLI's specific source conflict.
-    // Keep the local installer on generated test bundles. The repository-root
-    // catalog is independently installable from Git and uses committed bundles.
+    // The local catalog contains the selected production or test bundles.
     const add = [host, "plugin", "marketplace", "add", resolve(root, ".cache/codex-local-marketplace")];
     try { run(add); } catch (error) {
       if (!(error instanceof CommandError) || error.exitCode !== 1

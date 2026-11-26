@@ -8,11 +8,21 @@ repo = Path(__file__).resolve().parents[1]
 modes = {'portable': 'openai', 'compatible': 'test', 'codex': 'codex'}
 with tempfile.TemporaryDirectory(prefix='helio-host-') as tmp:
     root = Path(tmp); home = root/'home'; home.mkdir(); (home/'codex').mkdir()
+    expected = {}
     for mode, bundle in modes.items():
-        d = root/mode
-        shutil.copytree(repo/'plugins/slicing/_generated'/bundle, d)
-        market = d/'.agents/plugins'; market.mkdir(parents=True)
-        (market/'marketplace.json').write_text(json.dumps({'name': 'fixture-'+mode, 'plugins': [{'name':'helioadditive-slicing','source':{'source':'local','path':'./'}}]}))
+        directory = root / mode
+        market = directory / '.agents/plugins'
+        market.mkdir(parents=True)
+        entries = []
+        for product in sorted((repo / 'plugins').glob('*/spec.yaml')):
+            source = product.parent / '_generated' / bundle
+            target = './plugins/' + product.parent.name
+            shutil.copytree(source, directory / target)
+            manifest = source / ('.codex-plugin/plugin.json' if mode != 'portable' else 'plugin.json')
+            name = json.loads(manifest.read_text())['name']
+            entries.append({'name': name, 'source': {'source': 'local', 'path': target}})
+            expected[mode, name] = (len(list(source.glob('skills/*/SKILL.md'))), (source / '.mcp.json').exists())
+        (market / 'marketplace.json').write_text(json.dumps({'name': 'fixture-' + mode, 'plugins': entries}))
     env = dict(os.environ, HOME=str(home), CODEX_HOME=str(home/'codex'))
     print('host', subprocess.check_output([str(binary), '--version'], env=env, text=True).strip())
     with (root/'stderr').open('w') as err:
@@ -33,10 +43,13 @@ with tempfile.TemporaryDirectory(prefix='helio-host-') as tmp:
             request(1,'initialize',{'clientInfo':{'name':'helio-fixture','version':'1'},'capabilities':{'experimentalApi':True}})
             p.stdin.write('{"method":"initialized"}\n'); p.stdin.flush()
             request(2,'plugin/list',{'cwds':[str(root/m) for m in modes], 'marketplaceKinds':['local'],'forceRefetch':False})
-            for i, mode in enumerate(modes,3):
-                plugin=request(i,'plugin/read',{'marketplacePath':str(root/mode/'.agents/plugins/marketplace.json'),'pluginName':'helioadditive-slicing'})['plugin']
-                servers=plugin.get('mcpServers',{})
-                print(mode, 'MCP servers:', sorted(servers), 'skills:', len(plugin.get('skills',[])))
-                if mode in ('compatible', 'codex'): assert 'helioadditive-slicing' in servers, 'MCP discovery failed'
+            for i, ((mode, name), (skill_count, native_mcp)) in enumerate(expected.items(), 3):
+                plugin = request(i, 'plugin/read', {'marketplacePath': str(root / mode / '.agents/plugins/marketplace.json'), 'pluginName': name})['plugin']
+                servers = plugin.get('mcpServers', {})
+                skills = plugin.get('skills', [])
+                print(mode, name, 'MCP servers:', sorted(servers), 'skills:', len(skills))
+                assert len(skills) == skill_count, (mode, name)
+                if mode != 'portable':
+                    assert set(servers) == ({name} if native_mcp else set()), (mode, name)
         finally:
             p.terminate(); p.wait(timeout=5)

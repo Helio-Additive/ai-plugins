@@ -25,7 +25,7 @@ in each plugin's sources, not in the generator.
 - Never hand-edit `lib/_generated/` or `plugins/*/_generated/`. Run `just make`;
   commit regenerated types and production bundles with source changes.
 - `GENERATE_TEST=true MCP_TEST_URL=<base URL> MCP_TEST_VENDOR=<openai|anthropic> just make` also builds Git-ignored
-  test bundles, appending each spec's predefined `testPath` (`/slicing` or `/dragon`)
+  test bundles, appending each spec's predefined `testPath` (for example, `/slicing`, `/dragon` or `/scripting`)
   with the selected vendor prefix (`openai`, `anthropic`, `kimi-global`, or `kimi-china`; both Kimi ids use the `/kimi` route prefix). Never commit test bundles or redirect production to the test URL.
   Normal builds remove test output.
 - Keep the root `.agents/plugins/marketplace.json` Git-installable, listing each
@@ -33,7 +33,7 @@ in each plugin's sources, not in the generator.
   use the declared OpenAI endpoint/OAuth settings and are independent of test flags.
 - Preserve local/test installation through the ignored `.cache/codex-local-marketplace`.
   OpenAI test builds copy the test packages into this self-contained catalog;
-  normal/other-vendor builds remove it. Never commit this catalog or its packages.
+  the default local Codex installer copies the native production packages here. Other builds remove it. Never commit this catalog or its packages.
   `just install codex` uses this catalog; `just install claude` keeps its existing root catalog.
 - Keep the root `.claude-plugin/marketplace.json` Git-installable, listing each
   committed `./plugins/<plugin>/_generated/anthropic` bundle. Preserve local/test
@@ -47,6 +47,6 @@ After source or generator changes, run `just make`, `bun run typecheck`, and `bu
 Local checks do not establish hosted OAuth or API behavior.
 Preserve registered OAuth contracts and explicit consent for actions that create
 work. Never invent IDs, results, or credentials, or package tokens/client secrets.
-Specs target production services at `mcp.helioadditive.com` (China remains separately configured). Do not publish
+OpenAI and Codex use the product-specific host declared in each spec. Claude and Kimi Global use `mcp.helioadditive.com`, and Kimi China uses its regional host. Do not publish
 official plugins until production URLs and live authentication/workflows are verified
 and publication is authorized.

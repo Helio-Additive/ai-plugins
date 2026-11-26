@@ -58,7 +58,7 @@ export function ScriptingSkill({ directory }) {
 
 # Helio GraphQL scripting
 
-1. Establish the user's intended operation and environment. This plugin supplies instructions only; it has no MCP server or credential store.
+1. Establish the user's intended operation and environment. The bundled templates support local code generation without signing in.
 2. Read the [complete generated API reference](../api-schema/SKILL.md) to understand available operations. Follow [schema discovery](references/schema-workflow.md) before choosing fields, arguments, enums or scalar mappings. Never infer API fields from template names.
 3. Choose a language from the generated template tree below and follow its included files. These are setup recipes to materialize in the user’s project, not scripts to execute in the installed plugin.
 4. Write named `.graphql` operations from the verified schema, validate them through codegen, and use generated types. Inspect generated names and import paths before writing callers. Preserve list/null wrappers and distinguish transport errors, GraphQL errors, missing data and nullable fields.

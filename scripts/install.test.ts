@@ -6,9 +6,11 @@ for (const host of ["codex", "claude"]) for (const present of [false, true]) {
     install(host, (cmd, env) => {
       calls.push(cmd);
       if (cmd[0] === "just") {
-        expect(env?.MCP_TEST_VENDOR).toBe(host === "codex" ? "openai" : "anthropic");
-        expect(env?.GENERATE_TEST).toBe("true");
-        expect(env?.MCP_TEST_URL).toBe("https://mcp.helioadditive.com");
+        if (host === "codex") {
+          expect(env).toEqual({ GENERATE_TEST: "false", LOCAL_CODEX_CATALOG: "true" });
+        } else {
+          expect(env).toEqual({ GENERATE_TEST: "true", MCP_TEST_VENDOR: "anthropic", MCP_TEST_URL: "https://mcp.helioadditive.com" });
+        }
       }
       if (cmd.includes("list")) {
         const entries = present ? [{ name: "helioadditive-plugins" }] : [];
@@ -29,6 +31,16 @@ for (const host of ["codex", "claude"]) for (const present of [false, true]) {
     expect(calls.flat()).not.toContain("other@other");
   });
 }
+test.each(["codex", "claude"])("%s local install honors an explicit test base URL", (host) => {
+  const url = "https://test.example.org";
+  install(host, (cmd, env) => {
+    if (cmd[0] === "just") expect(env).toEqual({
+      GENERATE_TEST: "true", MCP_TEST_VENDOR: host === "codex" ? "openai" : "anthropic", MCP_TEST_URL: url,
+    });
+    return host === "codex" ? '{"installed":[]}' : '[]';
+  }, "/repo", url);
+});
+
 test("unsupported host and command failures stop installation", () => {
   for (const host of ["invalid", "code", ""]) expect(() => install(host, () => { throw Error("must not run"); }, "/repo")).toThrow("Host must");
   expect(() => install("claude", () => { throw Error("failure"); }, "/repo")).toThrow("failure");

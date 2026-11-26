@@ -8,6 +8,7 @@ from zipfile import ZipFile
 
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = json.loads((ROOT / "package.json").read_text())["version"]
+DEDICATED_SERVERS = {"dragon", "slicing", "scripting"}
 
 
 def check(plugin, layout, suffix):
@@ -32,34 +33,53 @@ def check(plugin, layout, suffix):
             assert data[:8] == b"\x89PNG\r\n\x1a\n"
             width, height = struct.unpack(">II", data[16:24])
             assert 48 <= width == height <= 4096 and len(data) <= 5 * 1024**2
-        if plugin.name in ("slicing", "dragon"):
-            config = json.loads(archive.read("mcp.json" if portable else ".mcp.json"))
-            assert set(config["mcpServers"]) == {manifest["name"]}
-            server = config["mcpServers"][manifest["name"]]
-            assert server["url"] == f"https://mcp.helioadditive.com/openai/{plugin.name}"
-            if portable:
-                assert ".codex-plugin/plugin.json" not in paths and ".mcp.json" not in paths
-                assert server["type"] == "streamable-http"
-                assert server["extensions"]["com.openai"]["auth"] == {
-                    "type": "oauth", "baseScopes": [plugin.name],
-                    "client": {"mode": "provided", "clientId": "openai-plugin", "tokenEndpointAuthMethod": "none"},
-                }
-                ext = manifest["extensions"]["com.openai"]
-                assert not manifest.get("apps") and not ext.get("apps")
+        mcp_path = "mcp.json" if portable else ".mcp.json"
+        if portable:
+            assert ".codex-plugin/plugin.json" not in paths and ".mcp.json" not in paths
+            ext = manifest["extensions"]["com.openai"]
+            assert not manifest.get("apps") and not ext.get("apps")
+            assert len(interface["shortDescription"]) <= 30
+            for field in ("websiteURL", "supportURL", "privacyPolicyURL", "termsOfServiceURL"):
+                assert interface[field].startswith("https://")
+            if plugin.name in ("slicing", "dragon"):
                 cases = ext["review"]["test_cases"]
                 assert len(cases["positive"]) == 5 and len(cases["negative"]) == 3
-                assert len(interface["shortDescription"]) <= 30
-                for field in ("websiteURL", "supportURL", "privacyPolicyURL", "termsOfServiceURL"):
-                    assert interface[field].startswith("https://")
+        else:
+            assert "plugin.json" not in paths and "mcp.json" not in paths
+        if plugin.name in DEDICATED_SERVERS:
+            config = json.loads(archive.read(mcp_path))
+            assert set(config["mcpServers"]) == {manifest["name"]}
+            server = config["mcpServers"][manifest["name"]]
+            assert server["url"] == f"https://{plugin.name}.mcp.helioadditive.com/openai/{plugin.name}"
+            if portable:
+                assert server["type"] == "streamable-http"
+                auth = server["extensions"]["com.openai"]["auth"]
+                if plugin.name == "scripting":
+                    assert auth == {"type": "oauth"}
+                else:
+                    assert auth == {
+                        "type": "oauth", "baseScopes": [plugin.name],
+                        "client": {"mode": "provided", "clientId": "openai-plugin", "tokenEndpointAuthMethod": "none"},
+                    }
             else:
-                assert "plugin.json" not in paths and "mcp.json" not in paths
-                assert server["oauth"]["clientId"] == "openai-plugin"
-                assert server["scopes"] == [plugin.name]
+                assert server["type"] == "http"
+                if plugin.name == "scripting":
+                    assert "oauth" not in server and "scopes" not in server
+                else:
+                    assert server["oauth"]["clientId"] == "openai-plugin"
+                    assert server["scopes"] == [plugin.name]
         print(f"Verified {filename} ({len(paths)} files)")
+    return filename
 
 
 if __name__ == "__main__":
-    for spec in sorted((ROOT / "plugins").glob("*/spec.yaml")):
-        if spec.parent.name in ("dragon", "slicing"):
-            check(spec.parent, "openai", "openai-submission")
-        check(spec.parent, "codex", "codex-desktop")
+    expected = set()
+    plugins = sorted(p.parent for p in (ROOT / "plugins").glob("*/spec.yaml"))
+    assert DEDICATED_SERVERS <= {p.name for p in plugins}
+    for plugin in plugins:
+        portable = json.loads((plugin / "_generated/openai/plugin.json").read_bytes())
+        if plugin.name in DEDICATED_SERVERS or portable["extensions"]["com.openai"].get("publication"):
+            expected.add(check(plugin, "openai", "openai-submission"))
+        expected.add(check(plugin, "codex", "codex-desktop"))
+    actual = {p.name for p in (ROOT / "dist/releases").glob(f"*-{VERSION}.zip")}
+    assert actual == expected, f"release asset mismatch: {actual ^ expected}"

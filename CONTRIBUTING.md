@@ -45,8 +45,11 @@ name, with no registry to update. A spec declares:
 - Optional `homepage`, an HTTPS website.
 - `displayName`, `shortDescription`, `longDescription` and `defaultPrompts` for
   the OpenAI presentation.
-- `mcp.openai` and `mcp.anthropic`: the HTTPS `url`, public OAuth `clientId` and
-  optional `scopes`.
+- `mcp.openai` supplies the dedicated HTTPS URL for both OpenAI and Codex. A
+  provided OAuth client adds its public `clientId`, method and optional `scopes`.
+  A URL-only entry leaves registration and scopes unspecified.
+- `mcp.anthropic`, when present, supplies its URL and registered public client.
+  Hosts without a configured server receive the standalone skills.
 - `mcp.kimi-global` and `mcp.kimi-china`: the HTTPS `url` only. Kimi registers its
   own OAuth client when the user signs in, so its manifest has no client fields.
 - `testPath`: the plugin's route segment for test bundles, such as `/slicing`.
@@ -79,8 +82,9 @@ To build and install a test bundle in one step:
 just install claude   # or: just install codex
 ```
 
-It builds the test bundle for that host against `MCP_TEST_URL` (the production
-service when unset), then replaces only the Helio plugins and the
+With `MCP_TEST_URL` set, the installer builds against that test base. Otherwise
+Codex copies each plugin's native production package and Claude uses its shared
+production service. The installer replaces only the Helio plugins and the
 `helioadditive-plugins` marketplace; it stops if that marketplace holds other
 plugins. Restart the host afterwards. To keep your normal setup
 untouched, set `CLAUDE_CONFIG_DIR` (Claude) or `CODEX_HOME` (Codex) to an empty
