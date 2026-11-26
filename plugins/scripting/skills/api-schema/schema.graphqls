@@ -3,6 +3,300 @@ schema {
   mutation: Mutation
 }
 
+enum GcodeStatus {
+  INITIALIZING
+  PARSING
+  READY
+  ERROR
+  RESTRICTED
+}
+
+type MaterialBrand {
+  id: ID!
+  name: String!
+  logoUrl: String
+  description: String
+  insertedAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Mutation {
+  """
+  Create a new simulation.
+  
+  Checkpoint-based pipeline:
+  1. Creates a DB record with `status = PENDING` and all checkpoints = `false`
+  2. Triggers the **gcode-reader** K8s job (first pipeline stage)
+  3. Returns the created Simulation immediately
+  
+  The pipeline then continues asynchronously via the internal API:
+  gcode-reader → engine (dragon-vector-engine) → gcode-writer → `status = FINISHED`
+  """
+  createSimulation(input: CreateSimulationInput!): Simulation!
+  """
+  Create a new simulation (v2 with feature flags).
+  
+  Same checkpoint-based pipeline as `createSimulation`.
+  """
+  createSimulationV2(input: CreateSimulationInputV2!): Simulation!
+  """
+  Create a new optimization.
+  
+  Checkpoint-based pipeline:
+  1. Creates a DB record with `status = PENDING` and all checkpoints = `false`
+  2. Triggers the **gcode-reader** K8s job (first pipeline stage)
+  3. Returns the created Optimization immediately
+  
+  The pipeline then continues asynchronously via the internal API:
+  gcode-reader → engine (dragon-vector-engine) → gcode-writer → `status = FINISHED`
+  """
+  createOptimization(input: CreateOptimizationInput!): Optimization!
+  """
+  Create a new optimization (v2).
+  
+  Same checkpoint-based pipeline as `createOptimization`.
+  """
+  createOptimizationV2(input: CreateOptimizationInputV2!): Optimization!
+  """
+  Stop a running simulation.
+  
+  Allowed from any active status (PENDING, INITIALIZING, SIMULATING, ARCHIVING).
+  Returns `true` if the simulation was stopped, `false` if it was already
+  in a terminal state (Finished / Failed / Stopped) — matching the old API.
+  """
+  stopSimulation(id: ID!): Boolean!
+  """
+  Stop a running optimization.
+  
+  Returns `true` if stopped, `false` if already in a terminal state — matching the old API.
+  """
+  stopOptimization(id: ID!): Boolean!
+  """
+  Soft-delete an optimization.
+  
+  Sets `is_deleted = true`, clears optimized G-code S3 keys, and returns `true`.
+  Matches the old API behaviour exactly.
+  """
+  deleteOptimization(id: ID!): Boolean!
+  """
+  Record feedback for a simulation.
+  
+  Verifies ownership, validates the rating, persists the feedback row,
+  and returns the stored record.
+  """
+  addSimulationFeedback(input: SimulationFeedbackInput!): SimulationFeedback!
+  """
+  Record feedback for an optimization.
+  
+  Verifies ownership, validates the rating, persists the feedback row,
+  and returns the stored record.
+  """
+  addOptimizationFeedback(input: OptimizationFeedbackInput!): OptimizationFeedback!
+  """Create a single-material G-code."""
+  createGcodeV2(input: CreateGcodeInputV2!): GcodeV2!
+  """Create a multi-material G-code."""
+  createGcodeV3(input: CreateGcodeInputV3!): GcodeV3!
+  """Update a single-material G-code owned by the authenticated user."""
+  updateGcodeV2(id: ID!, input: UpdateGcodeInputV2!): GcodeV2!
+  """Delete a G-code owned by the authenticated user."""
+  deleteGcode(id: ID!): Boolean!
+  """
+  Create a comment on a news article.
+  
+  Increments `n_comments` on the article by 1.
+  """
+  createNewsArticleComment(newsArticleId: ID!, commentMarkdown: String!): NewsArticleComment!
+  """
+  Create or update feedback for the current user on a news article.
+  
+  Only the `Option` fields that are `Some(...)` in `input` are applied;
+  the rest are left unchanged.
+  
+  When `is_like` changes, `n_likes` on the article is incremented or
+  decremented accordingly (clamped to >= 0).
+  """
+  updateNewsArticleFeedback(newsArticleId: ID!, input: NewsArticleFeedbackInput!): NewsArticleFeedback!
+  """
+  Record a deduplicated Store interaction for the authenticated user's
+  verified experiment assignment.
+  """
+  recordStoreExperimentEvent(input: RecordStoreExperimentEventInput!): RecordStoreExperimentEventPayload!
+  """
+  Claim a one-time 14-day free trial with unlimited optimizations.
+  
+  Each user may only claim a free trial once. Use `freeTrialEligibility`
+  to check whether the current user is eligible before calling this
+  mutation.
+  """
+  claimFreeTrial(input: ClaimFreeTrialInput): FreeTrialClaim!
+  """
+  Create a Paddle billing portal session.
+  
+  Returns a short-lived URL that redirects the user to the Paddle
+  customer portal where they can manage their subscription, payment
+  method, and billing history.
+  """
+  createPaddlePortalSession: PaddlePortalSessionResponse!
+  """
+  Redeem a free trial code for the platform.
+  
+  A valid, unused `code` must be supplied. The code is marked as
+  redeemed and associated with the authenticated user upon success.
+  """
+  redeemFreeTrialCode(input: RedeemFreeTrialCodeInput!): FreeTrialCode!
+  """
+  Redeem a subscription code for the platform.
+  
+  A valid, unused `code` must be supplied. The code is marked as
+  redeemed and associated with the authenticated user upon success.
+  """
+  redeemSubscriptionCode(input: RedeemSubscriptionCodeInput!): SubscriptionCode!
+  """
+  Compare two existing G-code files without slicing or rewriting either input.
+  """
+  createGcodeTiming(input: CreateGcodeTimingInput!): GcodeTiming!
+  """Rename display metadata only; never moves the stored object."""
+  renameUploadedFile(id: ID!, name: String!): UploadedFile!
+  """Rename a slice without dispatching work or modifying its file or jobs."""
+  renameSlice(id: ID!, name: String!): Slice!
+  """Register a reusable upload. A file has one engine-independent probe."""
+  createUploadedFile(input: CreateUploadedFileInput!): UploadedFile!
+  """Inspect an uploaded model while retaining it for subsequent slicing."""
+  createInputProbe(input: CreateInputProbeInput!): InputProbe!
+  """Create and enqueue a slice for the authenticated user."""
+  createSlice(input: CreateSliceInput!): Slice!
+  """
+  Update the authenticated user's feature flag settings.
+  
+  Deprecated — use `updateFeatureFlags` instead.
+  """
+  updateUser(input: UpdateUserInput!): User! @deprecated(reason: "Use updateFeatureFlags instead")
+  """Update the authenticated user's feature flag settings."""
+  updateFeatureFlags(input: UpdateFeatureFlags!): User!
+  """
+  Update the authenticated user's feature flag settings (V2).
+  
+  Extends `updateFeatureFlags` with support for the vertical support
+  interface optimisation flag.
+  """
+  updateFeatureFlagsV2(input: UpdateFeatureFlagsV2!): User!
+  """
+  Update the authenticated user's feature flag settings (V3).
+  
+  Extends `updateFeatureFlagsV2` with support for the
+  `enableOptimizationForLayersUnableToReachTarget` flag.
+  """
+  updateFeatureFlagsV3(input: UpdateFeatureFlagsV3!): User!
+  """
+  Create a new user account.
+  
+  This operation requires external orchestration (e.g. password hashing,
+  email verification, Paddle customer provisioning) and is not yet
+  implemented in this service.
+  """
+  createUser(input: CreateUserInput!): User!
+  """Send an OTP to the authenticated user's requested replacement email."""
+  sendUserEmailUpdateOtp(email: String!): SendOtpResponse!
+  """Verify an email update OTP and update the authenticated user's email."""
+  verifyUserEmailUpdateOtp(email: String!, otpCode: String!): VerifyUserEmailUpdateOtpResponse!
+  """
+  Send a one-time password (OTP) to the provided email address.
+  
+  Resolves the user by email first, falling back to the PAT-owned placeholder
+  user when appropriate, then persists a 10-minute OTP before sending the email.
+  """
+  sendOtp(email: String!, proceed: Boolean! = false): SendOtpResponse!
+  """
+  Verify the OTP sent to the provided email address.
+  
+  Links the incoming PAT to the resolved user, upgrading placeholder
+  emails and transferring Dragon simulations and optimizations on
+  existing-account relinks.
+  """
+  verifyOtp(email: String!, otpCode: String!): VerifyOtpResponse!
+  """
+  Submit a new suggestion for the L-FAM platform.
+  
+  Currently not yet implemented in this service.
+  """
+  createSuggestion(input: CreateSuggestionInput!): Suggestion!
+  """Create a new personal access token for the authenticated user."""
+  createPersonalAccessToken(name: String!, expirationDaysDelta: Int!): CreatePatTokenResponse!
+  """
+  Create an anonymous user + PAT for a slicer (BambuStudio / OrcaSlicer).
+  
+  This mutation requires no authentication — it is an open registration
+  endpoint called by the router on behalf of the slicer.
+  """
+  createAnonymousPatToken(slicerType: AnonymousSlicerType!, isTestingFramework: Boolean!): AnonymousPatTokenResponse!
+}
+
+type OptimizationFeedback {
+  id: ID!
+  optimizationId: ID!
+  rating: Float!
+  comment: String
+}
+
+type PrintInfo {
+  printOutcome: PrintOutcome!
+  printOutcomeDescription: String!
+  temperatureDirection: TemperatureDirection!
+  temperatureDirectionDescription: String!
+  caveats: [Caveat!]!
+}
+
+type GcodeCustomFloat {
+  floatType: FloatType!
+  """`true` when a client-supplied override constant is in effect."""
+  isOverriden: Boolean!
+  value: Float
+}
+
+enum CaveatType {
+  OVERCOOLING_WITH_SEVERE_OVERHEATED_LAYERS
+  OVERCOOLING_WITH_OVERHEATED_LAYERS
+  OVERHEATING_WITH_SEVERE_OVERCOOLED_LAYERS
+  OVERHEATING_WITH_OVERCOOLED_LAYERS
+  OVERCOOLING_WITH_SEVERE_OVERCOOLED_LAYERS
+  OVERCOOLING_WITH_OVERCOOLED_LAYERS
+  OVERHEATING_WITH_SEVERE_OVERHEATED_LAYERS
+  OVERHEATING_WITH_OVERHEATED_LAYERS
+  OVERCOOLED_LAYERS
+  SEVERE_OVERCOOLED_LAYERS
+  OVERHEATED_LAYERS
+  SEVERE_OVERHEATED_LAYERS
+}
+
+input UploadedFileFilter {
+  name: SlicingNameFilter
+  inputType: SliceInputType
+}
+
+enum GcodeRestriction {
+  SIZE_TOO_LARGE
+  WEIGHT_TOO_HEAVY
+}
+
+input SlicePresetOverridesInput {
+  machineId: ID!
+  processId: ID
+  filamentIds: [ID!]
+}
+
+type UploadedFile {
+  id: ID!
+  """User-editable display name; independent of the stored object key."""
+  name: String
+  inputType: SliceInputType!
+  inputKey: String!
+  inputVersionId: String
+  sha256: String!
+  probeId: ID!
+  insertedAt: DateTime!
+  probe: InputProbe!
+}
+
 """
 Response returned after creating a new personal access token.
 The `token` field contains the full plaintext token and is only ever
@@ -15,37 +309,63 @@ type CreatePatTokenResponse {
   personalAccessToken: PersonalAccessToken!
 }
 
-enum SimulationField {
-  NAME
-  STATUS
-  PROGRESS
+input RecordStoreExperimentEventInput {
+  visitId: ID!
+  eventType: PublicStoreExperimentEventType!
+  idempotencyKey: String!
+  selectedTab: StoreExperimentPlanTab
+  planKey: String
+  paddlePriceId: String
+  checkoutAttemptId: String
+  trialEligible: Boolean
+  locale: String
+  pricingCountryCode: String
+  pricingCountrySource: String
+  currencyCode: String
+  storeRelease: String
 }
 
-"""Input for creating a new user account."""
-input CreateUserInput {
-  email: String
-  firstName: String
-  lastName: String
+enum InputProbeStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
 }
 
-"""Response returned after requesting an OTP be sent."""
-type SendOtpResponse {
-  success: Boolean!
-  message: String!
-  messageId: String
-  error: String
-}
-
-"""Input for updating the authenticated user's feature flag settings."""
-input UpdateFeatureFlags {
-  enableFanSpeedRampUp: Boolean
-  enableSupportInterfaceOptimization: Boolean
-  enableAlwaysUseDragonGpu: Boolean
-  enableApplyOptimumNozzleTemp: Boolean
-  enableBridgeSpeedSmoothing: Boolean
-  enableFanSpeedOptimization: Boolean
-  enableOptimizeAboveBridge: Boolean
-  enableWarpageAnalysis: Boolean
+"""Legacy G-code type. Deprecated in favour of `GcodeV2`."""
+type Gcode {
+  id: ID!
+  name: String!
+  sizeKb: Float!
+  height: Float!
+  width: Float!
+  depth: Float!
+  platformTemperature: GcodeCustomFloat
+  nozzleTemperatureMin: GcodeCustomFloat!
+  nozzleTemperatureMax: GcodeCustomFloat!
+  gcodeKey: String
+  roadWidthMin: GcodeCustomFloat!
+  roadWidthMax: GcodeCustomFloat!
+  layerHeightMin: GcodeCustomFloat!
+  layerHeightMax: GcodeCustomFloat!
+  speedMin: GcodeCustomFloat!
+  speedMax: GcodeCustomFloat!
+  fanSpeedMin: GcodeCustomFloat!
+  fanSpeedMax: GcodeCustomFloat!
+  numberOfLayers: Int!
+  slicer: Slicer!
+  flowRatio: Float
+  overrideGcodeParams: OverrideGcodeParams
+  isSingleShell: Boolean!
+  maxFlowRate: Float
+  layerHeightMode: Float
+  lineWidthMode: Float
+  restrictions: [GcodeRestriction!]
+  errors: [GcodeError!]
+  printerId: ID!
+  materialId: ID!
+  insertedAt: DateTime!
+  updatedAt: DateTime!
+  gcodeUrl: String!
 }
 
 """A redeemable free trial code."""
@@ -60,15 +380,1327 @@ type FreeTrialCode {
   updatedAt: DateTime!
 }
 
-type Slice {
-  id: ID!
+input StringFilter {
+  equalTo: String
+  notEqualTo: String
+  caseSensitiveContains: String
+  caseInsensitiveContains: String
+  caseSensitiveStartsWith: String
+  caseInsensitiveStartsWith: String
+  caseSensitiveEndsWith: String
+  caseInsensitiveEndsWith: String
+  notCaseSensitiveContains: String
+  notCaseInsensitiveContains: String
+  notCaseSensitiveStartsWith: String
+  notCaseInsensitiveStartsWith: String
+  notCaseSensitiveEndsWith: String
+  notCaseInsensitiveEndsWith: String
+}
+
+type ThermalIndexStatistics {
+  thermalIndexCount: Int
+  thermalIndexMean: Float
+  thermalIndexStd: Float
+  thermalIndexMin: Float
+  thermalIndex25: Float
+  thermalIndex50: Float
+  thermalIndex75: Float
+  thermalIndexMax: Float
+}
+
+"""
+Overrides applied to the G-code.
+
+Temperatures are in Celsius; lengths are in millimetres.
+"""
+type OverrideGcodeParams {
+  overrideConstantNozzleTemperature: Float
+  overrideConstantLayerHeight: Float
+  overrideConstantRoadWidth: Float
+  overrideConstantPlatformTemperature: Float
+}
+
+input SlicerMachineFilter {
+  engine: SlicerEngine
+  search: String
+  vendor: String
+  nozzleDiameterMm: Float
+  forSlicerVersion: String
+}
+
+enum StoreExperimentPlanTab {
+  PERSONAL
+  BUSINESS
+}
+
+type LayerRange {
+  fromLayer: Int!
+  toLayer: Int!
+}
+
+input CreateUploadedFileInput {
+  """Optional display name; defaults to the uploaded object's filename."""
+  name: String
   inputType: SliceInputType!
   inputKey: String!
-  progress: Float!
-  userId: ID!
-  sliceConfigKey: String!
+  inputVersionId: String
+}
+
+enum GcodeErrorCode {
+  NOZZLE_TEMPERATURE_NOT_FOUND
+  PLATFORM_TEMPERATURE_NOT_FOUND
+  LAYER_HEIGHT_NOT_FOUND
+  LINE_WIDTH_NOT_FOUND
+  INVALID_GCODE
+  INTERNAL_ERROR
+  HAS_NEGATIVE_Z_COORDINATES
+  HAS_NO_COMMANDS
+  HAS_NO_LAYERS
+  HAS_UNCERTAIN_ENCODING
+  HAS_ZERO_SPEED
+  HAS_MULTI_MATERIAL_PRINTING
+  COMMAND_FORMAT_ERROR
+  COMMENT_FORMAT_ERROR
+  VALUE_ERROR
+  MULTI_MATERIAL_UNABLE_TO_DETECT_MATERIAL_SWITCH
+  NOZZLE_INDEX_MISMATCH
+  SLOT_INDEX_MISMATCH
+}
+
+"""Category of a FAQ entry."""
+enum FaqCategory {
+  """Printer-related FAQ."""
+  PRINTER
+  """Material-related FAQ."""
+  MATERIAL
+  """G-code-related FAQ."""
+  GCODE
+  """Simulation-related FAQ."""
+  SIMULATION
+}
+
+enum GcodeTimingStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+}
+
+type Summary {
+  simulationCount: Int!
+  materialCount: Int!
+  printerCount: Int!
+}
+
+"""Input for updating the authenticated user's feature flag settings."""
+input UpdateFeatureFlags {
+  enableFanSpeedRampUp: Boolean
+  enableSupportInterfaceOptimization: Boolean
+  enableAlwaysUseDragonGpu: Boolean
+  enableApplyOptimumNozzleTemp: Boolean
+  enableBridgeSpeedSmoothing: Boolean
+  enableFanSpeedOptimization: Boolean
+  enableOptimizeAboveBridge: Boolean
+  enableWarpageAnalysis: Boolean
+}
+
+"""A redeemed subscription code."""
+type SubscriptionCode {
+  id: ID!
+  code: String!
+  isUsed: Boolean!
+  subscription: HelioSubscription!
+  user: User
+  redeemedAt: DateTime
   insertedAt: DateTime!
   updatedAt: DateTime!
+}
+
+"""
+Flat representation of residual strategy settings as stored on an Optimization record.
+"""
+type OptimizationResidualStrategySettings {
+  optimizationResidualStrategy: OptimizationResidualStrategy
+  optimizationResidualExponentialPenaltyLow: Float
+  optimizationResidualExponentialPenaltyHigh: Float
+}
+
+enum OptimizationImprovement {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum Slicer {
+  SIMPLIFY3D
+  IDEAMAKER
+  CURA
+  BAMBU_LABS
+  SUPERSLICER
+  SLIC3R
+  FUSION360
+  BAAM
+  MW
+  CEAD_BAAM
+  KRAUSS_MAFFEI
+  PIOCREATE
+  KUYING
+  CEAD
+  AI_BUILD
+  AI_BUILD_GCODE
+  AI_BUILD_SRC
+  ADAONE
+  PRUSA_SLICER
+  SIGNIFY
+  ORCA_SLICER
+  CARACOL
+  CREALITY_PRINT
+  """An unrecognized slicer."""
+  UNKNOWN
+}
+
+enum StoreExperimentSurface {
+  STORE_PRICING
+}
+
+enum PrinterField {
+  ID
+  NAME
+  BRAND_NAME
+  ALTERNATIVE_NAME_BAMBUSTUDIO
+  ALTERNATIVE_NAME_PRUSASLICER
+  ALTERNATIVE_NAME_CURASLICER
+  ALTERNATIVE_NAME_CREALITYPRINT
+  BRAND_ID
+  NOZZLE_DIAMETER
+  IS_HEATED_BED
+  IS_HEATED_CHAMBER
+  IS_UNHEATED_CHAMBER
+  MAX_EXTRUDER_FLOW_RATE
+  MIN_EXTRUDER_FLOW_RATE
+  MAX_HARDWARE_PRINT_SPEED
+  MIN_HARDWARE_PRINT_SPEED
+  MAX_HARDWARE_EXTRUSION_TEMP
+  MIN_HARDWARE_EXTRUSION_TEMP
+  CHAMBER_TYPE
+  NUMBER_OF_NOZZLES
+  N_NODES
+}
+
+type SimulationFeatureFlags {
+  warpageAnalysisWasEnabled: Boolean!
+  bridgeSpeedSmoothingWasEnabled: Boolean!
+  aboveBridgeOptimizationWasEnabled: Boolean!
+  fanSpeedOptimizationWasEnabled: Boolean!
+  gpuWasUsed: Boolean!
+  coreAssetsOnlyExportWasEnabled: Boolean!
+  optimumNozzleTemperatureCapWasEnabled: Boolean!
+  fanSpeedRampUpWasEnabled: Boolean!
+  verticalSupportInterfacePreservationWasEnabled: Boolean!
+  elementsActiveRangeWasEnabled: Boolean!
+  optimizationForLayersUnableToReachTargetWasEnabled: Boolean!
+}
+
+type PresignedUrl {
+  """MIME type inferred from the file extension."""
+  mimeType: String!
+  """Presigned PUT URL for direct S3 upload."""
+  url: String!
+  """S3 object key — pass back when referencing the uploaded file."""
+  key: String!
+}
+
+input SimulationFeedbackInput {
+  simulationId: ID!
+  rating: Float!
+  comment: String
+}
+
+input CreateGcodeTimingInput {
+  """
+  Stable UUID for this pair and context. Reuse unchanged after an ambiguous response.
+  """
+  identity: String!
+  slicingEngine: SlicerEngine!
+  """
+  Required for Orca and Snapmaker from the original printer context. Omit for Bambu.
+  """
+  printerVendorBbl: Boolean
+  original: GcodeTimingInputFile!
+  optimized: GcodeTimingInputFile!
+}
+
+type SlicingIssue {
+  code: String!
+  field: String
+  message: String!
+  """
+  Stable action identifier; clients can explain it in the user's language.
+  """
+  action: String!
+}
+
+"""Name comparisons use the shared database filtering semantics."""
+input SlicingNameFilter {
+  equalTo: String
+  notEqualTo: String
+  contains: String
+  startsWith: String
+  endsWith: String
+}
+
+"""Source of the free trial claim."""
+enum TrialSource {
+  """Trial claimed from the store/pricing page."""
+  STORE
+  """Trial claimed from the user dashboard."""
+  DASHBOARD
+}
+
+"""Input for creating a new user account."""
+input CreateUserInput {
+  email: String
+  firstName: String
+  lastName: String
+}
+
+"""
+Input for updating the authenticated user's feature flag settings (V3).
+"""
+input UpdateFeatureFlagsV3 {
+  enableBridgeSpeedSmoothing: Boolean
+  enableOptimizeAboveBridge: Boolean
+  enableFanSpeedOptimization: Boolean
+  enableAlwaysUseDragonGpu: Boolean
+  enableApplyOptimumNozzleTemp: Boolean
+  enableFanSpeedRampUp: Boolean
+  enableKeepVerticalSupportInterface: Boolean
+  enableOptimizationForLayersUnableToReachTarget: Boolean
+  enableWarpageAnalysis: Boolean
+}
+
+enum TemperatureDirection {
+  NONE
+  OVERCOOLING
+  OVERHEATING
+}
+
+input GcodeTimingInputFile {
+  """
+  Opaque upload key returned by get_presigned_url; never an artifact URL.
+  """
+  inputKey: String!
+  inputVersionId: String
+  """
+  SHA-256 of the complete original bytes, verified when retaining the upload.
+  """
+  sha256: String!
+}
+
+enum HeatedChamberRequirement {
+  NOT_REQUIRED
+  OPTIONAL
+  REQUIRED
+}
+
+type ReductionStrategySettings {
+  strategy: OptimizationReductionStrategy!
+  linearNodesLimit: Int!
+  autolinearDoCriticality: Boolean!
+  autolinearDoFitness: Boolean!
+  autolinearDoInterpolation: Boolean!
+  autolinearCriticalityMaxNodesDensity: Float!
+  autolinearCriticalityThreshold: Float!
+  autolinearFitnessMaxNodesDensity: Float!
+  autolinearFitnessThreshold: Float!
+  autolinearInterpolationLevels: Int!
+}
+
+type SimulationFeedback {
+  id: ID!
+  simulationId: ID!
+  rating: Float!
+  comment: String
+}
+
+type PaginatedMaterials {
+  pages: Int!
+  pageInfo: PageInfo!
+  objects: [Material!]!
+}
+
+"""The authentication method used for a login record."""
+enum LoginType {
+  """User logs in using a username and password combination."""
+  USERNAME_PASSWORD
+  """User logs in using Auth0."""
+  AUTH_0
+}
+
+type SliceArtifact {
+  id: ID!
+  kind: SliceArtifactKind!
+  plateIndex: Int
+  """Object size in bytes, encoded as a decimal 64-bit integer."""
+  sizeBytes: String!
+  sha256: String!
+  state: SliceArtifactState!
+  insertedAt: DateTime!
+  updatedAt: DateTime!
+  """Short-lived authenticated URL. Null while the object is unavailable."""
+  downloadUrl: String
+}
+
+type Printer {
+  id: ID!
+  name: String!
+  brand: PrinterBrand!
+  alternativeNames: AlternativePrinterNames!
+  isBambuSupported: Boolean!
+  insertedAt: DateTime!
+  updatedAt: DateTime!
+  nozzleDiameter: Float!
+  heatedBed: Boolean!
+  heatedChamber: Boolean!
+  maxExtruderFlowRate: Float!
+  minExtruderFlowRate: Float!
+  minHardwarePrintSpeed: Float!
+  maxHardwarePrintSpeed: Float!
+  chamberType: ChamberType!
+  numberOfNozzles: Int!
+  nNodes: Int!
+  """Maximum hardware extrusion temperature (in Kelvin)"""
+  maxHardwareExtrusionTemp: Float!
+  """Minimum hardware extrusion temperature (in Kelvin)"""
+  minHardwareExtrusionTemp: Float!
+}
+
+"""A multi-material G-code."""
+type GcodeV3 {
+  id: ID!
+  name: String!
+  status: GcodeStatus!
+  progress: Float!
+  sizeKb: Float
+  height: Float
+  width: Float
+  depth: Float
+  weight: Float
+  platformTemperature: GcodeCustomFloat
+  nozzleTemperatureMin: GcodeCustomFloat
+  nozzleTemperatureMax: GcodeCustomFloat
+  """Uploaded G-code object key. Use `gcodeUrl` for a download URL."""
+  gcodeKey: String
+  roadWidthMin: GcodeCustomFloat
+  roadWidthMax: GcodeCustomFloat
+  layerHeightMin: GcodeCustomFloat
+  layerHeightMax: GcodeCustomFloat
+  speedMin: GcodeCustomFloat
+  speedMax: GcodeCustomFloat
+  fanSpeedMin: GcodeCustomFloat
+  fanSpeedMax: GcodeCustomFloat
+  numberOfLayers: Int
+  slicer: Slicer
+  flowRatio: Float
+  overrideGcodeParams: OverrideGcodeParams
+  isSingleShell: Boolean!
+  maxFlowRate: Float
+  layerHeightMode: Float
+  lineWidthMode: Float
+  restrictions: [GcodeRestriction!]
+  restrictionsV2: [GcodeRestrictionInfo!]!
+  errors: [GcodeError!] @deprecated(reason: "Use errorsV2 instead.")
+  errorsV2: [GcodeErrorV2!]
+  materialId: ID!
+  printerId: ID!
+  """Materials associated with this G-code."""
+  materials: [GcodeMaterialInfo!]!
+  insertedAt: DateTime!
+  updatedAt: DateTime!
+  """One-hour download URL for the G-code file."""
+  gcodeUrl: String!
+  """
+  The primary material for this G-code (resolved from materialId).
+  For multi-material G-codes this is the first material in the materials list.
+  """
+  material: Material!
+}
+
+type OptimizationImprovementResult {
+  improvement: OptimizationImprovement!
+  description: String!
+}
+
+type Simulation {
+  id: ID!
+  name: String!
+  progress: Float!
+  status: SimulationStatus!
+  meshUrl: SimulationAsset
+  """Extra mesh asset URL. Access is granted only to select individuals."""
+  meshExtraUrl: SimulationAsset
+  reportJsonUrl: String
+  thermalIndexGcodeUrl: String
+  """
+  Presigned GET URL for the overview image generated by dragon-postprocess.
+  `None` while the postprocessor is still running or has not produced an image.
+  """
+  overviewImageUrl: String
+  estimatedSimulationDurationSeconds: Float
+  simulationSettings: SimulationSettings!
+  thermalIndexStatistics: ThermalIndexStatistics!
+  featureFlagsUsed: SimulationFeatureFlags!
+  materialId: ID!
+  printerId: ID!
+  printInfo: PrintInfo
+  speedFactor: Float
+  suggestedFixes: [SuggestedFix!]!
+  updatedAt: DateTime!
+  insertedAt: DateTime!
+  gcode: GcodeV2!
+  material: Material!
+  printer: Printer!
+}
+
+"""A single-material G-code."""
+type GcodeV2 {
+  id: ID!
+  name: String!
+  status: GcodeStatus!
+  progress: Float!
+  sizeKb: Float
+  height: Float
+  width: Float
+  depth: Float
+  weight: Float
+  platformTemperature: GcodeCustomFloat
+  nozzleTemperatureMin: GcodeCustomFloat
+  nozzleTemperatureMax: GcodeCustomFloat
+  """Uploaded G-code object key. Use `gcodeUrl` for a download URL."""
+  gcodeKey: String
+  roadWidthMin: GcodeCustomFloat
+  roadWidthMax: GcodeCustomFloat
+  layerHeightMin: GcodeCustomFloat
+  layerHeightMax: GcodeCustomFloat
+  speedMin: GcodeCustomFloat
+  speedMax: GcodeCustomFloat
+  fanSpeedMin: GcodeCustomFloat
+  fanSpeedMax: GcodeCustomFloat
+  numberOfLayers: Int
+  slicer: Slicer
+  flowRatio: Float
+  overrideGcodeParams: OverrideGcodeParams
+  isSingleShell: Boolean!
+  maxFlowRate: Float
+  layerHeightMode: Float
+  lineWidthMode: Float
+  restrictions: [GcodeRestriction!]
+  restrictionsV2: [GcodeRestrictionInfo!]!
+  errors: [GcodeError!] @deprecated(reason: "Use errorsV2 instead.")
+  errorsV2: [GcodeErrorV2!]
+  materialId: ID!
+  printerId: ID!
+  insertedAt: DateTime!
+  updatedAt: DateTime!
+  """One-hour download URL for the G-code file."""
+  gcodeUrl: String!
+  material: Material! @deprecated(reason: "Use GcodeV3 with the materials field for multi-material support.")
+  printer: Printer!
+}
+
+"""The type of account linking event."""
+enum LinkingEventType {
+  """
+  User created a new account and linked their PAT token for the first time.
+  """
+  NEW_ACCOUNT
+  """User linked a new PAT token (new device) to their existing account."""
+  DEVICE_RELINKED
+}
+
+"""A single FAQ entry."""
+type Faq {
+  id: ID!
+  category: FaqCategory!
+  insertedAt: DateTime!
+  updatedAt: DateTime!
+  question: String
+  answer: String
+  questionEnUs: String @deprecated(reason: "Use question with Accept-Language: en instead.")
+  questionZhCn: String @deprecated(reason: "Use question with Accept-Language: zh-CN instead.")
+  answerEnUs: String @deprecated(reason: "Use answer with Accept-Language: en instead.")
+  answerZhCn: String @deprecated(reason: "Use answer with Accept-Language: zh-CN instead.")
+}
+
+"""
+Input for the `claimFreeTrial` mutation.
+
+The optional Store visit ID lets the trusted claim workflow attribute a
+successful Store trial without accepting that outcome from browser events.
+"""
+input ClaimFreeTrialInput {
+  """The source from which the trial is being claimed (STORE or DASHBOARD)."""
+  source: TrialSource!
+  """Store experiment visit to attribute a successful Store trial claim to."""
+  storeVisitId: ID
+}
+
+enum SimulationStatus {
+  PENDING
+  INITIALIZING
+  SIMULATING
+  ARCHIVING
+  FINISHED
+  FAILED
+  STOPPED
+}
+
+type InputProbe {
+  id: ID!
+  """Reusable file identifier for future slice requests."""
+  fileId: ID!
+  inputKey: String!
+  userId: ID!
+  status: InputProbeStatus!
+  """
+  Positive number of plates discovered by inspection; absent before completion or on failure.
+  """
+  plates: Int
+  """S3 key of native metadata JSON, including native error documents."""
+  infoKey: String
+  """Worker duration in milliseconds, encoded as a decimal 64-bit integer."""
+  durationMs: String
+  errorCode: String
+  errorString: String
+  exitCode: Int
+  signal: Int
+  stderrTail: String
+  insertedAt: DateTime!
+  updatedAt: DateTime!
+  """Short-lived authenticated URL for the native metadata JSON."""
+  infoDownloadUrl: String
+}
+
+"""A record of a user claiming their free trial."""
+type FreeTrialClaim {
+  id: ID!
+  userId: String!
+  claimedEmail: String
+  startsAt: DateTime!
+  claimedAt: DateTime!
+  endsAt: DateTime!
+  cooldownUntil: DateTime
+  source: String!
+  convertedToPaid: Boolean!
+  convertedAt: DateTime
+  isActive: Boolean!
+  insertedAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type PaginatedUploadedFiles {
+  page: Int!
+  pageSize: Int!
+  pageInfo: SlicingPageInfo!
+  objects: [UploadedFile!]!
+}
+
+"""Response returned after requesting an OTP be sent."""
+type SendOtpResponse {
+  success: Boolean!
+  message: String!
+  messageId: String
+  error: String
+}
+
+input LayerRangeInput {
+  fromLayer: Int!
+  toLayer: Int!
+}
+
+type PrinterSummary {
+  count: Int!
+}
+
+type Slice {
+  id: ID!
+  """User-editable display name; absent on older unnamed records."""
+  name: String
+  fileId: ID
+  """Overall completion percentage, from 0 through 100."""
+  progress: Float!
+  """Terminal worker status. Null while the slice is queued or running."""
+  status: SliceJobStatus
+  """Completion percentage for the plate currently being sliced."""
+  plateProgress: Float
+  currentPlate: Int
+  totalPlates: Int
+  progressMessage: String
+  progressStep: String
+  """
+  End-to-end worker duration in milliseconds, encoded as a decimal 64-bit integer.
+  """
+  durationMs: String
+  userId: ID!
+  insertedAt: DateTime!
+  updatedAt: DateTime!
+  """
+  Structured pre-dispatch issues. No plate jobs are created for these failures.
+  """
+  issues: [SlicingIssue!]!
+  slicingEngine: SlicerEngine
+  inputType: SliceInputType!
+  inputKey: String!
+  plates: [SlicePlate!]!
+  """Generated files and diagnostic payloads published for this slice."""
+  artifacts: [SliceArtifact!]!
+}
+
+enum MaterialField {
+  ID
+  BRAND_ID
+  BRAND_NAME
+  NAME
+  DESCRIPTION
+  DENSITY
+  CAPACITY
+  CONDUCTIVITY_X
+  CONDUCTIVITY_Y
+  CONDUCTIVITY_Z
+  EMISSIVITY
+  MIN_EXTRUSION_TEMP
+  MAX_EXTRUSION_TEMP
+  DRYING_TEMP
+  DRYING_TIME_HOURS
+  BED_TEMP_MIN
+  BED_TEMP_MAX
+  HEATED_CHAMBER_REQUIREMENT
+  APPLICATION_AREAS
+  TG
+  FEEDSTOCK
+  EMAIL_TO_BUY
+  ALTERNATIVE_NAME_BAMBUSTUDIO
+  ALTERNATIVE_NAME_PRUSASLICER
+  ALTERNATIVE_NAME_CURASLICER
+  ALTERNATIVE_NAME_CREALITYPRINT
+}
+
+enum StoreExperimentDecisionMode {
+  BASELINE
+  ASSIGNED
+  QA_PREVIEW
+}
+
+"""Response returned after creating a Paddle billing portal session."""
+type PaddlePortalSessionResponse {
+  """
+  The URL the user should be redirected to in order to manage their
+  subscription in the Paddle billing portal.
+  """
+  url: String!
+  """Error message if the portal session could not be created."""
+  error: String
+}
+
+input ResidualStrategySettingsInput {
+  strategy: OptimizationResidualStrategy
+  exponentialPenaltyLow: Float
+  exponentialPenaltyHigh: Float
+}
+
+"""
+Implement the DateTime<Utc> scalar
+
+The input/output is a string in RFC3339 format.
+"""
+scalar DateTime
+
+type AlternativePrinterNames {
+  bambustudio: String
+  prusaslicer: String
+  curaslicer: String
+  crealityprint: String
+}
+
+input GcodeFilter {
+  field: GcodeField!
+  filter: Filter!
+}
+
+type PrinterBrand {
+  id: ID!
+  name: String!
+  logoUrl: String
+  description: String
+  insertedAt: DateTime!
+  updatedAt: DateTime!
+}
+
+"""Federation reference to a user account (owned by the users subgraph)."""
+type User {
+  id: ID!
+  freeTrialEndsAt: DateTime
+  isFreeTrialActive: Boolean!
+  isFreeTrialClaimed: Boolean!
+  isFreeTrialConvertedToPaid: Boolean!
+  email: String!
+  firstName: String
+  lastName: String
+  insertedAt: DateTime!
+  updatedAt: DateTime!
+  enableFanSpeedRampUp: Boolean!
+  enableSupportInterfaceOptimization: Boolean!
+  enableKeepVerticalSupportInterface: Boolean!
+  enableFanSpeedOptimization: Boolean!
+  enableAlwaysUseDragonGpu: Boolean!
+  enableExcludeCoreAssets: Boolean!
+  enableApplyOptimumNozzleTemp: Boolean!
+  enableBridgeSpeedSmoothing: Boolean!
+  enableOptimizeAboveBridge: Boolean!
+  enableElementsActiveRange: Boolean!
+  enableWarpageAnalysis: Boolean!
+  enableOptimizationForLayersUnableToReachTarget: Boolean
+  addOnOptimizations: Int
+  totalSimulations: Int!
+  totalOptimizations: Int!
+  totalGcodes: Int!
+  handle: String
+  lastOtpRequestedAt: DateTime
+  membershipStatus: String!
+  paddleBillingCycleFrequency: Int
+  paddleBillingCycleInterval: String
+  paddleBillingPeriodEnd: DateTime
+  paddleBillingPeriodStart: DateTime
+  paddleBillingStatus: String
+  paddleCountryCode: String
+  paddleCustomerId: String
+  paddleNextBilledAt: DateTime
+  remainingOptsThisMonth: Int
+  subscription: HelioSubscription
+  subscriptionStartDate: DateTime
+  subscriptionEndDate: DateTime
+  transactionHistories: [TransactionHistory!]!
+  type: UserType!
+  avatarUrl: String
+  logins: [Login!]!
+}
+
+enum OptimizationField {
+  NAME
+  STATUS
+  PROGRESS
+}
+
+input CreateSimulationInput {
+  name: String!
+  gcodeId: ID!
+  """Settings related to the simulation environment and parameters."""
+  simulationSettings: SimulationSettingsInput
+}
+
+"""
+Input for creating or updating news article feedback.
+
+All fields are optional — only the provided fields are applied during an
+update. Fields left as `None` are left unchanged.
+"""
+input NewsArticleFeedbackInput {
+  isLike: Boolean
+  isNotImportant: Boolean
+  isNiceToHave: Boolean
+  isImportant: Boolean
+  isCritical: Boolean
+}
+
+input CreateOptimizationInput {
+  name: String!
+  gcodeId: ID!
+  """Settings related to the simulation environment and initial conditions."""
+  simulationSettings: SimulationSettingsInput
+  """Optimization settings. When omitted, sensible defaults are applied."""
+  optimizationSettings: OptimizationSettingsInput
+}
+
+"""Country context used for localized pricing previews."""
+type PricingContext {
+  countryCode: String!
+  source: String!
+}
+
+input CreateSliceInput {
+  """
+  Optional display name for this slice; defaults to its file's display name.
+  """
+  name: String
+  """
+  Omit to select from the 3MF probe recommendation or the printer catalog.
+  """
+  slicingEngine: SlicerEngine
+  """
+  Reuse this file without uploading again. Otherwise supply inputType and inputKey.
+  """
+  fileId: ID
+  inputType: SliceInputType
+  inputKey: String
+  inputVersionId: String
+  """Omit for embedded 3MF profiles; required for other input types."""
+  presetOverrides: SlicePresetOverridesInput
+  """Zero or omission selects every plate discovered by the file probe."""
+  plate: Int
+  """
+  Convert a model saved in meters or inches to millimeters before slicing.
+  """
+  convertUnit: Boolean
+  """
+  Uniform scale factor applied to every object; must be greater than zero.
+  """
+  scale: Float
+  """Rotation of every object around the Z axis, in degrees."""
+  rotate: Float
+  """
+  Total copies of the plate's objects to print, 1 to 100, as many as fit the bed.
+  """
+  repetitions: Int
+  """
+  Plate type for every plate, overriding the project and printer defaults, for example
+  "Textured PEI Plate". The engine refuses a name its printer does not have.
+  """
+  currBedType: String
+  """Rotation of every object around the X axis, in degrees."""
+  rotateX: Float
+  """Rotation of every object around the Y axis, in degrees."""
+  rotateY: Float
+  """
+  True turns each object onto its best printing face; false keeps the file's orientation.
+  """
+  orient: Boolean
+  """
+  True arranges the plate; false keeps every position. Omitted, the engine arranges a
+  model file with more than one object and keeps a project as saved. Arranging can fail
+  to place a part on some printers' beds; that plate then fails with the engine's sentence.
+  """
+  arrange: Boolean
+  """Lift an object that is partly below the bed."""
+  ensureOnBed: Boolean
+  """Let the arrange turn objects."""
+  allowRotations: Boolean
+  """Let the arrange put several colours on one plate."""
+  allowMulticolorOneplate: Boolean
+  """Arrange with room for a smooth timelapse."""
+  enableTimelapse: Boolean
+  """Copies of each loaded object, in file order, 1 to 100 each."""
+  cloneObjects: [Int!]
+  """Leave out the objects with these 3MF object ids."""
+  skipObjects: [Int!]
+  """Slice a 3MF saved by a newer app version."""
+  allowNewerFile: Boolean
+  """
+  Slice a 3MF whose values the engine has to substitute with its own defaults.
+  """
+  allowSubstitution: Boolean
+  """Allow filaments with very different temperatures on one plate."""
+  allowMixTemp: Boolean
+  """Keep the system presets' G-code where the project changed it."""
+  skipModifiedGcodes: Boolean
+  """
+  Reduce every part's triangles like the desktop Simplify tool (slicer-cli dev-23 or later).
+  """
+  simplify: SliceSimplifyInput
+  """Refuse a plate with more triangles than this."""
+  maxTrianglesPerPlate: Int
+  """
+  Refuse a plate that takes longer than this to slice: seconds on the Bambu engine,
+  milliseconds on the Orca and Snapmaker engines.
+  """
+  maxSliceTimePerPlate: Int
+  """
+  Skip some validity checks: a layer height over the printer's limit becomes a warning;
+  the G-code conflict check and the support-needed warning are skipped. Bed refusals stay.
+  """
+  noCheck: Boolean
+  """
+  Refuse a project with post-processing scripts or a mixed filament; on by default.
+  """
+  normativeCheck: Boolean
+  """
+  List the other printers the plates also fit on, in the report. Needs a project 3MF.
+  """
+  downwardCheck: Boolean
+  """Write the sliced 3MF without the model geometry."""
+  minSave: Boolean
+  """Metadata written into the sliced 3MF."""
+  metadata: [SliceMetadataInput!]
+  """MakerLab name written into the sliced 3MF."""
+  makerlabName: String
+  """MakerLab version written into the sliced 3MF."""
+  makerlabVersion: String
+  """
+  Engine settings encoded as a JSON object string and validated for `slicingEngine`.
+  """
+  settings: String
+  wantProject3Mf: Boolean
+}
+
+"""Feedback (reaction) from a user on a news article."""
+type NewsArticleFeedback {
+  id: ID!
+  userId: String!
+  user: User
+  isLike: Boolean!
+  isNotImportant: Boolean!
+  isNiceToHave: Boolean!
+  isImportant: Boolean!
+  isCritical: Boolean!
+  insertedAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type SimulationAsset {
+  assetType: SimulationAssetType!
+  url: String!
+}
+
+enum Optimizer {
+  FULL
+  HYBRID
+}
+
+input SliceFilter {
+  name: SlicingNameFilter
+  fileId: ID
+  status: SliceListStatus
+}
+
+type MaterialSummary {
+  count: Int!
+  brands: Int!
+  desktopMaterials: Int!
+  lfamMaterials: Int!
+  experimentalMaterials: Int!
+}
+
+type SettingsValidation {
+  valid: Boolean!
+  issues: [SlicingIssue!]!
+}
+
+type PaginatedGcodesV3 {
+  """Total number of pages for the current page size."""
+  pages: Int!
+  pageInfo: PageInfo!
+  objects: [GcodeV3!]!
+}
+
+type PaginatedGcodes {
+  """Total number of pages for the current page size."""
+  pages: Int!
+  pageInfo: PageInfo!
+  objects: [GcodeV2!]!
+}
+
+enum OptimizationReductionStrategy {
+  AUTOLINEAR
+  LINEAR
+  NO_STRATEGY
+}
+
+"""Pagination metadata."""
+type PageInfo {
+  hasPreviousPage: Boolean!
+  hasNextPage: Boolean!
+}
+
+"""
+Returned by `createAnonymousPatToken`.
+The `pat` value is the plaintext token — show it once and do not store it.
+"""
+type AnonymousPatTokenResponse {
+  pat: String!
+}
+
+"""Paginated list of FAQs."""
+type PaginatedFaqs {
+  """Total number of pages available."""
+  pages: Int!
+  pageInfo: PageInfo!
+  faqs: [Faq!]!
+}
+
+type SuggestedFix {
+  orderIndex: Int
+  category: SuggestedFixCategory!
+  fix: String!
+  extraDetails: [String!]!
+}
+
+enum NewsArticleStatus {
+  UNDER_CONSIDERATION
+  IN_DEVELOPMENT
+  RECENTLY_RELEASED
+}
+
+"""Terminal state reported by the slicing worker."""
+enum SliceJobStatus {
+  SUCCEEDED
+  FAILED
+}
+
+"""
+A personal access token belonging to a user.
+Note: the raw token value is never exposed here — only the prefix.
+"""
+type PersonalAccessToken {
+  id: ID!
+  name: String!
+  prefix: String!
+  expiresOn: DateTime!
+  insertedAt: DateTime!
+}
+
+type SlicerProcess {
+  id: ID!
+  engine: SlicerEngine!
+  name: String!
+  path: String!
+  vendor: String!
+  settingId: String
+  inherits: String
+  description: String
+  compatibleMachines: [String!]!
+  forSlicerVersion: String!
+}
+
+"""Per-material entry for V3 multi-material G-code creation."""
+input GcodeMaterialInput {
+  materialId: ID!
+  name: String
+  slotIndex: Int!
+  nozzleIndex: Int!
+}
+
+"""
+Input for updating the authenticated user's feature flag settings (V2).
+
+Extends `UpdateFeatureFlagsInput` with support for the vertical support
+interface optimisation flag.
+"""
+input UpdateFeatureFlagsV2 {
+  enableFanSpeedRampUp: Boolean
+  enableSupportInterfaceOptimization: Boolean
+  enableKeepVerticalSupportInterface: Boolean
+  enableFanSpeedOptimization: Boolean
+  enableAlwaysUseDragonGpu: Boolean
+  enableExcludeCoreAssets: Boolean
+  enableApplyOptimumNozzleTemp: Boolean
+  enableBridgeSpeedSmoothing: Boolean
+  enableOptimizeAboveBridge: Boolean
+  enableElementsActiveRange: Boolean
+  enableWarpageAnalysis: Boolean
+}
+
+enum Feedstock {
+  FILAMENT
+  PELLET
+}
+
+type OptimizedThermalIndexStatistics {
+  optimizedThermalIndexCount: Int
+  optimizedThermalIndexMean: Float
+  optimizedThermalIndexStd: Float
+  optimizedThermalIndexMin: Float
+  optimizedThermalIndex25: Float
+  optimizedThermalIndex50: Float
+  optimizedThermalIndex75: Float
+  optimizedThermalIndexMax: Float
+}
+
+type GcodeTiming {
+  id: ID!
+  identity: String!
+  slicingEngine: SlicerEngine!
+  printerVendorBbl: Boolean
+  status: GcodeTimingStatus!
+  originalSha256: String!
+  optimizedSha256: String!
+  engineRevision: String
+  originalSeconds: Float
+  optimizedSeconds: Float
+  """
+  Optimized minus original seconds. Positive means longer; negative means shorter.
+  """
+  deltaSeconds: Float
+  """
+  Worker elapsed milliseconds as a decimal 64-bit integer, not print time.
+  """
+  durationMs: String
+  errorCode: String
+  errorString: String
+  insertedAt: DateTime!
+  updatedAt: DateTime!
+}
+
+input SimulationSettingsInputV2 {
+  """
+  Override warpage analysis for this run; omission preserves the user feature flag.
+  """
+  enableWarpingAnalysis: Boolean
+  roomTemperature: Float
+  airTemperatureAboveBuildPlate: Float
+  temperatureStabilizationHeight: Float
+  stabilizedAirTemperature: Float
+  constantFanSpeed: Float
+  constantPlatformTemperature: Float
+  constantNozzleTemperature: Float
+  useBridgeSpeedSmoothing: Boolean
+  useOptimizeAboveBridge: Boolean
+  useFanSpeedOptimization: Boolean
+  temperatureHistoryDatapointsPerElement: Int
+  temperatureHistoryLengthMultiplier: Int
+}
+
+type OptimizationSettings {
+  minVelocity: Float!
+  maxVelocity: Float!
+  minVelocityIncrement: Float!
+  minExtruderFlowRate: Float!
+  maxExtruderFlowRate: Float!
+  tolerance: Float!
+  maxIterations: Int!
+  nNodes: Int!
+  optimizeOuterwall: Boolean!
+  optimizer: Optimizer!
+  reductionStrategySettings: ReductionStrategySettings!
+  residualStrategySettings: ResidualStrategySettings!
+  layersToOptimize: [LayerRange!]!
+}
+
+enum PrintOutcome {
+  WILL_PRINT
+  MAY_PRINT
+  LIKELY_FAIL
+}
+
+type OptimizationFeatureFlags {
+  warpageAnalysisWasEnabled: Boolean!
+  bridgeSpeedSmoothingWasEnabled: Boolean!
+  aboveBridgeOptimizationWasEnabled: Boolean!
+  fanSpeedOptimizationWasEnabled: Boolean!
+  gpuWasUsed: Boolean!
+  coreAssetsOnlyExportWasEnabled: Boolean!
+  optimumNozzleTemperatureCapWasEnabled: Boolean!
+  fanSpeedRampUpWasEnabled: Boolean!
+  verticalSupportInterfacePreservationWasEnabled: Boolean!
+  elementsActiveRangeWasEnabled: Boolean!
+  optimizationForLayersUnableToReachTargetWasEnabled: Boolean!
+}
+
+type ResidualStrategySettings {
+  strategy: OptimizationResidualStrategy!
+  exponentialPenaltyLow: Float!
+  exponentialPenaltyHigh: Float!
+}
+
+"""A news article author."""
+type Author {
+  id: ID!
+  name: String!
+  position: String!
+  avatarUrl: String
+  insertedAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type PrintPriorityOption {
+  value: PrintPriority!
+  label: String!
+  description: String!
+  isAvailable: Boolean!
+}
+
+type Optimization {
+  id: ID!
+  spec: Int!
+  name: String!
+  index: Int!
+  isOptimization: Boolean!
+  progress: Float!
+  status: SimulationStatus!
+  simulationSettings: SimulationSettings!
+  optimizationSettings: OptimizationSettings!
+  optimizationReductionStrategySettings: OptimizationReductionStrategySettings!
+  optimizationResidualStrategySettings: OptimizationResidualStrategySettings!
+  originalPreviewImageUrl: String
+  optimizedPreviewImageUrl: String
+  originalMeshUrl: SimulationAsset
+  optimizedMeshUrl: SimulationAsset
+  """Extra mesh asset URL. Access is granted only to select individuals."""
+  originalMeshExtraUrl: SimulationAsset
+  """Extra mesh asset URL. Access is granted only to select individuals."""
+  optimizedMeshExtraUrl: SimulationAsset
+  """Alias for `originalMeshUrl` matching the old API field name."""
+  originalMeshAsset: SimulationAsset
+  """Alias for `optimizedMeshUrl` matching the old API field name."""
+  optimizedMeshAsset: SimulationAsset
+  extrusionPathsAsset: SimulationAsset
+  contactsAsset: SimulationAsset
+  originalCoordinateAsset: SimulationAsset
+  originalThermalIndexGcodeUrl: String
+  optimizedThermalIndexGcodeUrl: String
+  optimizedGcodeWithThermalIndexesUrl: String
+  originalGcodeUrl: String
+  optimizedGcodeUrl: String
+  originalReportJsonUrl: String
+  optimizedReportJsonUrl: String
+  estimatedSimulationDurationSeconds: Float
+  originalThermalIndexStatistics: ThermalIndexStatistics!
+  optimizedThermalIndexStatistics: OptimizedThermalIndexStatistics!
+  featureFlagsUsed: OptimizationFeatureFlags!
+  materialId: ID!
+  printerId: ID!
+  printPriority: PrintPriority
+  optimizeOuterwall: Boolean!
+  enhanceSurfaceGloss: Boolean!
+  originalPrintInfo: PrintInfo
+  optimizedPrintInfo: PrintInfo
+  speedFactor: Float
+  qualityMeanDelta: Float
+  qualityMeanDeltaPcnt: Float
+  qualityStdDelta: Float
+  qualityStdDeltaPcnt: Float
+  qualityMeanImprovement: OptimizationImprovement
+  qualityStdImprovement: OptimizationImprovement
+  qualityImprovement: OptimizationImprovementResult
+  timeImprovement: OptimizationImprovementResult
+  suggestedFixes: [SuggestedFix!]!
+  updatedAt: DateTime!
+  insertedAt: DateTime!
+  gcode: GcodeV2!
+  material: Material!
+  printer: Printer!
+}
+
+"""A paginated list of Helio subscription plans."""
+type PaginatedSubscriptions {
+  """Total number of pages available."""
+  pages: Int!
+  pageInfo: PageInfo!
+  objects: [HelioSubscription!]!
+}
+
+type RecordStoreExperimentEventPayload {
+  eventId: ID!
+  recorded: Boolean!
+}
+
+type SlicerFilament {
+  id: ID!
+  engine: SlicerEngine!
+  name: String!
+  path: String!
+  vendor: String!
+  settingId: String
+  inherits: String
+  compatibleMachines: [String!]!
+  forSlicerVersion: String!
 }
 
 type Query {
@@ -221,10 +1853,13 @@ type Query {
   Print Priority selector dropdown. When a `material_id` is provided, the
   "Enhance Surface Gloss" option is only available if the material is glossy.
   "Enhance Transparency" option is only available if the material is transparent.
+  Multimaterial requests always mark "Enhance Transparency" as unavailable.
   """
   printPriorityOptions(
     """Optional material ID to check compatibility."""
     materialId: ID
+    """Whether the print uses multiple distinct materials. Defaults to false."""
+    isMultiMaterial: Boolean
   ): [PrintPriorityOption!]!
   """
   List the authenticated user's G-codes with pagination, filtering, and sorting.
@@ -268,6 +1903,10 @@ type Query {
   """Retrieve a paginated list of events ordered by newest first."""
   events(page: Int, pageSize: Int): PaginatedEvents!
   """
+  Start or resume an authenticated Store visit and return its presentation decision.
+  """
+  storeExperimentDecision(surface: StoreExperimentSurface!, visitId: ID!): StoreExperimentDecision!
+  """
   Return the country context that should be used for localized pricing
   previews.
   """
@@ -291,8 +1930,43 @@ type Query {
   printers(page: Int, pageSize: Int, sortBy: PrinterField, sortDirection: SortDirection, filters: [PrinterFilter!]): PaginatedPrinters!
   printer(id: ID!): Printer!
   printersSummary: PrinterSummary!
+  """Retrieve a timing request belonging to the authenticated user."""
+  getGcodeTiming(id: ID!): GcodeTiming!
+  """
+  List only the authenticated user's registered files. Pages are 1-based,
+  clamped to 1..50; pageSize defaults to 20 and is clamped to 1..100.
+  """
+  uploadedFiles(page: Int, pageSize: Int, filter: UploadedFileFilter, sortBy: SlicingSortField, sortDirection: SlicingSortDirection): PaginatedUploadedFiles!
+  """
+  List only the authenticated user's slices. Pages are 1-based, clamped
+  to 1..50; pageSize defaults to 20 and is clamped to 1..100.
+  """
+  slices(page: Int, pageSize: Int, filter: SliceFilter, sortBy: SlicingSortField, sortDirection: SlicingSortDirection): PaginatedSlices!
+  getUploadedFile(id: ID!): UploadedFile!
+  """Retrieve an input probe belonging to the authenticated user."""
+  getInputProbe(id: ID!): InputProbe!
   """Retrieve a slice belonging to the authenticated user."""
   getSlice(id: ID!): Slice!
+  """Return the slicer runner version supported by this service."""
+  slicerVersion: String!
+  """
+  Schema-only validation; hardware-dependent constraints are checked when slicing.
+  """
+  validateSlicerSettings(engine: SlicerEngine!, settings: String!): SettingsValidation!
+  """Return the compact BambuStudio settings JSON Schema encoded as base64."""
+  bambuSettingsBase64JsonSchema: String!
+  """Return the compact OrcaSlicer settings JSON Schema encoded as base64."""
+  orcaSettingsBase64JsonSchema: String!
+  """
+  Return the compact Snapmaker Orca settings JSON Schema encoded as base64.
+  """
+  snapmakerSettingsBase64JsonSchema: String!
+  """List packaged slicer machine profiles."""
+  slicerMachines(filter: SlicerMachineFilter): [SlicerMachine!]!
+  """List packaged slicer filament profiles."""
+  slicerFilaments(filter: SlicerFilamentFilter): [SlicerFilament!]!
+  """List packaged slicer process profiles."""
+  slicerProcesses(filter: SlicerProcessFilter): [SlicerProcess!]!
   """Retrieve the currently authenticated user."""
   user: User!
   """
@@ -320,212 +1994,67 @@ type Query {
   transactionHistoriesForUser(page: Int, pageSize: Int): PaginatedTransactionHistories!
 }
 
-enum NewsArticleTag {
-  PRINTER
-  MATERIAL
-  GCODE
-  SIMULATION
-  COMPANY
-  UPDATES
-  MISC
-}
-
-"""
-A personal access token belonging to a user.
-Note: the raw token value is never exposed here — only the prefix.
-"""
-type PersonalAccessToken {
-  id: ID!
-  name: String!
-  prefix: String!
-  expiresOn: DateTime!
-  insertedAt: DateTime!
-}
-
-type GcodeErrorV2 {
-  type: GcodeError! @deprecated(reason: "Use errorCode instead.")
-  errorCode: GcodeErrorCode!
-  line: Int
-  received: String
-  expected: String
-}
-
-type PresignedUrl {
-  """MIME type inferred from the file extension."""
-  mimeType: String!
-  """Presigned PUT URL for direct S3 upload."""
-  url: String!
-  """S3 object key — pass back when referencing the uploaded file."""
-  key: String!
-}
-
-type OptimizedThermalIndexStatistics {
-  optimizedThermalIndexCount: Int
-  optimizedThermalIndexMean: Float
-  optimizedThermalIndexStd: Float
-  optimizedThermalIndexMin: Float
-  optimizedThermalIndex25: Float
-  optimizedThermalIndex50: Float
-  optimizedThermalIndex75: Float
-  optimizedThermalIndexMax: Float
-}
-
-"""Pagination metadata."""
-type PageInfo {
+type SlicingPageInfo {
   hasPreviousPage: Boolean!
   hasNextPage: Boolean!
 }
 
-"""The type of account linking event."""
-enum LinkingEventType {
-  """
-  User created a new account and linked their PAT token for the first time.
-  """
-  NEW_ACCOUNT
-  """User linked a new PAT token (new device) to their existing account."""
-  DEVICE_RELINKED
-}
-
-enum TemperatureDirection {
-  NONE
-  OVERCOOLING
-  OVERHEATING
-}
-
-enum OptimizationField {
-  NAME
-  STATUS
-  PROGRESS
-}
-
-type Caveat {
-  caveatType: CaveatType!
-  description: String!
-}
-
-type Simulation {
-  id: ID!
-  name: String!
-  progress: Float!
-  status: SimulationStatus!
-  meshUrl: SimulationAsset
-  """Extra mesh asset URL. Access is granted only to select individuals."""
-  meshExtraUrl: SimulationAsset
-  reportJsonUrl: String
-  thermalIndexGcodeUrl: String
-  """
-  Presigned GET URL for the overview image generated by dragon-postprocess.
-  `None` while the postprocessor is still running or has not produced an image.
-  """
-  overviewImageUrl: String
-  estimatedSimulationDurationSeconds: Float
-  simulationSettings: SimulationSettings!
-  thermalIndexStatistics: ThermalIndexStatistics!
-  featureFlagsUsed: SimulationFeatureFlags!
-  materialId: ID!
-  printerId: ID!
-  printInfo: PrintInfo
-  speedFactor: Float
-  suggestedFixes: [SuggestedFix!]!
-  updatedAt: DateTime!
-  insertedAt: DateTime!
-  gcode: GcodeV2!
-  material: Material!
-  printer: Printer!
-}
-
-"""Paginated list of FAQs."""
-type PaginatedFaqs {
+"""A paginated list of events."""
+type PaginatedEvents {
   """Total number of pages available."""
   pages: Int!
   pageInfo: PageInfo!
-  faqs: [Faq!]!
+  objects: [Event!]!
 }
 
-"""A user-submitted suggestion for the L-FAM platform (legacy type)."""
-type Suggestion {
+"""System-wide default values for all user feature flags."""
+type FeatureFlagDefaults {
+  enableFanSpeedRampUp: Boolean!
+  enableSupportInterfaceOptimization: Boolean!
+  enableKeepVerticalSupportInterface: Boolean!
+  enableFanSpeedOptimization: Boolean!
+  enableAlwaysUseDragonGpu: Boolean!
+  enableExcludeCoreAssets: Boolean!
+  enableApplyOptimumNozzleTemp: Boolean!
+  enableBridgeSpeedSmoothing: Boolean!
+  enableOptimizeAboveBridge: Boolean!
+  enableOptimizationForLayersUnableToReachTarget: Boolean!
+  enableElementsActiveRange: Boolean!
+  enableWarpageAnalysis: Boolean!
+}
+
+"""A billing transaction record for a user."""
+type TransactionHistory {
   id: ID!
-  user: User
-  content: String!
-  insertedAt: DateTime!
-  updatedAt: DateTime!
-}
-
-input CreateSimulationInputV2 {
-  name: String!
-  gcodeId: ID!
-  """Settings related to the simulation environment and parameters."""
-  simulationSettings: SimulationSettingsInputV2
-}
-
-"""Per-material entry for V3 multi-material G-code creation."""
-input GcodeMaterialInput {
-  materialId: ID!
-  name: String
-  slotIndex: Int!
-  nozzleIndex: Int!
-}
-
-"""
-Flat representation of residual strategy settings as stored on an Optimization record.
-"""
-type OptimizationResidualStrategySettings {
-  optimizationResidualStrategy: OptimizationResidualStrategy
-  optimizationResidualExponentialPenaltyLow: Float
-  optimizationResidualExponentialPenaltyHigh: Float
-}
-
-type OptimizationFeedback {
-  id: ID!
-  optimizationId: ID!
-  rating: Float!
-  comment: String
-}
-
-type OptimizationImprovementResult {
-  improvement: OptimizationImprovement!
-  description: String!
-}
-
-input SimulationFilter {
-  field: SimulationField!
-  filter: Filter!
-}
-
-"""Country context used for localized pricing previews."""
-type PricingContext {
-  countryCode: String!
-  source: String!
-}
-
-type MaterialBrand {
-  id: ID!
-  name: String!
-  logoUrl: String
+  user: User!
+  amount: Float!
+  currency: String!
   description: String
+  name: String!
+  type: TransactionType!
+  optsPerMonth: Int
+  addOnOptimizations: Int
+  addOn: SubscriptionAddOn
+  paddleBillingStatus: String
+  paddleTransactionId: String
+  paddleSubscriptionId: String
+  subtotalAmount: String
+  taxAmount: String
+  discountAmount: String
+  totalAmount: String
+  paddleFeeAmount: String
+  payoutAmount: String
+  payoutCurrency: String
+  subscriptionStartDate: DateTime
+  subscriptionEndDate: DateTime
+  subscription: HelioSubscription
   insertedAt: DateTime!
   updatedAt: DateTime!
 }
 
-type OptimizationSettings {
-  minVelocity: Float!
-  maxVelocity: Float!
-  minVelocityIncrement: Float!
-  minExtruderFlowRate: Float!
-  maxExtruderFlowRate: Float!
-  tolerance: Float!
-  maxIterations: Int!
-  nNodes: Int!
-  optimizeOuterwall: Boolean!
-  optimizer: Optimizer!
-  reductionStrategySettings: ReductionStrategySettings!
-  residualStrategySettings: ResidualStrategySettings!
-  layersToOptimize: [LayerRange!]!
-}
-
-"""Input for submitting a new L-FAM platform suggestion."""
-input CreateSuggestionInput {
-  content: String
+enum OptimizationResidualStrategy {
+  LINEAR
+  EXPONENTIAL
 }
 
 enum SuggestedFixCategory {
@@ -534,29 +2063,49 @@ enum SuggestedFixCategory {
   EXPERT
 }
 
-type SimulationAsset {
-  assetType: SimulationAssetType!
-  url: String!
+"""Input for creating a single-material G-code."""
+input CreateGcodeInputV2 {
+  name: String!
+  description: String
+  materialId: ID!
+  printerId: ID!
+  """Object key returned after uploading the G-code file."""
+  gcodeKey: String!
+  isSingleShell: Boolean!
+  isMultiMaterial: Boolean
+  isMultiColor: Boolean
+  """Override nozzle temperature in **Kelvin**."""
+  overrideConstantNozzleTemperature: Float
+  """Override layer height in **metres**."""
+  overrideConstantLayerHeight: Float
+  """Override line (road) width in **metres**."""
+  overrideConstantLineWidth: Float
+  """Override platform temperature in **Kelvin**."""
+  overrideConstantPlatformTemperature: Float
 }
 
-"""A paginated list of subscription add-ons."""
-type PaginatedSubscriptionAddOns {
-  """Total number of pages available."""
-  pages: Int!
-  pageInfo: PageInfo!
-  objects: [SubscriptionAddOn!]!
-}
-
-"""A redeemed subscription code."""
-type SubscriptionCode {
-  id: ID!
-  code: String!
-  isUsed: Boolean!
-  subscription: HelioSubscription!
-  user: User
-  redeemedAt: DateTime
-  insertedAt: DateTime!
-  updatedAt: DateTime!
+input OptimizationSettingsInput {
+  minVelocity: Float
+  maxVelocity: Float
+  minVelocityIncrement: Float
+  minExtruderFlowRate: Float
+  maxExtruderFlowRate: Float
+  tolerance: Float
+  maxIterations: Int
+  optimizer: Optimizer
+  printPriority: PrintPriority
+  reductionStrategySettings: ReductionStrategySettingsInput
+  residualStrategySettings: ResidualStrategySettingsInput
+  layersToOptimize: [LayerRangeInput!]
+  useBridgeSpeedSmoothing: Boolean
+  useOptimizeAboveBridge: Boolean
+  useFanSpeedOptimization: Boolean
+  """
+  Deprecated: use `print_priority` instead.
+  `true`  → `PrintPriority::SpeedAndStrength`
+  `false` → `PrintPriority::PreserveSurfaceFinish`
+  """
+  optimizeOuterwall: Boolean
 }
 
 input CreateOptimizationInputV2 {
@@ -568,182 +2117,201 @@ input CreateOptimizationInputV2 {
   optimizationSettings: OptimizationSettingsInput
 }
 
-input StringFilter {
-  equalTo: String
-  notEqualTo: String
-  caseSensitiveContains: String
-  caseInsensitiveContains: String
-  caseSensitiveStartsWith: String
-  caseInsensitiveStartsWith: String
-  caseSensitiveEndsWith: String
-  caseInsensitiveEndsWith: String
-  notCaseSensitiveContains: String
-  notCaseInsensitiveContains: String
-  notCaseSensitiveStartsWith: String
-  notCaseInsensitiveStartsWith: String
-  notCaseSensitiveEndsWith: String
-  notCaseInsensitiveEndsWith: String
+"""
+One metadata entry of the sliced 3MF. Names and values may not contain `;`.
+"""
+input SliceMetadataInput {
+  name: String!
+  value: String!
 }
 
-"""
-Flat representation of reduction strategy settings as stored on an Optimization record.
-The field names use the `optimizationReduction*` prefix to match the old API contract.
-"""
-type OptimizationReductionStrategySettings {
-  optimizationReductionStrategy: OptimizationReductionStrategy
-  optimizationReductionAutolinearDoCriticality: Boolean
-  optimizationReductionAutolinearDoFitness: Boolean
-  optimizationReductionAutolinearDoInterpolation: Boolean
-  optimizationReductionAutolinearCriticalityMaxNodesDensity: Float
-  optimizationReductionAutolinearCriticalityThreshold: Float
-  optimizationReductionAutolinearFitnessMaxNodesDensity: Float
-  optimizationReductionAutolinearFitnessThreshold: Float
-  optimizationReductionAutolinearInterpolationLevels: Int
-  optimizationReductionLinearNodesLimit: Int
+"""Input for submitting a new L-FAM platform suggestion."""
+input CreateSuggestionInput {
+  content: String
 }
 
-input OptimizationFilter {
-  field: OptimizationField!
+enum SortDirection {
+  ASCENDING
+  DESCENDING
+}
+
+type SlicerMachine {
+  id: ID!
+  engine: SlicerEngine!
+  name: String!
+  path: String!
+  vendor: String!
+  settingId: String
+  inherits: String
+  printerModel: String
+  printerVariant: String
+  nozzleDiameterMm: Float
+  defaultFilaments: [String!]!
+  defaultProcess: String
+  """IDs of same-engine selectable filament defaults, in native order."""
+  defaultFilamentIds: [ID!]!
+  """ID of the same-engine selectable process default, when available."""
+  defaultProcessId: ID
+  forSlicerVersion: String!
+}
+
+input SlicerFilamentFilter {
+  engine: SlicerEngine
+  search: String
+  vendor: String
+  compatibleMachine: String
+  forSlicerVersion: String
+}
+
+enum FloatType {
+  NEG_INF
+  POS_INF
+  NAN
+  VALUE
+}
+
+input SlicerProcessFilter {
+  engine: SlicerEngine
+  search: String
+  vendor: String
+  compatibleMachine: String
+  forSlicerVersion: String
+}
+
+type PaginatedPrinters {
+  pages: Int!
+  pageInfo: PageInfo!
+  objects: [Printer!]!
+}
+
+enum PrintPriority {
+  SPEED_AND_STRENGTH
+  PRESERVE_SURFACE_FINISH
+  ENHANCE_SURFACE_GLOSS
+  ENHANCE_TRANSPARENCY
+}
+
+enum PublicStoreExperimentEventType {
+  STORE_EXPOSED
+  PLAN_TAB_SELECTED
+  SUBSCRIPTION_CTA_CLICKED
+  TRIAL_CTA_CLICKED
+  CHECKOUT_OPENED
+  CHECKOUT_CLOSED
+  ADD_ON_CTA_CLICKED
+  ENTERPRISE_CONTACT_CLICKED
+}
+
+enum SimulationAssetType {
+  PARQUET
+  JSON
+}
+
+enum ChamberType {
+  HEATED_CHAMBER
+  NO_CHAMBER
+  UNHEATED_CHAMBER
+}
+
+input SimulationFilter {
+  field: SimulationField!
   filter: Filter!
 }
 
-"""Federation reference to a user account (owned by the users subgraph)."""
-type User {
-  id: ID!
-  freeTrialEndsAt: DateTime
-  isFreeTrialActive: Boolean!
-  isFreeTrialClaimed: Boolean!
-  isFreeTrialConvertedToPaid: Boolean!
-  email: String!
-  firstName: String
-  lastName: String
-  insertedAt: DateTime!
-  updatedAt: DateTime!
-  enableFanSpeedRampUp: Boolean!
-  enableSupportInterfaceOptimization: Boolean!
-  enableKeepVerticalSupportInterface: Boolean!
-  enableFanSpeedOptimization: Boolean!
-  enableAlwaysUseDragonGpu: Boolean!
-  enableExcludeCoreAssets: Boolean!
-  enableApplyOptimumNozzleTemp: Boolean!
-  enableBridgeSpeedSmoothing: Boolean!
-  enableOptimizeAboveBridge: Boolean!
-  enableElementsActiveRange: Boolean!
-  enableWarpageAnalysis: Boolean!
-  enableOptimizationForLayersUnableToReachTarget: Boolean
-  addOnOptimizations: Int
-  totalSimulations: Int!
-  totalOptimizations: Int!
-  totalGcodes: Int!
-  avatarUrl: String
-  handle: String
-  lastOtpRequestedAt: DateTime
-  membershipStatus: String!
-  paddleBillingCycleFrequency: Int
-  paddleBillingCycleInterval: String
-  paddleBillingPeriodEnd: DateTime
-  paddleBillingPeriodStart: DateTime
-  paddleBillingStatus: String
-  paddleCountryCode: String
-  paddleCustomerId: String
-  paddleNextBilledAt: DateTime
-  remainingOptsThisMonth: Int
-  subscription: HelioSubscription
-  subscriptionStartDate: DateTime
-  subscriptionEndDate: DateTime
-  transactionHistories: [TransactionHistory!]!
-  type: UserType!
-  logins: [Login!]!
-}
-
 """
-Input for creating or updating news article feedback.
+Input for updating the authenticated user's feature flags.
 
-All fields are optional — only the provided fields are applied during an
-update. Fields left as `None` are left unchanged.
+Deprecated — use `UpdateFeatureFlagsInput` instead.
 """
-input NewsArticleFeedbackInput {
-  isLike: Boolean
-  isNotImportant: Boolean
-  isNiceToHave: Boolean
-  isImportant: Boolean
-  isCritical: Boolean
+input UpdateUserInput {
+  enableFanSpeedRampUp: Boolean
+  enableSupportInterfaceOptimization: Boolean
+  enableAlwaysUseDragonGpu: Boolean
+  enableBridgeSpeedSmoothing: Boolean
+  enableFanSpeedOptimization: Boolean
+  enableOptimizeAboveBridge: Boolean
+  enableWarpageAnalysis: Boolean
 }
 
-"""The type or role of a user in the system."""
-enum UserType {
-  """
-  User is a hobbyist, often engaging in 3D printing for personal projects or fun.
-  """
-  HOBBYIST
-  """User is affiliated with an academic institution."""
-  ACADEMIC
-  """User uses 3D printing in a professional context."""
-  PROFESSIONAL
-  """User is part of an industrial setting."""
-  INDUSTRIAL
+"""Response returned after verifying an email update OTP."""
+type VerifyUserEmailUpdateOtpResponse {
+  success: Boolean!
+  error: String
+  user: User
 }
 
-"""An add-on pack that grants additional optimizations."""
-type SubscriptionAddOn {
+"""An upcoming or past industry event."""
+type Event {
   id: ID!
   name: String!
-  description: String
-  price: String!
-  currency: String!
-  optimizations: Int!
-  isActive: Boolean!
+  location: String!
+  startDate: DateTime!
+  endDate: DateTime!
+  link: String
+  isUpcoming: Boolean!
   insertedAt: DateTime!
   updatedAt: DateTime!
-  """Number of bonus optimizations granted by this add-on."""
-  addOnOptimizationsCount: Int!
-  """Paddle price ID for this add-on."""
-  addOnPriceId: String!
-  """Button text for the add-on."""
-  button: String
-  """Category of the add-on."""
-  category: String
-  """Disclaimers associated with this add-on."""
-  disclaimers: [String!]!
-  """Features included in this add-on."""
-  features: [String!]!
-  """Associated subscriptions."""
-  subscriptions: [HelioSubscription!]!
 }
 
-type ResidualStrategySettings {
-  strategy: OptimizationResidualStrategy!
-  exponentialPenaltyLow: Float!
-  exponentialPenaltyHigh: Float!
+"""A paginated list of subscription add-ons."""
+type PaginatedSubscriptionAddOns {
+  """Total number of pages available."""
+  pages: Int!
+  pageInfo: PageInfo!
+  objects: [SubscriptionAddOn!]!
 }
 
-enum OptimizationResidualStrategy {
-  LINEAR
-  EXPONENTIAL
+"""Input for the `redeemSubscriptionCode` mutation."""
+input RedeemSubscriptionCodeInput {
+  """Subscription code to redeem."""
+  code: String!
 }
 
-input CreateSliceInput {
-  inputType: SliceInputType!
-  inputKey: String!
-  sliceConfigKey: String!
+input IntFilter {
+  equalTo: Int
+  notEqualTo: Int
+  greaterThan: Int
+  greaterThanOrEqualTo: Int
+  lessThan: Int
+  lessThanOrEqualTo: Int
+  inList: [Int!]
+  notInList: [Int!]
 }
 
-enum SimulationStatus {
-  PENDING
-  INITIALIZING
-  SIMULATING
-  ARCHIVING
-  FINISHED
-  FAILED
-  STOPPED
+"""Identifies which slicer is requesting an anonymous PAT token."""
+enum AnonymousSlicerType {
+  BAMBU_STUDIO
+  ORCA_SLICER
 }
 
-"""Response returned after updating a Paddle customer's email address."""
-type UpdatePaddleCustomerEmailResponse {
-  success: Boolean!
-  message: String
-  customerId: String!
-  email: String!
+input MaterialFilter {
+  field: MaterialField!
+  filter: Filter!
+}
+
+type AlternativeMaterialNames {
+  bambustudio: String
+  prusaslicer: String
+  curaslicer: String
+  crealityprint: String
+}
+
+enum GcodeError {
+  NOZZLE_TEMPERATURE_NOT_FOUND
+  PLATFORM_TEMPERATURE_NOT_FOUND
+  LAYER_HEIGHT_NOT_FOUND
+  LINE_WIDTH_NOT_FOUND
+  INVALID_GCODE
+  HAS_NEGATIVE_Z_COORDINATES
+  HAS_NO_COMMANDS
+  HAS_UNCERTAIN_ENCODING
+  HAS_ZERO_SPEED
+  HAS_MULTI_MATERIAL_PRINTING
+  COMMAND_FORMAT_ERROR
+  COMMENT_FORMAT_ERROR
+  VALUE_ERROR
+  INTERNAL_ERROR
+  MULTI_MATERIAL_UNABLE_TO_DETECT_MATERIAL_SWITCH
 }
 
 enum GcodeField {
@@ -775,281 +2343,6 @@ enum GcodeField {
   FAN_SPEED_MIN
   FAN_SPEED_MAX
   NUMBER_OF_LAYERS
-}
-
-type PaginatedPrinters {
-  pages: Int!
-  pageInfo: PageInfo!
-  objects: [Printer!]!
-}
-
-input GcodeFilter {
-  field: GcodeField!
-  filter: Filter!
-}
-
-enum CaveatType {
-  OVERCOOLING_WITH_SEVERE_OVERHEATED_LAYERS
-  OVERCOOLING_WITH_OVERHEATED_LAYERS
-  OVERHEATING_WITH_SEVERE_OVERCOOLED_LAYERS
-  OVERHEATING_WITH_OVERCOOLED_LAYERS
-  OVERCOOLING_WITH_SEVERE_OVERCOOLED_LAYERS
-  OVERCOOLING_WITH_OVERCOOLED_LAYERS
-  OVERHEATING_WITH_SEVERE_OVERHEATED_LAYERS
-  OVERHEATING_WITH_OVERHEATED_LAYERS
-  OVERCOOLED_LAYERS
-  SEVERE_OVERCOOLED_LAYERS
-  OVERHEATED_LAYERS
-  SEVERE_OVERHEATED_LAYERS
-}
-
-"""Source of the free trial claim."""
-enum TrialSource {
-  """Trial claimed from the store/pricing page."""
-  STORE
-  """Trial claimed from the user dashboard."""
-  DASHBOARD
-}
-
-enum PrinterField {
-  ID
-  NAME
-  BRAND_NAME
-  ALTERNATIVE_NAME_BAMBUSTUDIO
-  ALTERNATIVE_NAME_PRUSASLICER
-  ALTERNATIVE_NAME_CURASLICER
-  ALTERNATIVE_NAME_CREALITYPRINT
-  BRAND_ID
-  NOZZLE_DIAMETER
-  IS_HEATED_BED
-  IS_HEATED_CHAMBER
-  IS_UNHEATED_CHAMBER
-  MAX_EXTRUDER_FLOW_RATE
-  MIN_EXTRUDER_FLOW_RATE
-  MAX_HARDWARE_PRINT_SPEED
-  MIN_HARDWARE_PRINT_SPEED
-  MAX_HARDWARE_EXTRUSION_TEMP
-  MIN_HARDWARE_EXTRUSION_TEMP
-  CHAMBER_TYPE
-  NUMBER_OF_NOZZLES
-  N_NODES
-}
-
-input SimulationSettingsInput {
-  """
-  Override warpage analysis for this run; omission preserves the user feature flag.
-  """
-  enableWarpingAnalysis: Boolean
-  roomTemperature: Float
-  airTemperatureAboveBuildPlate: Float
-  temperatureStabilizationHeight: Float
-  stabilizedAirTemperature: Float
-  constantFanSpeed: Float
-  constantPlatformTemperature: Float
-  constantNozzleTemperature: Float
-}
-
-enum SortDirection {
-  ASCENDING
-  DESCENDING
-}
-
-enum NewsArticleStatus {
-  UNDER_CONSIDERATION
-  IN_DEVELOPMENT
-  RECENTLY_RELEASED
-}
-
-type GcodeRestrictionInfo {
-  restriction: GcodeRestriction!
-  description: String!
-}
-
-type Optimization {
-  id: ID!
-  spec: Int!
-  name: String!
-  index: Int!
-  isOptimization: Boolean!
-  progress: Float!
-  status: SimulationStatus!
-  simulationSettings: SimulationSettings!
-  optimizationSettings: OptimizationSettings!
-  optimizationReductionStrategySettings: OptimizationReductionStrategySettings!
-  optimizationResidualStrategySettings: OptimizationResidualStrategySettings!
-  originalPreviewImageUrl: String
-  optimizedPreviewImageUrl: String
-  originalMeshUrl: SimulationAsset
-  optimizedMeshUrl: SimulationAsset
-  """Extra mesh asset URL. Access is granted only to select individuals."""
-  originalMeshExtraUrl: SimulationAsset
-  """Extra mesh asset URL. Access is granted only to select individuals."""
-  optimizedMeshExtraUrl: SimulationAsset
-  """Alias for `originalMeshUrl` matching the old API field name."""
-  originalMeshAsset: SimulationAsset
-  """Alias for `optimizedMeshUrl` matching the old API field name."""
-  optimizedMeshAsset: SimulationAsset
-  extrusionPathsAsset: SimulationAsset
-  contactsAsset: SimulationAsset
-  originalCoordinateAsset: SimulationAsset
-  originalThermalIndexGcodeUrl: String
-  optimizedThermalIndexGcodeUrl: String
-  optimizedGcodeWithThermalIndexesUrl: String
-  originalGcodeUrl: String
-  optimizedGcodeUrl: String
-  originalReportJsonUrl: String
-  optimizedReportJsonUrl: String
-  estimatedSimulationDurationSeconds: Float
-  originalThermalIndexStatistics: ThermalIndexStatistics!
-  optimizedThermalIndexStatistics: OptimizedThermalIndexStatistics!
-  featureFlagsUsed: OptimizationFeatureFlags!
-  materialId: ID!
-  printerId: ID!
-  printPriority: PrintPriority
-  optimizeOuterwall: Boolean!
-  enhanceSurfaceGloss: Boolean!
-  originalPrintInfo: PrintInfo
-  optimizedPrintInfo: PrintInfo
-  speedFactor: Float
-  qualityMeanDelta: Float
-  qualityMeanDeltaPcnt: Float
-  qualityStdDelta: Float
-  qualityStdDeltaPcnt: Float
-  qualityMeanImprovement: OptimizationImprovement
-  qualityStdImprovement: OptimizationImprovement
-  qualityImprovement: OptimizationImprovementResult
-  timeImprovement: OptimizationImprovementResult
-  suggestedFixes: [SuggestedFix!]!
-  updatedAt: DateTime!
-  insertedAt: DateTime!
-  gcode: GcodeV2!
-  material: Material!
-  printer: Printer!
-}
-
-"""A material assigned to a multi-material G-code."""
-type GcodeMaterialInfo {
-  """Material identifier."""
-  materialId: ID!
-  """Optional display name provided at upload time."""
-  name: String
-  """Printer slot index for this material."""
-  slotIndex: Int!
-  """Printer nozzle index for this material."""
-  nozzleIndex: Int!
-  """The full material resolved from materialId."""
-  material: Material!
-}
-
-"""A historical login record for a user."""
-type Login {
-  id: ID!
-  loginType: LoginType!
-  upUsername: String
-  upPassword: String
-  auth0UserId: String
-  auth0Email: String
-  auth0EmailVerified: Boolean
-  ipAddress: String
-  userAgent: String
-  insertedAt: DateTime!
-}
-
-"""A Helio subscription plan."""
-type HelioSubscription {
-  id: ID!
-  name: String!
-  description: String
-  optsPerMonth: Int!
-  membershipDuration: Int
-  paddlePriceId: String
-  price: String
-  features: [String!]!
-  disclaimers: [String!]!
-  button: String
-  category: String
-  insertedAt: DateTime!
-  updatedAt: DateTime!
-}
-
-enum Optimizer {
-  FULL
-  HYBRID
-}
-
-"""Category of a FAQ entry."""
-enum FaqCategory {
-  """Printer-related FAQ."""
-  PRINTER
-  """Material-related FAQ."""
-  MATERIAL
-  """G-code-related FAQ."""
-  GCODE
-  """Simulation-related FAQ."""
-  SIMULATION
-}
-
-type PrintPriorityOption {
-  value: PrintPriority!
-  label: String!
-  description: String!
-  isAvailable: Boolean!
-}
-
-input SimulationSettingsInputV2 {
-  """
-  Override warpage analysis for this run; omission preserves the user feature flag.
-  """
-  enableWarpingAnalysis: Boolean
-  roomTemperature: Float
-  airTemperatureAboveBuildPlate: Float
-  temperatureStabilizationHeight: Float
-  stabilizedAirTemperature: Float
-  constantFanSpeed: Float
-  constantPlatformTemperature: Float
-  constantNozzleTemperature: Float
-  useBridgeSpeedSmoothing: Boolean
-  useOptimizeAboveBridge: Boolean
-  useFanSpeedOptimization: Boolean
-  temperatureHistoryDatapointsPerElement: Int
-  temperatureHistoryLengthMultiplier: Int
-}
-
-enum GcodeError {
-  NOZZLE_TEMPERATURE_NOT_FOUND
-  PLATFORM_TEMPERATURE_NOT_FOUND
-  LAYER_HEIGHT_NOT_FOUND
-  LINE_WIDTH_NOT_FOUND
-  INVALID_GCODE
-  HAS_NEGATIVE_Z_COORDINATES
-  HAS_NO_COMMANDS
-  HAS_UNCERTAIN_ENCODING
-  HAS_ZERO_SPEED
-  HAS_MULTI_MATERIAL_PRINTING
-  COMMAND_FORMAT_ERROR
-  COMMENT_FORMAT_ERROR
-  VALUE_ERROR
-  INTERNAL_ERROR
-  MULTI_MATERIAL_UNABLE_TO_DETECT_MATERIAL_SWITCH
-}
-
-type ReductionStrategySettings {
-  strategy: OptimizationReductionStrategy!
-  linearNodesLimit: Int!
-  autolinearDoCriticality: Boolean!
-  autolinearDoFitness: Boolean!
-  autolinearDoInterpolation: Boolean!
-  autolinearCriticalityMaxNodesDensity: Float!
-  autolinearCriticalityThreshold: Float!
-  autolinearFitnessMaxNodesDensity: Float!
-  autolinearFitnessThreshold: Float!
-  autolinearInterpolationLevels: Int!
-}
-
-enum ChamberType {
-  HEATED_CHAMBER
-  NO_CHAMBER
-  UNHEATED_CHAMBER
 }
 
 enum ApplicationArea {
@@ -1086,306 +2379,110 @@ enum ApplicationArea {
   WEARABLES
 }
 
-enum GcodeStatus {
-  INITIALIZING
-  PARSING
-  READY
-  ERROR
-  RESTRICTED
+enum SlicingSortDirection {
+  ASCENDING
+  DESCENDING
 }
 
-"""An upcoming or past industry event."""
-type Event {
+"""Input for updating a single-material G-code."""
+input UpdateGcodeInputV2 {
+  name: String!
+  materialId: ID!
+  printerId: ID!
+  isSingleShell: Boolean!
+  """Override layer height in **metres**."""
+  overrideConstantLayerHeight: Float
+  """Override line (road) width in **metres**."""
+  overrideConstantLineWidth: Float
+  """Override platform temperature in **Kelvin**."""
+  overrideConstantPlatformTemperature: Float
+  """Override nozzle temperature in **Kelvin**."""
+  overrideConstantNozzleTemperature: Float
+}
+
+type Caveat {
+  caveatType: CaveatType!
+  description: String!
+}
+
+"""The type or role of a user in the system."""
+enum UserType {
+  """
+  User is a hobbyist, often engaging in 3D printing for personal projects or fun.
+  """
+  HOBBYIST
+  """User is affiliated with an academic institution."""
+  ACADEMIC
+  """User uses 3D printing in a professional context."""
+  PROFESSIONAL
+  """User is part of an industrial setting."""
+  INDUSTRIAL
+}
+
+enum PlateJobStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+"""An add-on pack that grants additional optimizations."""
+type SubscriptionAddOn {
   id: ID!
   name: String!
-  location: String!
-  startDate: DateTime!
-  endDate: DateTime!
-  link: String
-  isUpcoming: Boolean!
+  description: String
+  price: String!
+  currency: String!
+  optimizations: Int!
+  isActive: Boolean!
   insertedAt: DateTime!
   updatedAt: DateTime!
+  """Number of bonus optimizations granted by this add-on."""
+  addOnOptimizationsCount: Int!
+  """Paddle price ID for this add-on."""
+  addOnPriceId: String!
+  """Button text for the add-on."""
+  button: String
+  """Category of the add-on."""
+  category: String
+  """Disclaimers associated with this add-on."""
+  disclaimers: [String!]!
+  """Features included in this add-on."""
+  features: [String!]!
+  """Associated subscriptions."""
+  subscriptions: [HelioSubscription!]!
 }
 
-type ThermalIndexStatistics {
-  thermalIndexCount: Int
-  thermalIndexMean: Float
-  thermalIndexStd: Float
-  thermalIndexMin: Float
-  thermalIndex25: Float
-  thermalIndex50: Float
-  thermalIndex75: Float
-  thermalIndexMax: Float
+type SimulationSettings {
+  airTemperatureAboveBuildPlate: Float!
+  temperatureStabilizationHeight: Float!
+  stabilizedAirTemperature: Float!
+  constantFanSpeed: Float
+  constantPlatformTemperature: Float
+  constantNozzleTemperature: Float
+  temperatureHistoryDatapointsPerElement: Int
+  temperatureHistoryLengthMultiplier: Int
 }
 
-"""Response returned after verifying an OTP."""
-type VerifyOtpResponse {
-  success: Boolean!
-  token: String
-  error: String
-  linkingEvent: LinkingEventType
+input PrinterFilter {
+  field: PrinterField!
+  filter: Filter!
 }
 
-input SimulationFeedbackInput {
-  simulationId: ID!
-  rating: Float!
-  comment: String
+enum SimplifyLevel {
+  EXTRA_HIGH
+  HIGH
+  MEDIUM
+  LOW
+  EXTRA_LOW
 }
 
-input OptimizationFeedbackInput {
-  optimizationId: ID!
-  rating: Float!
-  comment: String
-}
-
-"""A group of free trial codes associated with a subscription."""
-type FreeTrialCodeGroup {
-  id: ID!
-  subscription: HelioSubscription!
-  company: String!
-  name: String!
-  expirationDate: DateTime!
-  quantityOfCodes: Int!
-  isExpired: Boolean!
-  insertedAt: DateTime!
-  updatedAt: DateTime!
-}
-
-"""A news article author."""
-type Author {
-  id: ID!
-  name: String!
-  position: String!
-  avatarUrl: String
-  insertedAt: DateTime!
-  updatedAt: DateTime!
-}
-
-type PaginatedGcodes {
-  """Total number of pages for the current page size."""
+"""A paginated list of news articles."""
+type PaginatedNewsArticles {
+  """Total number of pages available."""
   pages: Int!
   pageInfo: PageInfo!
-  objects: [GcodeV2!]!
-}
-
-type Mutation {
-  """
-  Create a new simulation.
-  
-  Checkpoint-based pipeline:
-  1. Creates a DB record with `status = PENDING` and all checkpoints = `false`
-  2. Triggers the **gcode-reader** K8s job (first pipeline stage)
-  3. Returns the created Simulation immediately
-  
-  The pipeline then continues asynchronously via the internal API:
-  gcode-reader → engine (dragon-vector-engine) → gcode-writer → `status = FINISHED`
-  """
-  createSimulation(input: CreateSimulationInput!): Simulation!
-  """
-  Create a new simulation (v2 with feature flags).
-  
-  Same checkpoint-based pipeline as `createSimulation`.
-  """
-  createSimulationV2(input: CreateSimulationInputV2!): Simulation!
-  """
-  Create a new optimization.
-  
-  Checkpoint-based pipeline:
-  1. Creates a DB record with `status = PENDING` and all checkpoints = `false`
-  2. Triggers the **gcode-reader** K8s job (first pipeline stage)
-  3. Returns the created Optimization immediately
-  
-  The pipeline then continues asynchronously via the internal API:
-  gcode-reader → engine (dragon-vector-engine) → gcode-writer → `status = FINISHED`
-  """
-  createOptimization(input: CreateOptimizationInput!): Optimization!
-  """
-  Create a new optimization (v2).
-  
-  Same checkpoint-based pipeline as `createOptimization`.
-  """
-  createOptimizationV2(input: CreateOptimizationInputV2!): Optimization!
-  """
-  Stop a running simulation.
-  
-  Allowed from any active status (PENDING, INITIALIZING, SIMULATING, ARCHIVING).
-  Returns `true` if the simulation was stopped, `false` if it was already
-  in a terminal state (Finished / Failed / Stopped) — matching the old API.
-  """
-  stopSimulation(id: ID!): Boolean!
-  """
-  Stop a running optimization.
-  
-  Returns `true` if stopped, `false` if already in a terminal state — matching the old API.
-  """
-  stopOptimization(id: ID!): Boolean!
-  """
-  Soft-delete an optimization.
-  
-  Sets `is_deleted = true`, clears optimized G-code S3 keys, and returns `true`.
-  Matches the old API behaviour exactly.
-  """
-  deleteOptimization(id: ID!): Boolean!
-  """
-  Record feedback for a simulation.
-  
-  Verifies ownership, validates the rating, persists the feedback row,
-  and returns the stored record.
-  """
-  addSimulationFeedback(input: SimulationFeedbackInput!): SimulationFeedback!
-  """
-  Record feedback for an optimization.
-  
-  Verifies ownership, validates the rating, persists the feedback row,
-  and returns the stored record.
-  """
-  addOptimizationFeedback(input: OptimizationFeedbackInput!): OptimizationFeedback!
-  """Create a single-material G-code."""
-  createGcodeV2(input: CreateGcodeInputV2!): GcodeV2!
-  """Create a multi-material G-code."""
-  createGcodeV3(input: CreateGcodeInputV3!): GcodeV3!
-  """Update a single-material G-code owned by the authenticated user."""
-  updateGcodeV2(id: ID!, input: UpdateGcodeInputV2!): GcodeV2!
-  """Delete a G-code owned by the authenticated user."""
-  deleteGcode(id: ID!): Boolean!
-  """
-  Create a comment on a news article.
-  
-  Increments `n_comments` on the article by 1.
-  """
-  createNewsArticleComment(newsArticleId: ID!, commentMarkdown: String!): NewsArticleComment!
-  """
-  Create or update feedback for the current user on a news article.
-  
-  Only the `Option` fields that are `Some(...)` in `input` are applied;
-  the rest are left unchanged.
-  
-  When `is_like` changes, `n_likes` on the article is incremented or
-  decremented accordingly (clamped to >= 0).
-  """
-  updateNewsArticleFeedback(newsArticleId: ID!, input: NewsArticleFeedbackInput!): NewsArticleFeedback!
-  """
-  Decrement one optimization add-on when the user currently has add-ons.
-  
-  Monthly quota is intentionally ignored here. When no add-ons are
-  available, this is a no-op that still returns `true`.
-  """
-  decrementOptimizationQuota(userId: ID!): Boolean!
-  """
-  Refund one optimization add-on for users who have add-on history.
-  
-  Monthly quota is intentionally never refunded here.
-  """
-  refundOptimizationQuota(userId: ID!): Boolean!
-  """
-  Claim a one-time 14-day free trial with unlimited optimizations.
-  
-  Each user may only claim a free trial once. Use `freeTrialEligibility`
-  to check whether the current user is eligible before calling this
-  mutation.
-  """
-  claimFreeTrial(input: ClaimFreeTrialInput): FreeTrialClaim!
-  """
-  Create a Paddle billing portal session.
-  
-  Returns a short-lived URL that redirects the user to the Paddle
-  customer portal where they can manage their subscription, payment
-  method, and billing history.
-  """
-  createPaddlePortalSession: PaddlePortalSessionResponse!
-  """
-  Internal: update a Paddle customer's email address.
-  
-  This is served through `/graphql/internal`; public requests inject a
-  non-empty authenticated user id and are rejected here.
-  """
-  updatePaddleCustomerEmailInternal(customerId: String!, email: String!): UpdatePaddleCustomerEmailResponse!
-  """
-  Redeem a free trial code for the platform.
-  
-  A valid, unused `code` must be supplied. The code is marked as
-  redeemed and associated with the authenticated user upon success.
-  """
-  redeemFreeTrialCode(input: RedeemFreeTrialCodeInput!): FreeTrialCode!
-  """
-  Redeem a subscription code for the platform.
-  
-  A valid, unused `code` must be supplied. The code is marked as
-  redeemed and associated with the authenticated user upon success.
-  """
-  redeemSubscriptionCode(input: RedeemSubscriptionCodeInput!): SubscriptionCode!
-  """Create a slice for the authenticated user."""
-  createSlice(input: CreateSliceInput!): Slice!
-  """
-  Update the authenticated user's feature flag settings.
-  
-  Deprecated — use `updateFeatureFlags` instead.
-  """
-  updateUser(input: UpdateUserInput!): User! @deprecated(reason: "Use updateFeatureFlags instead")
-  """Update the authenticated user's feature flag settings."""
-  updateFeatureFlags(input: UpdateFeatureFlags!): User!
-  """
-  Update the authenticated user's feature flag settings (V2).
-  
-  Extends `updateFeatureFlags` with support for the vertical support
-  interface optimisation flag.
-  """
-  updateFeatureFlagsV2(input: UpdateFeatureFlagsV2!): User!
-  """
-  Update the authenticated user's feature flag settings (V3).
-  
-  Extends `updateFeatureFlagsV2` with support for the
-  `enableOptimizationForLayersUnableToReachTarget` flag.
-  """
-  updateFeatureFlagsV3(input: UpdateFeatureFlagsV3!): User!
-  """
-  Create a new user account.
-  
-  This operation requires external orchestration (e.g. password hashing,
-  email verification, Paddle customer provisioning) and is not yet
-  implemented in this service.
-  """
-  createUser(input: CreateUserInput!): User!
-  """Send an OTP to the authenticated user's requested replacement email."""
-  sendUserEmailUpdateOtp(email: String!): SendOtpResponse!
-  """Verify an email update OTP and update the authenticated user's email."""
-  verifyUserEmailUpdateOtp(email: String!, otpCode: String!): VerifyUserEmailUpdateOtpResponse!
-  """
-  Send a one-time password (OTP) to the provided email address.
-  
-  Resolves the user by email first, falling back to the PAT-owned placeholder
-  user when appropriate, then persists a 10-minute OTP before sending the email.
-  """
-  sendOtp(email: String!, proceed: Boolean! = false): SendOtpResponse!
-  """
-  Verify the OTP sent to the provided email address.
-  
-  Links the incoming PAT to the resolved user, upgrading placeholder
-  emails and transferring Dragon simulations and optimizations on
-  existing-account relinks.
-  """
-  verifyOtp(email: String!, otpCode: String!): VerifyOtpResponse!
-  """
-  Submit a new suggestion for the L-FAM platform.
-  
-  Currently not yet implemented in this service.
-  """
-  createSuggestion(input: CreateSuggestionInput!): Suggestion!
-  """Create a new personal access token for the authenticated user."""
-  createPersonalAccessToken(name: String!, expirationDaysDelta: Int!): CreatePatTokenResponse!
-  """
-  Create an anonymous user + PAT for a slicer (BambuStudio / OrcaSlicer).
-  
-  This mutation requires no authentication — it is an open registration
-  endpoint called by the router on behalf of the slicer.
-  """
-  createAnonymousPatToken(slicerType: AnonymousSlicerType!, isTestingFramework: Boolean!): AnonymousPatTokenResponse!
-}
-
-"""Input for the `redeemSubscriptionCode` mutation."""
-input RedeemSubscriptionCodeInput {
-  """Subscription code to redeem."""
-  code: String!
+  objects: [NewsArticle!]!
 }
 
 type Material {
@@ -1421,210 +2518,159 @@ type Material {
   bedTempMax: Float
 }
 
-type PaginatedOptimizations {
-  pages: Int!
-  pageInfo: PageInfo!
-  objects: [Optimization!]!
+"""A historical login record for a user."""
+type Login {
+  id: ID!
+  loginType: LoginType!
+  upUsername: String
+  upPassword: String
+  auth0UserId: String
+  auth0Email: String
+  auth0EmailVerified: Boolean
+  ipAddress: String
+  userAgent: String
+  insertedAt: DateTime!
 }
 
-"""A record of a user claiming their free trial."""
-type FreeTrialClaim {
+type GcodeErrorV2 {
+  type: GcodeError! @deprecated(reason: "Use errorCode instead.")
+  errorCode: GcodeErrorCode!
+  line: Int
+  received: String
+  expected: String
+}
+
+enum SliceListStatus {
+  """Includes queued, probing and running plate jobs."""
+  IN_PROGRESS
+  SUCCEEDED
+  FAILED
+}
+
+input OptimizationFilter {
+  field: OptimizationField!
+  filter: Filter!
+}
+
+"""A user-submitted suggestion for the L-FAM platform (legacy type)."""
+type Suggestion {
   id: ID!
-  userId: String!
-  claimedEmail: String
-  startsAt: DateTime!
-  claimedAt: DateTime!
-  endsAt: DateTime!
-  cooldownUntil: DateTime
-  source: String!
-  convertedToPaid: Boolean!
-  convertedAt: DateTime
-  isActive: Boolean!
+  user: User
+  content: String!
   insertedAt: DateTime!
   updatedAt: DateTime!
 }
 
-enum HeatedChamberRequirement {
-  NOT_REQUIRED
-  OPTIONAL
-  REQUIRED
+"""A comment on a news article."""
+type NewsArticleComment {
+  id: ID!
+  commentMarkdown: String!
+  userId: String
+  user: User
+  insertedAt: DateTime!
+  updatedAt: DateTime!
 }
 
-"""
-Input for updating the authenticated user's feature flags.
+"""A material assigned to a multi-material G-code."""
+type GcodeMaterialInfo {
+  """Material identifier."""
+  materialId: ID!
+  """Optional display name provided at upload time."""
+  name: String
+  """Printer slot index for this material."""
+  slotIndex: Int!
+  """Printer nozzle index for this material."""
+  nozzleIndex: Int!
+  """The full material resolved from materialId."""
+  material: Material!
+}
 
-Deprecated — use `UpdateFeatureFlagsInput` instead.
-"""
-input UpdateUserInput {
-  enableFanSpeedRampUp: Boolean
-  enableSupportInterfaceOptimization: Boolean
-  enableAlwaysUseDragonGpu: Boolean
-  enableBridgeSpeedSmoothing: Boolean
-  enableFanSpeedOptimization: Boolean
-  enableOptimizeAboveBridge: Boolean
-  enableWarpageAnalysis: Boolean
+"""A news article."""
+type NewsArticle {
+  id: ID!
+  title: String!
+  summary: String!
+  markdown: String!
+  coverUrl: String
+  status: NewsArticleStatus!
+  tags: [NewsArticleTag!]!
+  comments: [NewsArticleComment!]!
+  nLikes: Int!
+  nComments: Int!
+  author: Author!
+  insertedAt: DateTime!
+  updatedAt: DateTime!
+}
+
+"""Payload type of a generated slice artifact."""
+enum SliceArtifactKind {
+  GCODE
+  RESULT_JSON
+  PROJECT_3MF
+  DIAGNOSTICS
+  WARNINGS
+  NOTES
+}
+
+type GcodeRestrictionInfo {
+  restriction: GcodeRestriction!
+  description: String!
+}
+
+enum SimulationField {
+  NAME
+  STATUS
+  PROGRESS
 }
 
 enum SliceInputType {
-  MPF
   STL
+  OBJ
+  AMF
+  STEP
+  """A 3MF using embedded profiles or explicit preset overrides."""
+  THREE_MF
+  GLTF
+  GLB
+  FBX
+  SVG
 }
 
-"""The type of a billing transaction."""
-enum TransactionType {
-  SUBSCRIPTION
-  ADD_ON
-  PAYMENT_FAILED
-}
-
-enum Feedstock {
-  FILAMENT
-  PELLET
-}
-
-enum FloatType {
-  NEG_INF
-  POS_INF
-  NAN
-  VALUE
-}
-
-input ResidualStrategySettingsInput {
-  strategy: OptimizationResidualStrategy
-  exponentialPenaltyLow: Float
-  exponentialPenaltyHigh: Float
-}
-
-input OptimizationSettingsInput {
-  minVelocity: Float
-  maxVelocity: Float
-  minVelocityIncrement: Float
-  minExtruderFlowRate: Float
-  maxExtruderFlowRate: Float
-  tolerance: Float
-  maxIterations: Int
-  optimizer: Optimizer
-  printPriority: PrintPriority
-  reductionStrategySettings: ReductionStrategySettingsInput
-  residualStrategySettings: ResidualStrategySettingsInput
-  layersToOptimize: [LayerRangeInput!]
-  useBridgeSpeedSmoothing: Boolean
-  useOptimizeAboveBridge: Boolean
-  useFanSpeedOptimization: Boolean
-  """
-  Deprecated: use `print_priority` instead.
-  `true`  → `PrintPriority::SpeedAndStrength`
-  `false` → `PrintPriority::PreserveSurfaceFinish`
-  """
-  optimizeOuterwall: Boolean
-}
-
-type Summary {
-  simulationCount: Int!
-  materialCount: Int!
-  printerCount: Int!
-}
-
-enum SimulationAssetType {
-  PARQUET
-  JSON
-}
-
-"""A billing transaction record for a user."""
-type TransactionHistory {
+"""A Helio subscription plan."""
+type HelioSubscription {
   id: ID!
-  user: User!
-  amount: Float!
-  currency: String!
+  name: String!
   description: String
-  name: String!
-  type: TransactionType!
-  optsPerMonth: Int
-  addOnOptimizations: Int
-  addOn: SubscriptionAddOn
-  paddleBillingStatus: String
-  paddleTransactionId: String
-  paddleSubscriptionId: String
-  subtotalAmount: String
-  taxAmount: String
-  discountAmount: String
-  totalAmount: String
-  paddleFeeAmount: String
-  payoutAmount: String
-  payoutCurrency: String
-  subscriptionStartDate: DateTime
-  subscriptionEndDate: DateTime
-  subscription: HelioSubscription
+  optsPerMonth: Int!
+  membershipDuration: Int
+  paddlePriceId: String
+  price: String
+  features: [String!]!
+  disclaimers: [String!]!
+  button: String
+  category: String
   insertedAt: DateTime!
   updatedAt: DateTime!
 }
 
-type OptimizationFeatureFlags {
-  warpageAnalysisWasEnabled: Boolean!
-  bridgeSpeedSmoothingWasEnabled: Boolean!
-  aboveBridgeOptimizationWasEnabled: Boolean!
-  fanSpeedOptimizationWasEnabled: Boolean!
-  gpuWasUsed: Boolean!
-  coreAssetsOnlyExportWasEnabled: Boolean!
-  optimumNozzleTemperatureCapWasEnabled: Boolean!
-  fanSpeedRampUpWasEnabled: Boolean!
-  verticalSupportInterfacePreservationWasEnabled: Boolean!
-  elementsActiveRangeWasEnabled: Boolean!
-  optimizationForLayersUnableToReachTargetWasEnabled: Boolean!
+input Filter {
+  stringFilter: StringFilter
+  intFilter: IntFilter
+  floatFilter: FloatFilter
+  booleanFilter: BooleanFilter
 }
 
-"""A single-material G-code."""
-type GcodeV2 {
-  id: ID!
-  name: String!
-  status: GcodeStatus!
-  progress: Float!
-  sizeKb: Float
-  height: Float
-  width: Float
-  depth: Float
-  weight: Float
-  platformTemperature: GcodeCustomFloat
-  nozzleTemperatureMin: GcodeCustomFloat
-  nozzleTemperatureMax: GcodeCustomFloat
-  """Uploaded G-code object key. Use `gcodeUrl` for a download URL."""
-  gcodeKey: String
-  roadWidthMin: GcodeCustomFloat
-  roadWidthMax: GcodeCustomFloat
-  layerHeightMin: GcodeCustomFloat
-  layerHeightMax: GcodeCustomFloat
-  speedMin: GcodeCustomFloat
-  speedMax: GcodeCustomFloat
-  fanSpeedMin: GcodeCustomFloat
-  fanSpeedMax: GcodeCustomFloat
-  numberOfLayers: Int
-  slicer: Slicer
-  flowRatio: Float
-  overrideGcodeParams: OverrideGcodeParams
-  isSingleShell: Boolean!
-  maxFlowRate: Float
-  layerHeightMode: Float
-  lineWidthMode: Float
-  restrictions: [GcodeRestriction!]
-  restrictionsV2: [GcodeRestrictionInfo!]!
-  errors: [GcodeError!] @deprecated(reason: "Use errorsV2 instead.")
-  errorsV2: [GcodeErrorV2!]
-  materialId: ID!
-  printerId: ID!
-  insertedAt: DateTime!
-  updatedAt: DateTime!
-  """One-hour download URL for the G-code file."""
-  gcodeUrl: String!
-  material: Material! @deprecated(reason: "Use GcodeV3 with the materials field for multi-material support.")
-  printer: Printer!
-}
-
-type MaterialSummary {
-  count: Int!
-  brands: Int!
-  desktopMaterials: Int!
-  lfamMaterials: Int!
-  experimentalMaterials: Int!
+input ReductionStrategySettingsInput {
+  strategy: OptimizationReductionStrategy
+  linearNodesLimit: Int
+  autolinearDoCriticality: Boolean
+  autolinearDoFitness: Boolean
+  autolinearDoInterpolation: Boolean
+  autolinearCriticalityMaxNodesDensity: Float
+  autolinearCriticalityThreshold: Float
+  autolinearFitnessMaxNodesDensity: Float
+  autolinearFitnessThreshold: Float
+  autolinearInterpolationLevels: Int
 }
 
 """A paginated list of transaction history records."""
@@ -1634,42 +2680,182 @@ type PaginatedTransactionHistories {
   objects: [TransactionHistory!]!
 }
 
-enum MaterialField {
-  ID
-  BRAND_ID
-  BRAND_NAME
-  NAME
-  DESCRIPTION
-  DENSITY
-  CAPACITY
-  CONDUCTIVITY_X
-  CONDUCTIVITY_Y
-  CONDUCTIVITY_Z
-  EMISSIVITY
-  MIN_EXTRUSION_TEMP
-  MAX_EXTRUSION_TEMP
-  DRYING_TEMP
-  DRYING_TIME_HOURS
-  BED_TEMP_MIN
-  BED_TEMP_MAX
-  HEATED_CHAMBER_REQUIREMENT
-  APPLICATION_AREAS
-  TG
-  FEEDSTOCK
-  EMAIL_TO_BUY
-  ALTERNATIVE_NAME_BAMBUSTUDIO
-  ALTERNATIVE_NAME_PRUSASLICER
-  ALTERNATIVE_NAME_CURASLICER
-  ALTERNATIVE_NAME_CREALITYPRINT
+"""The type of a billing transaction."""
+enum TransactionType {
+  SUBSCRIPTION
+  ADD_ON
+  PAYMENT_FAILED
 }
 
-input CreateOptimizationInput {
+type SlicePlate {
+  plateIndex: Int!
+  status: PlateJobStatus!
+  progress: Float!
+  errorString: String
+  """
+  Native result code, absent if the worker failed before producing a report.
+  """
+  returnCode: Int
+  durationMs: String
+}
+
+type PaginatedSimulations {
+  pages: Int!
+  pageInfo: PageInfo!
+  objects: [Simulation!]!
+}
+
+input CreateSimulationInputV2 {
   name: String!
   gcodeId: ID!
-  """Settings related to the simulation environment and initial conditions."""
-  simulationSettings: SimulationSettingsInput
-  """Optimization settings. When omitted, sensible defaults are applied."""
-  optimizationSettings: OptimizationSettingsInput
+  """Settings related to the simulation environment and parameters."""
+  simulationSettings: SimulationSettingsInputV2
+}
+
+"""Filter for simulation status values."""
+input SimulationStatusFilter {
+  equalTo: SimulationStatus
+  notEqualTo: SimulationStatus
+}
+
+"""Availability state of a generated slice artifact."""
+enum SliceArtifactState {
+  PENDING
+  READY
+  ARCHIVING
+  ARCHIVED
+}
+
+enum SlicingSortField {
+  NAME
+  INSERTED_AT
+}
+
+input BooleanFilter {
+  equalTo: Boolean
+  notEqualTo: Boolean
+}
+
+type StoreExperimentDecision {
+  visitId: ID!
+  mode: StoreExperimentDecisionMode!
+  assignmentId: ID
+  experimentKey: String
+  variantKey: String
+}
+
+enum NewsArticleTag {
+  PRINTER
+  MATERIAL
+  GCODE
+  SIMULATION
+  COMPANY
+  UPDATES
+  MISC
+}
+
+type PaginatedOptimizations {
+  pages: Int!
+  pageInfo: PageInfo!
+  objects: [Optimization!]!
+}
+
+type PaginatedSlices {
+  page: Int!
+  pageSize: Int!
+  pageInfo: SlicingPageInfo!
+  objects: [Slice!]!
+}
+
+input OptimizationFeedbackInput {
+  optimizationId: ID!
+  rating: Float!
+  comment: String
+}
+
+"""Response returned after verifying an OTP."""
+type VerifyOtpResponse {
+  success: Boolean!
+  token: String
+  error: String
+  linkingEvent: LinkingEventType
+}
+
+"""
+Flat representation of reduction strategy settings as stored on an Optimization record.
+The field names use the `optimizationReduction*` prefix to match the old API contract.
+"""
+type OptimizationReductionStrategySettings {
+  optimizationReductionStrategy: OptimizationReductionStrategy
+  optimizationReductionAutolinearDoCriticality: Boolean
+  optimizationReductionAutolinearDoFitness: Boolean
+  optimizationReductionAutolinearDoInterpolation: Boolean
+  optimizationReductionAutolinearCriticalityMaxNodesDensity: Float
+  optimizationReductionAutolinearCriticalityThreshold: Float
+  optimizationReductionAutolinearFitnessMaxNodesDensity: Float
+  optimizationReductionAutolinearFitnessThreshold: Float
+  optimizationReductionAutolinearInterpolationLevels: Int
+  optimizationReductionLinearNodesLimit: Int
+}
+
+input FloatFilter {
+  equalTo: Float
+  notEqualTo: Float
+  greaterThan: Float
+  greaterThanOrEqualTo: Float
+  lessThan: Float
+  lessThanOrEqualTo: Float
+  inList: [Float!]
+  notInList: [Float!]
+}
+
+enum SlicerEngine {
+  BAMBU
+  ORCA
+  SNAPMAKER
+}
+
+input SimulationSettingsInput {
+  """
+  Override warpage analysis for this run; omission preserves the user feature flag.
+  """
+  enableWarpingAnalysis: Boolean
+  roomTemperature: Float
+  airTemperatureAboveBuildPlate: Float
+  temperatureStabilizationHeight: Float
+  stabilizedAirTemperature: Float
+  constantFanSpeed: Float
+  constantPlatformTemperature: Float
+  constantNozzleTemperature: Float
+}
+
+"""Input for the `redeemFreeTrialCode` mutation."""
+input RedeemFreeTrialCodeInput {
+  """Free trial code to redeem."""
+  code: String!
+}
+
+"""
+The desktop Simplify tool, headless. Exactly one of `level`, `ratio` or
+`triangles` chooses how far to reduce.
+"""
+input SliceSimplifyInput {
+  """Detail level of the dialog's slider; MEDIUM is the tool's default."""
+  level: SimplifyLevel
+  """Share of each part's triangles to remove, above 0 and below 100."""
+  ratio: Float
+  """
+  Reduce each part to about this many triangles; a part at or under it is left as it is.
+  """
+  triangles: Int
+  """Simplify only these 3MF object ids; omitted, every object."""
+  objects: [Int!]
+  """
+  Carry painted colours, supports, seams and fuzzy skin onto the reduced mesh, as the
+  desktop's "preserve painting" does. Off, the paint is cleared. The Snapmaker engine
+  refuses it.
+  """
+  keepPaint: Boolean
 }
 
 """Input for creating a multi-material G-code."""
@@ -1694,616 +2880,29 @@ input CreateGcodeInputV3 {
   overrideConstantPlatformTemperature: Float
 }
 
-type SimulationFeatureFlags {
-  warpageAnalysisWasEnabled: Boolean!
-  bridgeSpeedSmoothingWasEnabled: Boolean!
-  aboveBridgeOptimizationWasEnabled: Boolean!
-  fanSpeedOptimizationWasEnabled: Boolean!
-  gpuWasUsed: Boolean!
-  coreAssetsOnlyExportWasEnabled: Boolean!
-  optimumNozzleTemperatureCapWasEnabled: Boolean!
-  fanSpeedRampUpWasEnabled: Boolean!
-  verticalSupportInterfacePreservationWasEnabled: Boolean!
-  elementsActiveRangeWasEnabled: Boolean!
-  optimizationForLayersUnableToReachTargetWasEnabled: Boolean!
-}
-
-type AlternativePrinterNames {
-  bambustudio: String
-  prusaslicer: String
-  curaslicer: String
-  crealityprint: String
-}
-
-input Filter {
-  stringFilter: StringFilter
-  intFilter: IntFilter
-  floatFilter: FloatFilter
-  booleanFilter: BooleanFilter
-}
-
-type PrinterSummary {
-  count: Int!
-}
-
-"""A paginated list of Helio subscription plans."""
-type PaginatedSubscriptions {
-  """Total number of pages available."""
-  pages: Int!
-  pageInfo: PageInfo!
-  objects: [HelioSubscription!]!
-}
-
-input ReductionStrategySettingsInput {
-  strategy: OptimizationReductionStrategy
-  linearNodesLimit: Int
-  autolinearDoCriticality: Boolean
-  autolinearDoFitness: Boolean
-  autolinearDoInterpolation: Boolean
-  autolinearCriticalityMaxNodesDensity: Float
-  autolinearCriticalityThreshold: Float
-  autolinearFitnessMaxNodesDensity: Float
-  autolinearFitnessThreshold: Float
-  autolinearInterpolationLevels: Int
-}
-
-"""
-Input for updating the authenticated user's feature flag settings (V2).
-
-Extends `UpdateFeatureFlagsInput` with support for the vertical support
-interface optimisation flag.
-"""
-input UpdateFeatureFlagsV2 {
-  enableFanSpeedRampUp: Boolean
-  enableSupportInterfaceOptimization: Boolean
-  enableKeepVerticalSupportInterface: Boolean
-  enableFanSpeedOptimization: Boolean
-  enableAlwaysUseDragonGpu: Boolean
-  enableExcludeCoreAssets: Boolean
-  enableApplyOptimumNozzleTemp: Boolean
-  enableBridgeSpeedSmoothing: Boolean
-  enableOptimizeAboveBridge: Boolean
-  enableElementsActiveRange: Boolean
-  enableWarpageAnalysis: Boolean
-}
-
-"""A news article."""
-type NewsArticle {
+"""A group of free trial codes associated with a subscription."""
+type FreeTrialCodeGroup {
   id: ID!
-  title: String!
-  summary: String!
-  markdown: String!
-  coverUrl: String
-  status: NewsArticleStatus!
-  tags: [NewsArticleTag!]!
-  comments: [NewsArticleComment!]!
-  nLikes: Int!
-  nComments: Int!
-  author: Author!
+  subscription: HelioSubscription!
+  company: String!
+  name: String!
+  expirationDate: DateTime!
+  quantityOfCodes: Int!
+  isExpired: Boolean!
   insertedAt: DateTime!
   updatedAt: DateTime!
 }
 
-enum Slicer {
-  SIMPLIFY3D
-  IDEAMAKER
-  CURA
-  BAMBU_LABS
-  SUPERSLICER
-  SLIC3R
-  FUSION360
-  BAAM
-  MW
-  CEAD_BAAM
-  KRAUSS_MAFFEI
-  PIOCREATE
-  KUYING
-  CEAD
-  AI_BUILD
-  AI_BUILD_GCODE
-  AI_BUILD_SRC
-  ADAONE
-  PRUSA_SLICER
-  SIGNIFY
-  ORCA_SLICER
-  CARACOL
-  CREALITY_PRINT
-  """An unrecognized slicer."""
-  UNKNOWN
-}
-
-input PrinterFilter {
-  field: PrinterField!
-  filter: Filter!
-}
-
-"""
-Implement the DateTime<Utc> scalar
-
-The input/output is a string in RFC3339 format.
-"""
-scalar DateTime
-
-input CreateSimulationInput {
-  name: String!
-  gcodeId: ID!
-  """Settings related to the simulation environment and parameters."""
-  simulationSettings: SimulationSettingsInput
-}
-
-type PaginatedGcodesV3 {
-  """Total number of pages for the current page size."""
-  pages: Int!
-  pageInfo: PageInfo!
-  objects: [GcodeV3!]!
-}
-
-enum PrintOutcome {
-  WILL_PRINT
-  MAY_PRINT
-  LIKELY_FAIL
-}
-
-input LayerRangeInput {
-  fromLayer: Int!
-  toLayer: Int!
-}
-
-type PaginatedSimulations {
-  pages: Int!
-  pageInfo: PageInfo!
-  objects: [Simulation!]!
-}
-
-enum OptimizationImprovement {
-  LOW
-  MEDIUM
-  HIGH
-}
-
-type SuggestedFix {
-  orderIndex: Int
-  category: SuggestedFixCategory!
-  fix: String!
-  extraDetails: [String!]!
-}
-
-type Printer {
-  id: ID!
-  name: String!
-  brand: PrinterBrand!
-  alternativeNames: AlternativePrinterNames!
-  isBambuSupported: Boolean!
-  insertedAt: DateTime!
-  updatedAt: DateTime!
-  nozzleDiameter: Float!
-  heatedBed: Boolean!
-  heatedChamber: Boolean!
-  maxExtruderFlowRate: Float!
-  minExtruderFlowRate: Float!
-  minHardwarePrintSpeed: Float!
-  maxHardwarePrintSpeed: Float!
-  chamberType: ChamberType!
-  numberOfNozzles: Int!
-  nNodes: Int!
-  """Maximum hardware extrusion temperature (in Kelvin)"""
-  maxHardwareExtrusionTemp: Float!
-  """Minimum hardware extrusion temperature (in Kelvin)"""
-  minHardwareExtrusionTemp: Float!
-}
-
-"""Response returned after creating a Paddle billing portal session."""
-type PaddlePortalSessionResponse {
+input CreateInputProbeInput {
   """
-  The URL the user should be redirected to in order to manage their
-  subscription in the Paddle billing portal.
+  Optional display name when registering a new file; does not rename an existing file.
   """
-  url: String!
-  """Error message if the portal session could not be created."""
-  error: String
-}
-
-type AlternativeMaterialNames {
-  bambustudio: String
-  prusaslicer: String
-  curaslicer: String
-  crealityprint: String
-}
-
-type LayerRange {
-  fromLayer: Int!
-  toLayer: Int!
-}
-
-type SimulationFeedback {
-  id: ID!
-  simulationId: ID!
-  rating: Float!
-  comment: String
-}
-
-type GcodeCustomFloat {
-  floatType: FloatType!
-  """`true` when a client-supplied override constant is in effect."""
-  isOverriden: Boolean!
-  value: Float
-}
-
-"""A single FAQ entry."""
-type Faq {
-  id: ID!
-  category: FaqCategory!
-  insertedAt: DateTime!
-  updatedAt: DateTime!
-  question: String
-  answer: String
-  questionEnUs: String @deprecated(reason: "Use question with Accept-Language: en instead.")
-  questionZhCn: String @deprecated(reason: "Use question with Accept-Language: zh-CN instead.")
-  answerEnUs: String @deprecated(reason: "Use answer with Accept-Language: en instead.")
-  answerZhCn: String @deprecated(reason: "Use answer with Accept-Language: zh-CN instead.")
-}
-
-enum PrintPriority {
-  SPEED_AND_STRENGTH
-  PRESERVE_SURFACE_FINISH
-  ENHANCE_SURFACE_GLOSS
-  ENHANCE_TRANSPARENCY
-}
-
-"""Identifies which slicer is requesting an anonymous PAT token."""
-enum AnonymousSlicerType {
-  BAMBU_STUDIO
-  ORCA_SLICER
-}
-
-"""Filter for simulation status values."""
-input SimulationStatusFilter {
-  equalTo: SimulationStatus
-  notEqualTo: SimulationStatus
-}
-
-type PaginatedMaterials {
-  pages: Int!
-  pageInfo: PageInfo!
-  objects: [Material!]!
-}
-
-"""Input for creating a single-material G-code."""
-input CreateGcodeInputV2 {
-  name: String!
-  description: String
-  materialId: ID!
-  printerId: ID!
-  """Object key returned after uploading the G-code file."""
-  gcodeKey: String!
-  isSingleShell: Boolean!
-  isMultiMaterial: Boolean
-  isMultiColor: Boolean
-  """Override nozzle temperature in **Kelvin**."""
-  overrideConstantNozzleTemperature: Float
-  """Override layer height in **metres**."""
-  overrideConstantLayerHeight: Float
-  """Override line (road) width in **metres**."""
-  overrideConstantLineWidth: Float
-  """Override platform temperature in **Kelvin**."""
-  overrideConstantPlatformTemperature: Float
-}
-
-"""
-Input for the `claimFreeTrial` mutation.
-
-Retained for backward compatibility with existing clients that pass a
-`source` argument. The value is currently ignored by the implementation.
-"""
-input ClaimFreeTrialInput {
-  """The source from which the trial is being claimed (STORE or DASHBOARD)."""
-  source: TrialSource!
-}
-
-input BooleanFilter {
-  equalTo: Boolean
-  notEqualTo: Boolean
-}
-
-"""Legacy G-code type. Deprecated in favour of `GcodeV2`."""
-type Gcode {
-  id: ID!
-  name: String!
-  sizeKb: Float!
-  height: Float!
-  width: Float!
-  depth: Float!
-  platformTemperature: GcodeCustomFloat
-  nozzleTemperatureMin: GcodeCustomFloat!
-  nozzleTemperatureMax: GcodeCustomFloat!
-  gcodeKey: String
-  roadWidthMin: GcodeCustomFloat!
-  roadWidthMax: GcodeCustomFloat!
-  layerHeightMin: GcodeCustomFloat!
-  layerHeightMax: GcodeCustomFloat!
-  speedMin: GcodeCustomFloat!
-  speedMax: GcodeCustomFloat!
-  fanSpeedMin: GcodeCustomFloat!
-  fanSpeedMax: GcodeCustomFloat!
-  numberOfLayers: Int!
-  slicer: Slicer!
-  flowRatio: Float
-  overrideGcodeParams: OverrideGcodeParams
-  isSingleShell: Boolean!
-  maxFlowRate: Float
-  layerHeightMode: Float
-  lineWidthMode: Float
-  restrictions: [GcodeRestriction!]
-  errors: [GcodeError!]
-  printerId: ID!
-  materialId: ID!
-  insertedAt: DateTime!
-  updatedAt: DateTime!
-  gcodeUrl: String!
-}
-
-"""Response returned after verifying an email update OTP."""
-type VerifyUserEmailUpdateOtpResponse {
-  success: Boolean!
-  error: String
-  user: User
-}
-
-"""Feedback (reaction) from a user on a news article."""
-type NewsArticleFeedback {
-  id: ID!
-  userId: String!
-  user: User
-  isLike: Boolean!
-  isNotImportant: Boolean!
-  isNiceToHave: Boolean!
-  isImportant: Boolean!
-  isCritical: Boolean!
-  insertedAt: DateTime!
-  updatedAt: DateTime!
-}
-
-type SimulationSettings {
-  airTemperatureAboveBuildPlate: Float!
-  temperatureStabilizationHeight: Float!
-  stabilizedAirTemperature: Float!
-  constantFanSpeed: Float
-  constantPlatformTemperature: Float
-  constantNozzleTemperature: Float
-  temperatureHistoryDatapointsPerElement: Int
-  temperatureHistoryLengthMultiplier: Int
-}
-
-"""
-Overrides applied to the G-code.
-
-Temperatures are in Celsius; lengths are in millimetres.
-"""
-type OverrideGcodeParams {
-  overrideConstantNozzleTemperature: Float
-  overrideConstantLayerHeight: Float
-  overrideConstantRoadWidth: Float
-  overrideConstantPlatformTemperature: Float
-}
-
-"""
-Returned by `createAnonymousPatToken`.
-The `pat` value is the plaintext token — show it once and do not store it.
-"""
-type AnonymousPatTokenResponse {
-  pat: String!
-}
-
-input FloatFilter {
-  equalTo: Float
-  notEqualTo: Float
-  greaterThan: Float
-  greaterThanOrEqualTo: Float
-  lessThan: Float
-  lessThanOrEqualTo: Float
-  inList: [Float!]
-  notInList: [Float!]
-}
-
-type PrinterBrand {
-  id: ID!
-  name: String!
-  logoUrl: String
-  description: String
-  insertedAt: DateTime!
-  updatedAt: DateTime!
-}
-
-input IntFilter {
-  equalTo: Int
-  notEqualTo: Int
-  greaterThan: Int
-  greaterThanOrEqualTo: Int
-  lessThan: Int
-  lessThanOrEqualTo: Int
-  inList: [Int!]
-  notInList: [Int!]
-}
-
-"""System-wide default values for all user feature flags."""
-type FeatureFlagDefaults {
-  enableFanSpeedRampUp: Boolean!
-  enableSupportInterfaceOptimization: Boolean!
-  enableKeepVerticalSupportInterface: Boolean!
-  enableFanSpeedOptimization: Boolean!
-  enableAlwaysUseDragonGpu: Boolean!
-  enableExcludeCoreAssets: Boolean!
-  enableApplyOptimumNozzleTemp: Boolean!
-  enableBridgeSpeedSmoothing: Boolean!
-  enableOptimizeAboveBridge: Boolean!
-  enableOptimizationForLayersUnableToReachTarget: Boolean!
-  enableElementsActiveRange: Boolean!
-  enableWarpageAnalysis: Boolean!
-}
-
-"""Input for updating a single-material G-code."""
-input UpdateGcodeInputV2 {
-  name: String!
-  materialId: ID!
-  printerId: ID!
-  isSingleShell: Boolean!
-  """Override layer height in **metres**."""
-  overrideConstantLayerHeight: Float
-  """Override line (road) width in **metres**."""
-  overrideConstantLineWidth: Float
-  """Override platform temperature in **Kelvin**."""
-  overrideConstantPlatformTemperature: Float
-  """Override nozzle temperature in **Kelvin**."""
-  overrideConstantNozzleTemperature: Float
-}
-
-"""Input for the `redeemFreeTrialCode` mutation."""
-input RedeemFreeTrialCodeInput {
-  """Free trial code to redeem."""
-  code: String!
-}
-
-enum GcodeRestriction {
-  SIZE_TOO_LARGE
-  WEIGHT_TOO_HEAVY
-}
-
-"""A paginated list of events."""
-type PaginatedEvents {
-  """Total number of pages available."""
-  pages: Int!
-  pageInfo: PageInfo!
-  objects: [Event!]!
-}
-
-type PrintInfo {
-  printOutcome: PrintOutcome!
-  printOutcomeDescription: String!
-  temperatureDirection: TemperatureDirection!
-  temperatureDirectionDescription: String!
-  caveats: [Caveat!]!
-}
-
-"""A multi-material G-code."""
-type GcodeV3 {
-  id: ID!
-  name: String!
-  status: GcodeStatus!
-  progress: Float!
-  sizeKb: Float
-  height: Float
-  width: Float
-  depth: Float
-  weight: Float
-  platformTemperature: GcodeCustomFloat
-  nozzleTemperatureMin: GcodeCustomFloat
-  nozzleTemperatureMax: GcodeCustomFloat
-  """Uploaded G-code object key. Use `gcodeUrl` for a download URL."""
-  gcodeKey: String
-  roadWidthMin: GcodeCustomFloat
-  roadWidthMax: GcodeCustomFloat
-  layerHeightMin: GcodeCustomFloat
-  layerHeightMax: GcodeCustomFloat
-  speedMin: GcodeCustomFloat
-  speedMax: GcodeCustomFloat
-  fanSpeedMin: GcodeCustomFloat
-  fanSpeedMax: GcodeCustomFloat
-  numberOfLayers: Int
-  slicer: Slicer
-  flowRatio: Float
-  overrideGcodeParams: OverrideGcodeParams
-  isSingleShell: Boolean!
-  maxFlowRate: Float
-  layerHeightMode: Float
-  lineWidthMode: Float
-  restrictions: [GcodeRestriction!]
-  restrictionsV2: [GcodeRestrictionInfo!]!
-  errors: [GcodeError!] @deprecated(reason: "Use errorsV2 instead.")
-  errorsV2: [GcodeErrorV2!]
-  materialId: ID!
-  printerId: ID!
-  """Materials associated with this G-code."""
-  materials: [GcodeMaterialInfo!]!
-  insertedAt: DateTime!
-  updatedAt: DateTime!
-  """One-hour download URL for the G-code file."""
-  gcodeUrl: String!
+  name: String
   """
-  The primary material for this G-code (resolved from materialId).
-  For multi-material G-codes this is the first material in the materials list.
+  Reuse a registered file, or supply inputType and inputKey to register an upload.
   """
-  material: Material!
-}
-
-"""A paginated list of news articles."""
-type PaginatedNewsArticles {
-  """Total number of pages available."""
-  pages: Int!
-  pageInfo: PageInfo!
-  objects: [NewsArticle!]!
-}
-
-enum OptimizationReductionStrategy {
-  AUTOLINEAR
-  LINEAR
-  NO_STRATEGY
-}
-
-"""The authentication method used for a login record."""
-enum LoginType {
-  """User logs in using a username and password combination."""
-  USERNAME_PASSWORD
-  """User logs in using Auth0."""
-  AUTH_0
-}
-
-"""A comment on a news article."""
-type NewsArticleComment {
-  id: ID!
-  commentMarkdown: String!
-  userId: String
-  user: User
-  insertedAt: DateTime!
-  updatedAt: DateTime!
-}
-
-"""
-Input for updating the authenticated user's feature flag settings (V3).
-"""
-input UpdateFeatureFlagsV3 {
-  enableBridgeSpeedSmoothing: Boolean
-  enableOptimizeAboveBridge: Boolean
-  enableFanSpeedOptimization: Boolean
-  enableAlwaysUseDragonGpu: Boolean
-  enableApplyOptimumNozzleTemp: Boolean
-  enableFanSpeedRampUp: Boolean
-  enableKeepVerticalSupportInterface: Boolean
-  enableOptimizationForLayersUnableToReachTarget: Boolean
-  enableWarpageAnalysis: Boolean
-}
-
-input MaterialFilter {
-  field: MaterialField!
-  filter: Filter!
-}
-
-enum GcodeErrorCode {
-  NOZZLE_TEMPERATURE_NOT_FOUND
-  PLATFORM_TEMPERATURE_NOT_FOUND
-  LAYER_HEIGHT_NOT_FOUND
-  LINE_WIDTH_NOT_FOUND
-  INVALID_GCODE
-  INTERNAL_ERROR
-  HAS_NEGATIVE_Z_COORDINATES
-  HAS_NO_COMMANDS
-  HAS_NO_LAYERS
-  HAS_UNCERTAIN_ENCODING
-  HAS_ZERO_SPEED
-  HAS_MULTI_MATERIAL_PRINTING
-  COMMAND_FORMAT_ERROR
-  COMMENT_FORMAT_ERROR
-  VALUE_ERROR
-  MULTI_MATERIAL_UNABLE_TO_DETECT_MATERIAL_SWITCH
-  NOZZLE_INDEX_MISMATCH
-  SLOT_INDEX_MISMATCH
+  fileId: ID
+  inputType: SliceInputType
+  inputKey: String
+  inputVersionId: String
 }

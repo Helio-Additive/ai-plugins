@@ -36,6 +36,15 @@ export interface PluginSpec {
     "kimi-global": MCPURLOnlyConnection;
     "kimi-china": MCPURLOnlyConnection;
   };
+  openaiSubmission?: {
+    developerName: string;
+    supportURL: string;
+    privacyPolicyURL: string;
+    termsOfServiceURL: string;
+    releaseNotes: string;
+    cases: ReviewCases;
+    introduction?: string;
+  };
 }
 /**
  * Provider MCP endpoint and public OAuth registration. Secrets must never be stored in a plugin spec.
@@ -55,6 +64,10 @@ export interface MCPConnection {
    * @minItems 1
    */
   scopes?: [string, ...string[]];
+  /**
+   * Explicit public-client authentication method when registered without a secret.
+   */
+  tokenEndpointAuthMethod?: "none";
 }
 /**
  * Provider MCP endpoint for hosts whose plugin manifests cannot carry an OAuth client registration or scopes (Kimi Code CLI registers a public client dynamically and runs OAuth itself). Secrets must never be stored in a plugin spec.
@@ -64,4 +77,65 @@ export interface MCPURLOnlyConnection {
    * Absolute HTTPS provider endpoint, without credentials or a fragment.
    */
   url: string;
+}
+export interface ReviewCases {
+  /**
+   * @minItems 5
+   * @maxItems 5
+   */
+  positive: [
+    {
+      description: string;
+      prompt: string;
+      tools_triggered: string;
+      expected_behavior: string;
+      file_attachment_urls?: string[];
+    },
+    {
+      description: string;
+      prompt: string;
+      tools_triggered: string;
+      expected_behavior: string;
+      file_attachment_urls?: string[];
+    },
+    {
+      description: string;
+      prompt: string;
+      tools_triggered: string;
+      expected_behavior: string;
+      file_attachment_urls?: string[];
+    },
+    {
+      description: string;
+      prompt: string;
+      tools_triggered: string;
+      expected_behavior: string;
+      file_attachment_urls?: string[];
+    },
+    {
+      description: string;
+      prompt: string;
+      tools_triggered: string;
+      expected_behavior: string;
+      file_attachment_urls?: string[];
+    }
+  ];
+  /**
+   * @minItems 3
+   * @maxItems 3
+   */
+  negative: [
+    {
+      description: string;
+      prompt: string;
+    },
+    {
+      description: string;
+      prompt: string;
+    },
+    {
+      description: string;
+      prompt: string;
+    }
+  ];
 }

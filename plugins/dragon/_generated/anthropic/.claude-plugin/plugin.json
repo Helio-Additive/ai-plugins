@@ -5,5 +5,5 @@
   "description": "Prepare, run, monitor, and retrieve Helio Dragon thermal workflows. Companion slicing and G-code timing use Helio slicer-cli. Slicer source code, licences and acknowledgements: https://github.com/Helio-Additive/slicer-cli/blob/main/docs/open-source.md",
   "homepage": "https://www.helioadditive.com",
   "name": "helioadditive-dragon",
-  "version": "0.1.0"
+  "version": "0.1.1"
 }

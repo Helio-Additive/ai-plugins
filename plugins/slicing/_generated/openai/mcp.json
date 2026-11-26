@@ -10,7 +10,8 @@
             ],
             "client": {
               "clientId": "openai-plugin",
-              "mode": "provided"
+              "mode": "provided",
+              "tokenEndpointAuthMethod": "none"
             },
             "type": "oauth"
           }

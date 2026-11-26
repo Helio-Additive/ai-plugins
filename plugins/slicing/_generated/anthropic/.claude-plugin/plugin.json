@@ -5,5 +5,5 @@
   "description": "Create, monitor, and retrieve Helio Additive slicing jobs. Powered by Helio slicer-cli with Bambu Studio, OrcaSlicer and Snapmaker Orca engines. Source code, licences and acknowledgements: https://github.com/Helio-Additive/slicer-cli/blob/main/docs/open-source.md",
   "homepage": "https://www.helioadditive.com",
   "name": "helioadditive-slicing",
-  "version": "0.1.0"
+  "version": "0.1.1"
 }

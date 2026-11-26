@@ -28,7 +28,9 @@ jobs:
         run: devbox run just make
       - name: Zip OpenAI packages
         run: devbox run bun scripts/package-release.ts "$RELEASE_TAG"
+      - name: Validate release ZIP contents
+        run: python3 scripts/check-release.py
       - name: Upload release assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "$RELEASE_TAG" dist/releases/*.zip --clobber
+        run: gh release upload "$RELEASE_TAG" dist/releases/*-openai-submission-*.zip dist/releases/*-codex-desktop-*.zip --clobber

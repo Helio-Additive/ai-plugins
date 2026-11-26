@@ -1,7 +1,7 @@
 {
   "endpoint": "https://api.helioadditive.com/graphql",
-  "retrievedAt": "2026-11-17T05:23:01.679Z",
-  "sha256": "3cecd3170d8f7dc2f4acb98ef71c9deb60b5933a7df31022b73b38b85423e056",
+  "retrievedAt": "2026-11-26T11:59:26.063Z",
+  "sha256": "148cd1051d28447ae7dcddbb66e32ea2a7be71de99a53a697dd33aeb1c93a360",
   "websiteRevision": "14212e931d64bca559a139b9f1c5f4217eda1757",
   "websiteFiles": {
     "src/lib/docs-graphql.ts": "981f6ceaf66961f8d5e78ca195e44f9a500384cae76cba238c233d085b342bd6",

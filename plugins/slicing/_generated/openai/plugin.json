@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "author": {
-    "name": "Helio-Additive"
+    "name": "Helio Additive"
   },
   "description": "Create, monitor, and retrieve Helio Additive slicing jobs. Powered by Helio slicer-cli with Bambu Studio, OrcaSlicer and Snapmaker Orca engines. Source code, licences and acknowledgements: https://github.com/Helio-Additive/slicer-cli/blob/main/docs/open-source.md",
   "extensions": {
@@ -19,17 +19,79 @@
           "Show me my recent slices",
           "Check the progress of my slice"
         ],
-        "developerName": "Helio-Additive",
+        "developerName": "Helio Additive",
         "displayName": "Helio Slicing",
         "logo": "./assets/logo.png",
         "logoDark": "./assets/logo-dark.png",
-        "longDescription": "Connect to Helio Additive to create slicing jobs, check their progress, and retrieve completed outputs. Slicing uses Helio slicer-cli with Bambu Studio, OrcaSlicer and Snapmaker Orca engines. Source code, licences and acknowledgements: https://github.com/Helio-Additive/slicer-cli/blob/main/docs/open-source.md",
-        "shortDescription": "Create and track 3D prints",
+        "longDescription": "Bring your 3D printing workflow into ChatGPT with Helio Additive. Prepare models for printing, select printer and material profiles, configure slicing settings, estimate print times, manage slicing jobs and retrieve print-ready files. Powered by Helio slicer-cli with Bambu Studio, OrcaSlicer and Snapmaker Orca engines. Source code, licences and acknowledgements: https://github.com/Helio-Additive/slicer-cli/blob/main/docs/open-source.md",
+        "privacyPolicyURL": "https://www.helioadditive.com/en-us/policies/privacy",
+        "shortDescription": "Prepare and manage 3D prints",
+        "supportURL": "https://www.helioadditive.com/contact",
+        "termsOfServiceURL": "https://www.helioadditive.com/en-us/policies/terms",
         "websiteURL": "https://www.helioadditive.com"
+      },
+      "publication": {
+        "release_notes": "Updated printer hardware and project-settings guidance, centered the icons, and added the portable OpenAI directory package."
+      },
+      "review": {
+        "test_cases": {
+          "negative": [
+            {
+              "description": "Physical printer control is outside this integration. Explain the limit and make no tool call.",
+              "prompt": "Start my physical printer and heat its bed now."
+            },
+            {
+              "description": "Live camera monitoring is unavailable. Explain without claiming access or calling tools.",
+              "prompt": "Watch my printer camera for the next hour and stop it if the part fails."
+            },
+            {
+              "description": "CAD design is outside the plugin. Explain without inventing a model or launching a slice.",
+              "prompt": "Design a replacement enclosure from this photo and export the CAD assembly."
+            }
+          ],
+          "positive": [
+            {
+              "description": "Identify the compatible machine profile for a specified nozzle.",
+              "expected_behavior": "Use the BAMBU catalog, return the matching measured nozzle and machine name, and identify its compatible defaults from the result.",
+              "prompt": "Which Bambu Lab X1 Carbon profile should I use with the stock 0.4 mm nozzle and PLA?",
+              "tools_triggered": "slicer_machines"
+            },
+            {
+              "description": "Validate a protected hardware setting without creating a job.",
+              "expected_behavior": "Report valid=false and the returned nozzle issue. Explain how to select the matching machine profile. No job is created.",
+              "prompt": "Check whether I can override nozzle_diameter to 0.6 in my Bambu job settings. Just validate it.",
+              "tools_triggered": "validate_slicer_settings"
+            },
+            {
+              "description": "Attach the supplied geometry-only cube.3mf. Request inspection only.",
+              "expected_behavior": "Upload once, probe using the returned key, and report recorded geometry or profile gaps using the returned file ID. Never start a slice.",
+              "file_attachment_urls": [
+                "https://raw.githubusercontent.com/Helio-Additive/ai-plugins/206e5184dcbd569d15df2b6cdcfd1a40ec408974/docs/openai-review/fixtures/cube.3mf"
+              ],
+              "prompt": "Inspect this 3MF and tell me whether it includes usable printer settings.",
+              "tools_triggered": "get_presigned_url, create_input_probe, get_input_probe"
+            },
+            {
+              "description": "Attach cube.stl. Use the single stock 0.4 mm nozzle, standard 0.20 mm process and default PLA. Explicit slice request.",
+              "expected_behavior": "Use compatible returned presets, upload once, create one slice and poll the returned ID. On success report plate status and the actual output file. On failure report the returned issue without claiming success.",
+              "file_attachment_urls": [
+                "https://raw.githubusercontent.com/Helio-Additive/ai-plugins/206e5184dcbd569d15df2b6cdcfd1a40ec408974/docs/openai-review/fixtures/cube.stl"
+              ],
+              "prompt": "Slice this STL for a stock Bambu Lab X1 Carbon with a single 0.4 mm nozzle, standard 0.20 mm layers and default PLA. Return the G-code.",
+              "tools_triggered": "slicer_machines, get_presigned_url, create_slice, get_slice"
+            },
+            {
+              "description": "Continue the preceding slice after its ID is available in the conversation.",
+              "expected_behavior": "Reuse exactly the prior ID and report each returned plate state, warning and available output. No duplicate job.",
+              "prompt": "Check that slice again. Which plates finished and where is the output?",
+              "tools_triggered": "get_slice"
+            }
+          ]
+        }
       }
     }
   },
   "homepage": "https://www.helioadditive.com",
   "name": "helioadditive-slicing",
-  "version": "0.1.0"
+  "version": "0.1.1"
 }
