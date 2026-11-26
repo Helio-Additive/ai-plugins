@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { loadPluginSpecs, renderPlugin } from "./build";
+import { loadPluginSpecs, renderPlugin, root } from "./build";
 
 const plugins = await loadPluginSpecs();
 const sourceUrl = "https://github.com/Helio-Additive/slicer-cli/blob/main/docs/open-source.md";
@@ -133,4 +133,22 @@ describe("public plugin metadata", () => {
       }
     });
   }
+
+  test("every bundle carries the repository licence, with no SPDX identifier in its manifest", async () => {
+    const licence = await readFile(join(root, "LICENSE"), "utf8");
+    expect(licence).toStartWith("Helio AI Plugins License\n");
+    expect(licence).toContain("Helio Additive, Inc.");
+    for (const { spec, source } of plugins) {
+      const bundles = await renderPlugin(spec, source, { testUrl: "http://localhost:8080", testVendor: "anthropic" });
+      expect([...bundles.keys()]).toEqual(["openai", "anthropic", "kimi-global", "kimi-china", "codex", "test"]);
+      for (const outputs of bundles.values()) {
+        // Hosts copy only the bundle folder, so the licence has to travel inside it.
+        expect(outputs.get("LICENSE")).toBe(licence);
+        for (const [path, content] of outputs) {
+          // The licence is Helio's own text: an SPDX identifier in a manifest would misstate it.
+          if (path.endsWith("plugin.json")) expect(JSON.parse(String(content)).license).toBeUndefined();
+        }
+      }
+    }
+  });
 });

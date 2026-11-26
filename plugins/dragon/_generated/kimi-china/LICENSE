@@ -1,0 +1,149 @@
+Helio AI Plugins License
+Version 1.0
+
+Copyright © 2026 Helio Additive, Inc. All rights reserved except as granted below.
+
+1. Definitions
+
+"Helio" means Helio Additive, Inc., a Delaware corporation, and its affiliates.
+
+"Materials" means the contents of the Helio AI plugins repository and every
+plugin package built from it, including manifests, connection settings, skill
+instructions, build tooling and documentation.
+
+"Sample Code" means the code templates, code snippets and helper scripts in the
+Materials that are written to be copied into, or run as part of, your own
+projects. It includes the language templates of the scripting plugin and the
+code blocks inside skill instructions.
+
+"Services" means Helio's hosted products, APIs and MCP servers.
+
+"Terms" means the Helio Terms of Service at
+https://www.helioadditive.com/en-us/policies/terms.
+
+"Platform" means an AI assistant, agent host, marketplace or directory through
+which the Materials are reviewed, listed, installed or run.
+
+2. License to the Materials
+
+Subject to this License, Helio grants you a worldwide, royalty-free,
+non-exclusive, non-transferable license to use, copy, modify and distribute the
+Materials, for personal and commercial purposes and on any Platform, solely to
+access, use or integrate with the Services or to contribute to the Materials.
+
+3. Sample Code
+
+Helio grants you a perpetual, worldwide, royalty-free license to use, copy,
+modify, merge, publish, distribute, sublicense and sell the Sample Code, and
+anything you build with it, for any purpose and without attribution. Section 4
+does not apply to Sample Code. As between you and Helio, code that an AI
+assistant writes for you with the help of the Materials is yours.
+
+4. Restrictions
+
+Except with Helio's prior written permission, or where applicable law allows it
+despite this License, you may not:
+
+(a) use the Materials, or a modified version of them, to access, operate or
+    promote a product or service that competes with or substitutes for the
+    Services, including by adapting them to connect to another provider's
+    slicing, simulation or G-code optimisation service;
+
+(b) distribute a modified version under Helio's names, logos or plugin names,
+    or in a way that suggests it is official or endorsed by Helio. A modified
+    version must state prominently that it has been changed and is not
+    provided by Helio;
+
+(c) sell the Materials or charge for access to them;
+
+(d) distribute the Materials without a copy of this License, or remove or alter
+    any copyright, trademark or attribution notice in them;
+
+(e) resell or otherwise commercialise access to the Services, or circumvent
+    their authentication, subscription requirements, usage limits or access
+    controls.
+
+5. Platforms
+
+A Platform may host, cache, reproduce, convert between package formats, scan,
+test, display and distribute the Materials, and may display the Helio names and
+logos included in them, as needed to review, list and deliver the Materials to
+users. This is in addition to any rights Helio grants a Platform under that
+Platform's own terms.
+
+6. Contributions
+
+If you submit a contribution to the Materials to Helio, such as a pull request,
+patch or suggestion, you confirm that you have the right to submit it and you
+grant Helio a perpetual, irrevocable, worldwide, royalty-free, sublicensable
+license to use, modify and distribute it, and to license it to others under this
+License or any other terms. You keep ownership of your contribution.
+
+7. Services and Terms
+
+This License covers the Materials only. Installing a plugin does not grant free
+or unrestricted access to the Services. Access to the Services requires valid
+authentication and is subject to applicable subscription requirements, usage
+limits, account permissions and the Terms. If this License and the Terms
+conflict about the Services or their output, the Terms prevail.
+
+8. Third-party and openly licensed material
+
+Third-party open-source components remain subject to their own licenses. Nothing
+in this License limits or overrides rights granted under those licenses. The
+Agent Plugins schemas in the repository's schemas/agent-plugins folder are
+licensed under the Apache License 2.0, and a copy of that license is in the
+same folder.
+
+The slicer engines that the Services run are open-source software under their
+own licenses. Their source code, licenses and acknowledgements are published at
+https://github.com/Helio-Additive/slicer-cli/blob/main/docs/open-source.md.
+Those licenses apply to that software and not to the Materials.
+
+Files that Helio has expressly dedicated to the public domain or released under
+another license, such as the model fixtures released under CC0 1.0, remain
+under that dedication or license.
+
+9. Ownership, patents and trademarks
+
+The Materials are licensed, not sold. Helio keeps all rights in the Materials
+and in its proprietary software, algorithms, simulation technologies, backend
+services, infrastructure, patents and trademarks. This License transfers no
+ownership. It grants no rights in Helio's patents beyond the right to use the
+Materials as this License permits. It grants no rights in Helio's trademarks
+beyond reproducing them as they appear in unmodified Materials, the display
+that section 5 permits, and stating accurately that something works with the
+Services.
+
+10. No warranty
+
+TO THE EXTENT PERMITTED BY APPLICABLE LAW, THE MATERIALS ARE PROVIDED "AS IS"
+AND "AS AVAILABLE", WITHOUT WARRANTIES OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NON-INFRINGEMENT. You are responsible for reviewing any file, G-code or code
+produced or changed with the Materials before you rely on it or send it to a
+printer.
+
+11. No liability
+
+TO THE EXTENT PERMITTED BY APPLICABLE LAW, HELIO WILL NOT BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY ARISING OUT OF THE MATERIALS OR THIS LICENSE,
+WHETHER IN CONTRACT, TORT OR OTHERWISE. THIS INCLUDES DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, CONSEQUENTIAL, EXEMPLARY AND PUNITIVE DAMAGES, ANY LOSS OF
+PROFITS, REVENUE, DATA, MATERIALS OR GOODWILL, AND ANY DAMAGE TO HARDWARE.
+Liability for the Services is governed by the Terms.
+
+12. Termination
+
+This License ends automatically if you breach it. When it ends you must stop
+using and distributing the Materials. The license to Sample Code in section 3
+and sections 6 and 8 to 13 continue after it ends.
+
+13. Governing law
+
+This License is governed by the laws of the State of Delaware, without regard
+to its conflict-of-law rules. The state and federal courts located in Delaware
+have exclusive jurisdiction over disputes arising out of this License. Disputes
+about the Services are resolved as the Terms provide.
+
+Questions about this License: https://www.helioadditive.com/contact
