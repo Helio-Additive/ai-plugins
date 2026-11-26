@@ -22,7 +22,7 @@ defaultPrompts:
 testPath: /dragon
 mcp:
   openai:
-    url: https://dragon.mcp.helioadditive.com/openai/dragon
+    url: https://dragon.mcp.helioadditive.com/openai
     clientId: openai-plugin
     tokenEndpointAuthMethod: none
     scopes:

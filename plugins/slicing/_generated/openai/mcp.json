@@ -18,7 +18,7 @@
         }
       },
       "type": "streamable-http",
-      "url": "https://slicing.mcp.helioadditive.com/openai/slicing"
+      "url": "https://slicing.mcp.helioadditive.com/openai"
     }
   }
 }

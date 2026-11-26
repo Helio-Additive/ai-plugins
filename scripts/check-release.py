@@ -8,7 +8,12 @@ from zipfile import ZipFile
 
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = json.loads((ROOT / "package.json").read_text())["version"]
-DEDICATED_SERVERS = {"dragon", "slicing", "scripting"}
+OPENAI_ENDPOINTS = {
+    "dragon": "https://dragon.mcp.helioadditive.com/openai",
+    "slicing": "https://slicing.mcp.helioadditive.com/openai",
+    # Candidate route until the Scripting backend exists.
+    "scripting": "https://scripting.mcp.helioadditive.com/openai/scripting",
+}
 
 
 def check(plugin, layout, suffix):
@@ -46,11 +51,11 @@ def check(plugin, layout, suffix):
                 assert len(cases["positive"]) == 5 and len(cases["negative"]) == 3
         else:
             assert "plugin.json" not in paths and "mcp.json" not in paths
-        if plugin.name in DEDICATED_SERVERS:
+        if plugin.name in OPENAI_ENDPOINTS:
             config = json.loads(archive.read(mcp_path))
             assert set(config["mcpServers"]) == {manifest["name"]}
             server = config["mcpServers"][manifest["name"]]
-            assert server["url"] == f"https://{plugin.name}.mcp.helioadditive.com/openai/{plugin.name}"
+            assert server["url"] == OPENAI_ENDPOINTS[plugin.name]
             if portable:
                 assert server["type"] == "streamable-http"
                 auth = server["extensions"]["com.openai"]["auth"]
@@ -75,10 +80,10 @@ def check(plugin, layout, suffix):
 if __name__ == "__main__":
     expected = set()
     plugins = sorted(p.parent for p in (ROOT / "plugins").glob("*/spec.yaml"))
-    assert DEDICATED_SERVERS <= {p.name for p in plugins}
+    assert OPENAI_ENDPOINTS.keys() <= {p.name for p in plugins}
     for plugin in plugins:
         portable = json.loads((plugin / "_generated/openai/plugin.json").read_bytes())
-        if plugin.name in DEDICATED_SERVERS or portable["extensions"]["com.openai"].get("publication"):
+        if plugin.name in OPENAI_ENDPOINTS or portable["extensions"]["com.openai"].get("publication"):
             expected.add(check(plugin, "openai", "openai-submission"))
         expected.add(check(plugin, "codex", "codex-desktop"))
     actual = {p.name for p in (ROOT / "dist/releases").glob(f"*-{VERSION}.zip")}

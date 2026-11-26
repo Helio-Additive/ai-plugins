@@ -1,18 +1,20 @@
 # OpenAI directory submission, v0.1.1
 
-Each plugin has a separate portable ZIP and a native Codex ZIP at version 0.1.1. The dedicated-host build is awaiting backend route confirmation and live sign-in tests. Helio's OpenAI business identity is already verified.
+Each plugin has a separate portable ZIP and a native Codex ZIP at version 0.1.1. Alex’s routing design gives Slicing and Dragon the path `/openai` on their own hosts. They are awaiting certificates, DNS, deployed routes and live sign-in tests. Scripting is deferred in that design. Its ZIP uses the originally proposed path for local packaging checks. Helio's OpenAI business identity is already verified.
 
 ## Package and service findings
 
 | Plugin | OpenAI and Codex MCP endpoint in the candidate packages | OAuth in the public package | Bundled skills |
 | --- | --- | --- | --- |
-| Helio Slicing | `https://slicing.mcp.helioadditive.com/openai/slicing` | Public client `openai-plugin`, scope `slicing` | 6 |
-| Helio Dragon | `https://dragon.mcp.helioadditive.com/openai/dragon` | Public client `openai-plugin`, scope `dragon` | 6 |
+| Helio Slicing | `https://slicing.mcp.helioadditive.com/openai` | Public client `openai-plugin`, scope `slicing` | 6 |
+| Helio Dragon | `https://dragon.mcp.helioadditive.com/openai` | Public client `openai-plugin`, scope `dragon` | 6 |
 | Helio Scripting | `https://scripting.mcp.helioadditive.com/openai/scripting` | OAuth declared. Registration and scopes await confirmation from the service owner. | 2 |
+
+The infrastructure work starts with TLS certificates. The routing issue covers Slicing and Dragon, including their OAuth resource URLs. A wildcard certificate can cover a future Scripting hostname, which also needs its own MCP route, authorization and tools. [Dedicated-host routing](https://github.com/Helio-Additive/devops/issues/5854) · [Certificate work](https://github.com/Helio-Additive/devops/issues/5856)
 
 The **openai-submission** ZIP for each plugin has `plugin.json` and `mcp.json` at its root. The **codex-desktop** ZIP contains the native hidden manifests. The Git marketplaces point to the committed host bundles. Claude and both Kimi regions continue to receive their existing MCP configurations for Slicing and Dragon and the standalone Scripting skills.
 
-Slicing covers print preparation and slicing jobs. Dragon covers Assess and Enhance for supported G-code. Both retain their listing copy, three suggested prompts, attribution and reviewer cases. Scripting includes a schema reference and templates for ten languages. Before uploading its ZIP, check the deployed server's registration method, any required scopes, callback and actual tools. Run five positive and three negative cases with the dedicated reviewer account, recording real tool names and results, and supply the cases in the spec or the dashboard. [Slicing spec and cases](../../plugins/slicing/spec.yaml) · [Dragon spec and cases](../../plugins/dragon/spec.yaml) · [Scripting spec](../../plugins/scripting/spec.yaml)
+Slicing covers print preparation and slicing jobs. Dragon covers Assess and Enhance for supported G-code. Both retain their listing copy, three suggested prompts, attribution and reviewer cases. Scripting includes a schema reference and templates for ten languages. Before uploading its ZIP, confirm the Scripting service exists and verify the exact route, registration method, any required scopes, callback and actual tools. Run five positive and three negative cases with the dedicated reviewer account, recording real tool names and results, and supply the cases in the spec or the dashboard. [Slicing spec and cases](../../plugins/slicing/spec.yaml) · [Dragon spec and cases](../../plugins/dragon/spec.yaml) · [Scripting spec](../../plugins/scripting/spec.yaml)
 
 The Agent Plugins 1.0.0 schema downloads matched the vendored schemas after parsing JSON. Portable plugin manifests validate. The upstream MCP schema rejects server extensions; OpenAI documents its OAuth extension at precisely that location. Checks validate the remaining MCP document against the upstream schema and validate the actual extension separately. Portal acceptance is still unverified. [Schema provenance](../../schemas/README.md) · [Official packaging reference](https://developers.openai.com/plugins/build/plugins)
 

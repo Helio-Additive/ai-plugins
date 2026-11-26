@@ -9,7 +9,11 @@ const validator = new Ajv2020({ strict: false });
 const validateManifest = validator.compile(manifestSchema);
 const validateCoreMcp = validator.compile(mcpSchema);
 
-test.each(["dragon", "slicing", "scripting"])("%s public package matches the portable schema and documented OpenAI extensions", async (plugin) => {
+test.each([
+  ["dragon", "https://dragon.mcp.helioadditive.com/openai"],
+  ["slicing", "https://slicing.mcp.helioadditive.com/openai"],
+  ["scripting", "https://scripting.mcp.helioadditive.com/openai/scripting"],
+] as const)("%s public package matches the portable schema and documented OpenAI extensions", async (plugin, endpoint) => {
   const bundle = join(root, "plugins", plugin, "_generated/openai");
   const manifest = await Bun.file(join(bundle, "plugin.json")).json();
   expect(validateManifest(manifest)).toBe(true);
@@ -25,7 +29,7 @@ test.each(["dragon", "slicing", "scripting"])("%s public package matches the por
   // The upstream MCP schema omits server extensions. Validate the documented
   // extension separately, then validate the complete remaining MCP document.
   const server = config.mcpServers[manifest.name];
-  expect(server.url).toBe(`https://${plugin}.mcp.helioadditive.com/openai/${plugin}`);
+  expect(server.url).toBe(endpoint);
   expect(server.extensions["com.openai"].auth).toEqual(plugin === "scripting" ? { type: "oauth" } : {
     type: "oauth", client: { mode: "provided", clientId: "openai-plugin", tokenEndpointAuthMethod: "none" },
     baseScopes: [plugin],

@@ -73,8 +73,9 @@ GENERATE_TEST=true MCP_TEST_URL=https://<test-host> MCP_TEST_VENDOR=anthropic ju
 `MCP_TEST_URL` is a base URL (HTTP or HTTPS, optional port, no path). The build
 appends `/<route><testPath>`, where `testPath` already starts with `/`.
 `MCP_TEST_VENDOR` is `openai`, `anthropic`, `kimi-global` or `kimi-china`; the
-route is the vendor name, except `kimi` for both Kimi vendors. A normal
-`just make` removes the test bundle.
+route is the vendor name, except `kimi` for both Kimi vendors. For example, a
+shared test host serves `/openai/slicing`, while Slicing’s dedicated production
+URL uses `/openai`. A normal `just make` removes the test bundle.
 
 To build and install a test bundle in one step:
 
