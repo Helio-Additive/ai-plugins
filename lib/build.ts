@@ -196,6 +196,12 @@ export async function renderPlugin(spec: PluginSpec, source: string, options: Bu
     let portableManifest: AgentPluginsManifest = manifest;
     if (provider === "openai" && spec.openaiSubmission) {
       const submission = spec.openaiSubmission;
+      if ("cases" in submission) {
+        for (const name of submission.bundledFixtures ?? []) {
+          const fixture = await readFile(join(root, "docs/openai-review/fixtures", name));
+          outputs.set(join("assets/review", name), fixture);
+        }
+      }
       const extension = manifest.extensions["com.openai"];
       const listing = "cases" in submission ? {
         interface: {

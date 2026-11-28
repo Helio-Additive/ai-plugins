@@ -1,5 +1,6 @@
 """Check the actual release ZIPs against the generated production bundles."""
 
+import hashlib
 import json
 import re
 import struct
@@ -27,6 +28,19 @@ def check(plugin, layout, suffix):
         assert paths == expected, f"unexpected or missing files in {filename}"
         for path in paths:
             assert archive.read(path) == (bundle / path).read_bytes(), path
+        review_cube = "assets/review/helio-dragon-review-cube.gcode"
+        if plugin.name == "dragon" and portable:
+            digest = hashlib.sha256(archive.read(review_cube)).hexdigest()
+            assert digest == "98aa170b3c08bb589e62e2c854b532f8e3ae13ace36aafa0bce75204537bea1e"
+            case = manifest["extensions"]["com.openai"]["review"]["test_cases"]["positive"][2]
+            assert Path(review_cube).name in case["prompt"]
+            assert case["file_attachment_urls"] == [
+                "https://raw.githubusercontent.com/Helio-Additive/ai-plugins/"
+                "d36b5caf8a9b03acdd28ba0232962852939ea6e8/"
+                "docs/openai-review/fixtures/helio-dragon-review-cube.gcode"
+            ]
+        else:
+            assert review_cube not in paths, filename
         assert manifest["version"] == VERSION
         assert any(re.fullmatch(r"skills/[^/]+/SKILL.md", p) for p in paths)
         assert ".app.json" not in paths

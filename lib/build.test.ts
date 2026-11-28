@@ -67,15 +67,15 @@ for (const { spec, source } of plugins) {
           expect(manifest.skills).toBe("./skills/");
         }
         const mcp = JSON.parse(testBundle.get(".mcp.json") as string);
+        expect(mcp.mcpServers[spec.name].url).toBe(new URL(baseUrl).origin + "/" + vendor + expectedPath);
         if (legacy) {
           expect(mcp.mcpServers[spec.name].oauth.clientId).toBe(connectionSpec.openai.clientId);
           expect(mcp.mcpServers[spec.name].oauth.callbackUrl).toBe("http://127.0.0.1/callback");
           expect(mcp.mcpServers[spec.name].scopes).toEqual(connectionSpec.openai.scopes);
-          testBundle.delete(".codex-plugin/plugin.json");
-          testBundle.delete(".mcp.json");
-          testBundle.set("plugin.json", bundles.get("openai")!.get("plugin.json")!);
+          mcp.mcpServers[spec.name].url = connectionSpec.openai.url;
+          testBundle.set(".mcp.json", JSON.stringify(mcp, null, 2) + "\n");
+          expect(testBundle).toEqual(normal.get("codex")!);
         }
-        expect(mcp.mcpServers[spec.name].url).toBe(new URL(baseUrl).origin + "/" + vendor + expectedPath);
         if (!legacy) {
           expect(testBundle.has(".codex-plugin/plugin.json")).toBe(false);
           expect(JSON.parse(testBundle.get(".claude-plugin/plugin.json") as string).name).toBe(spec.name);
@@ -88,12 +88,6 @@ for (const { spec, source } of plugins) {
           testBundle.set(".mcp.json", JSON.stringify(mcp, null, 2) + "\n");
           expect(testBundle).toEqual(bundles.get("anthropic")!);
         }
-        // Skills/assets and production bundles remain byte-identical; test layout differs.
-        if (legacy) testBundle.set("mcp.json", bundles.get("openai")!.get("mcp.json")!);
-        if (legacy) expect(testBundle).toEqual(bundles.get("openai")!);
-        const openaiMcp = JSON.parse(bundles.get("openai")!.get("mcp.json") as string);
-        mcp.mcpServers[spec.name].url = connectionSpec.openai.url;
-
         expect(bundles.get("openai")).toEqual(normal.get("openai"));
         expect(bundles.get("anthropic")).toEqual(normal.get("anthropic"));
       },
