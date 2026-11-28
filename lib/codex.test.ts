@@ -33,6 +33,10 @@ for (const { spec, source } of plugins) {
         expect(codex.has(".mcp.json")).toBe(false);
       }
       for (const [path, content] of normal.get("openai")!) {
+        if (path.startsWith("assets/review/")) {
+          expect(codex.has(path)).toBe(false);
+          continue;
+        }
         if (path.startsWith("skills/") || path.startsWith("assets/")) expect(codex.get(path)).toEqual(content);
       }
     });

@@ -75,6 +75,10 @@ export interface MCPURLOnlyConnection {
   url: string;
 }
 export interface McpSubmission {
+  /**
+   * Files from docs/openai-review/fixtures to include under assets/review/ in this OpenAI submission.
+   */
+  bundledFixtures?: string[];
   developerName: string;
   supportURL: string;
   privacyPolicyURL: string;

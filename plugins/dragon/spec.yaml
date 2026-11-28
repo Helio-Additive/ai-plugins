@@ -42,6 +42,8 @@ openaiSubmission:
   privacyPolicyURL: https://www.helioadditive.com/en-us/policies/privacy
   termsOfServiceURL: https://www.helioadditive.com/en-us/policies/terms
   releaseNotes: Initial public release of Helio Dragon. Assess the thermal behavior of existing G-code or optimize it for a supported printer and material. Review your plan in ChatGPT, start the run when you’re ready, track its progress, and retrieve the assessment results or enhanced G-code.
+  bundledFixtures:
+    - helio-dragon-review-cube.gcode
   cases:
     positive:
       - description: Read the first page of the printer catalog.
@@ -52,15 +54,19 @@ openaiSubmission:
         prompt: Pick the first material in the Dragon catalog and show which optimization priorities are available to my account for it.
         tools_triggered: dragon_catalog, dragon_optimization_options
         expected_behavior: Use the returned material ID. Distinguish available and unavailable options from the response without promising an upgrade.
-      - description: Supply the original G-code from the reviewer cube slice and its verified compatible Dragon printer and material IDs.
-        prompt: Prepare a thermal assessment of this G-code using the printer and material I supplied. Stop at the plan.
+      - description: Connect Helio Dragon and attach helio-dragon-review-cube.gcode from this case or from assets/review/ in the submission ZIP. The file is already sliced.
+        prompt: >-
+          Use helio-dragon-review-cube.gcode to prepare a Dragon thermal assessment for the Bambu Lab X1 Carbon with a 0.4 mm nozzle (printer ID 7b2354df-083b-438b-8840-6a88b5909e28)
+          and Bambu PLA Basic (material ID 031d3bab-67fd-4626-babb-1ae5a197eff7). Show me the plan and wait for my confirmation.
         tools_triggered: get_presigned_url, prepare_dragon_run
-        expected_behavior: Register the original upload, keep the same identity on polls, and show the returned plan or missing fields. Never start a run.
-      - description: Continue the prepared assessment after resolving any requested substitutions and reaching a ready plan.
+        file_attachment_urls:
+          - https://raw.githubusercontent.com/Helio-Additive/ai-plugins/d36b5caf8a9b03acdd28ba0232962852939ea6e8/docs/openai-review/fixtures/helio-dragon-review-cube.gcode
+        expected_behavior: Upload the original G-code using Dragon, prepare Assess with the supplied IDs, and reuse the same identity when polling. Show the plan or any missing fields and stop before starting the run.
+      - description: Continue case 3 in the same chat after resolving any requested substitutions and reaching a ready plan for helio-dragon-review-cube.gcode.
         prompt: I confirm the displayed assessment plan. Start that assessment once.
         tools_triggered: start_dragon_run
         expected_behavior: Use the existing identity and explicit confirmation. Report the actual run state. Never repeat an ambiguous create.
-      - description: Continue in the same conversation with the started assessment.
+      - description: Continue in the same chat with the Dragon assessment started in case 4.
         prompt: Check my assessment and show me its standard result when ready.
         tools_triggered: get_dragon_run
         expected_behavior: Poll the same identity. Report terminal status and only the standard results or available artifact references returned by Dragon.
